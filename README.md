@@ -1,7 +1,3 @@
-# homepage-fe
-
-## LikeLion 14th homepage frontend code space
-
 ## **🎯 Git Convention**
 
 - 🎉 **Start:** Start New Project [:tada:]
