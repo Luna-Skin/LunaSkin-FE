@@ -1,0 +1,1 @@
+// 도넛 차트 (Home, TodaySkinResult 공용)
