@@ -19,13 +19,11 @@ const TABS = [
 ];
 
 const Nav = styled.nav`
-  position: fixed;
-  left: 0;
-  right: 0;
+  position: sticky;
   bottom: 0;
   z-index: 10;
+  width: 100%;
   height: 60px;
-  max-width: 402px;
   display: flex;
   justify-content: center;
   align-items: center;
