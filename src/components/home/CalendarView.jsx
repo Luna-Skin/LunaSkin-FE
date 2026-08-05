@@ -12,6 +12,7 @@ const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const SHOW_PHASE_HIGHLIGHT_IN_WEEK_VIEW = false;
 
 const Wrapper = styled.div`
+margin : 0 auto;
   position: relative;
   width: 354px;
   border-radius: 18px;
