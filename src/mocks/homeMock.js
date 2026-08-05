@@ -25,6 +25,77 @@ export const MOCK_PERIOD_CYCLES = [
 // 날짜별 피부 기록 (Today_Skin + AI_Analysis + Detailed_Skin_Analysis 대응)
 // 날짜 문자열("YYYY-MM-DD")을 키로 사용해 바로 조회할 수 있게 만든 객체
 export const MOCK_SKIN_RECORDS = {
+  "2026-07-30": {
+    photoUrl: null, // 촬영한 피부 사진 경로 (아직 사진 없으면 null)
+    score: 78, // 피부 종합 점수 (0~100), 도넛 차트에 표시됨
+    statusText: "피부 상태 좋음", // 점수 옆에 붙는 한 줄 라벨 (나쁨/보통/좋음)
+    statusSummary: "난포기로 접어들며 유분과 수분 밸런스가 안정되고 있어요.", // 도넛 차트 옆 짧은 요약 문구
+    aiInsight: // 화면 하단 "AI 인사이트" 보라색 박스에 들어가는 상세 설명
+      "현재 피부는 난포기의 영향으로 피지 분비가 비교적 안정된 상태예요. 피부 컨디션이 좋은 시기이지만 과도한 각질 제거는 피하고, 수분 세럼과 가벼운 보습제로 현재 상태를 유지해보세요.",
+
+    // 세부 피부 지표 (0~100), "세부 피부 지표" 막대그래프 5개에 각각 대응
+    metrics: {
+      trouble: 25, // 트러블
+      oil: 45, // 유분
+      dullness: 35, // 칙칙함
+      hydration: 70, // 수분
+      elasticity: 65, // 탄력
+    },
+
+    // 추천 제품 목록. name: 제품명 / tag: 효능 태그 / price: 가격(원)
+    recommendedProducts: [
+      { id: 1, name: "라운드랩 자작나무 수분 세럼", tag: "수분 충전", price: 24000 },
+      { id: 2, name: "에스트라 아토베리어 로션", tag: "장벽 보습", price: 31000 },
+      { id: 3, name: "아누아 어성초 토너", tag: "진정", price: 23000 },
+    ],
+  },
+
+  "2026-08-01": {
+    photoUrl: null,
+    score: 82,
+    statusText: "피부 상태 좋음",
+    statusSummary: "피부 유분이 안정되고 수분감과 탄력이 좋아지고 있어요.",
+    aiInsight:
+      "난포기에는 피부 회복력이 높아지고 유수분 밸런스가 안정되는 편이에요. 새로운 제품을 사용하고 싶다면 얼굴 전체에 바르기 전에 턱선이나 귀 뒤쪽에 먼저 테스트해보세요.",
+
+    metrics: {
+      trouble: 20,
+      oil: 40,
+      dullness: 30,
+      hydration: 78,
+      elasticity: 72,
+    },
+
+    recommendedProducts: [
+      { id: 1, name: "토리든 다이브인 세럼", tag: "수분 보충", price: 22000 },
+      { id: 2, name: "일리윤 세라마이드 아토 크림", tag: "보습 장벽", price: 18000 },
+      { id: 3, name: "구달 청귤 비타C 세럼", tag: "브라이트닝", price: 28000 },
+    ],
+  },
+
+  "2026-08-03": {
+    photoUrl: null,
+    score: 85,
+    statusText: "피부 상태 좋음",
+    statusSummary: "배란기로 유분과 수분 밸런스가 가장 안정적인 상태예요.",
+    aiInsight:
+      "현재 피부는 배란기의 영향으로 수분감과 탄력이 비교적 좋은 상태예요. 무거운 제품을 여러 겹 사용하기보다는 가벼운 수분 세럼과 진정 크림으로 현재의 피부 균형을 유지해보세요.",
+
+    metrics: {
+      trouble: 15,
+      oil: 48,
+      dullness: 22,
+      hydration: 85,
+      elasticity: 80,
+    },
+
+    recommendedProducts: [
+      { id: 1, name: "웰라쥬 히알루로닉 앰플", tag: "수분 유지", price: 25000 },
+      { id: 2, name: "닥터지 레드 블레미쉬 크림", tag: "수분·진정", price: 36000 },
+      { id: 3, name: "라로슈포제 시카플라스트 밤", tag: "피부 진정", price: 39000 },
+    ],
+  },
+
   "2026-08-06": {
     photoUrl: null, // 촬영한 피부 사진 경로 (아직 사진 없으면 null)
     score: 70, // 피부 종합 점수 (0~100), 도넛 차트에 표시됨
