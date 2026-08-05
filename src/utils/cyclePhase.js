@@ -11,7 +11,7 @@ export const CYCLE_PHASE = {
 const OVULATION_WINDOW = 1; // 배란예정일 앞뒤 1일씩, 총 3일 (스펙: 2~3일)
 
 /**
- * 특정 날짜가 생리주기 4단계 중 어디에 해당하는지 계산합니다.
+ * 특정 날짜가 생리주기 4단계 중 어디에 해당하는지 계산
  * @param {string} dateStr - 판정할 날짜 ("YYYY-MM-DD")
  * @param {Array} periodCycles - 사용자가 기록한 생리주기 목록
  * @returns {string|null} CYCLE_PHASE 중 하나, 또는 기록이 없으면 null
@@ -36,8 +36,7 @@ export function getPhaseForDate(dateStr, periodCycles) {
   if (cycleDay < periodDuration) return CYCLE_PHASE.MENSTRUATION;
 
   // 배란예정일 = 주기 정중앙 ("주기 중간 2~3일")
-  // TODO: PO 확인 후 필요하면 (predictedCycleLength - 14) 방식으로 되돌릴 수 있음
-  const ovulationDay = Math.round(predictedCycleLength / 2);
+  const ovulationDay = predictedCycleLength - 14;
   if (Math.abs(cycleDay - ovulationDay) <= OVULATION_WINDOW) return CYCLE_PHASE.OVULATION;
 
   return cycleDay < ovulationDay ? CYCLE_PHASE.FOLLICULAR : CYCLE_PHASE.LUTEAL;
