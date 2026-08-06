@@ -35,7 +35,7 @@ export function getPhaseForDate(dateStr, periodCycles) {
 
   if (cycleDay < periodDuration) return CYCLE_PHASE.MENSTRUATION;
 
-  // 배란예정일 = 주기 정중앙 ("주기 중간 2~3일")
+  // 배란예정일 = 다음 생ㄹ리 14일 전 
   const ovulationDay = predictedCycleLength - 14;
   if (Math.abs(cycleDay - ovulationDay) <= OVULATION_WINDOW) return CYCLE_PHASE.OVULATION;
 
