@@ -40,9 +40,8 @@ const SkinTagText = styled.span`
   line-height: normal;
 `;
 
-// 태그 한 줄 안에 다 담아야 해서, 고민이 많아지면 2개까지만 보여주고 나머지는 +N으로 축약
-// TODO: 디자이너/PO 확인 필요 - 전부 나열 vs 개수 제한 
-const MAX_VISIBLE_CONCERNS = 2;
+// 고민은 1개만 보여주고 나머지는 +N으로 축약
+const MAX_VISIBLE_CONCERNS = 1;
 
 function formatConcerns(concerns = []) {
   if (concerns.length <= MAX_VISIBLE_CONCERNS) return concerns.join(" · ");
