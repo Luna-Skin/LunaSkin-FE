@@ -35,7 +35,7 @@ export function getPhaseForDate(dateStr, periodCycles) {
 
   if (cycleDay < periodDuration) return CYCLE_PHASE.MENSTRUATION;
 
-  // 배란예정일 = 주기 정중앙 ("주기 중간 2~3일")
+  // 배란예정일 = 다음 생ㄹ리 14일 전 
   const ovulationDay = predictedCycleLength - 14;
   if (Math.abs(cycleDay - ovulationDay) <= OVULATION_WINDOW) return CYCLE_PHASE.OVULATION;
 
@@ -48,4 +48,11 @@ export const PHASE_COLOR = {
   OVULATION: "#D5F1EF",
   LUTEAL: "#F0E5FF",
   FOLLICULAR: "transparent",
+};
+
+export const PHASE_LABEL = {
+  MENSTRUATION: "생리기",
+  FOLLICULAR: "난포기",
+  OVULATION: "배란기",
+  LUTEAL: "황체기",
 };
