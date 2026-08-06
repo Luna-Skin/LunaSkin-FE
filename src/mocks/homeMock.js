@@ -157,12 +157,12 @@ export const PHASE_GUIDE = {
 export const PHASE_ROUTINES = {
   MENSTRUATION: [
     { id: 1, title: "오늘의 스킨케어", description: "저자극 수분크림 사용하기", icon: creamJarIcon },
-    { id: 2, title: "오늘의 행동", description: "따뜻한 물로 반신욕하기", icon: waterGlassIcon }, // TODO: 더 맞는 아이콘 확인 필요
-    { id: 3, title: "오늘의 운동", description: "무리하지 않는 가벼운 스트레칭", icon: sneakerIcon },
+    { id: 2, title: "오늘의 행동", description: "물 2L 마시기", icon: waterGlassIcon }, // TODO: 더 맞는 아이콘 확인 필요
+    { id: 3, title: "오늘의 운동", description: "무리하지 않는 가벼운 유산소", icon: sneakerIcon },
   ],
   FOLLICULAR: [
-    { id: 1, title: "오늘의 스킨케어", description: "약산성 각질 토너로 턴오버 촉진하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "새 스킨케어 제품 패치 테스트해보기", icon: sunscreenIcon }, // TODO: 더 맞는 아이콘 확인 필요
+    { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
+    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: sunscreenIcon }, // TODO: 더 맞는 아이콘 확인 필요
     { id: 3, title: "오늘의 운동", description: "평소보다 강도 높은 운동 도전하기", icon: strengthIcon },
   ],
   OVULATION: [
@@ -171,8 +171,8 @@ export const PHASE_ROUTINES = {
     { id: 3, title: "오늘의 운동", description: "가벼운 운동하기", icon: sneakerIcon },
   ],
   LUTEAL: [
-    { id: 1, title: "오늘의 스킨케어", description: "BHA 토너로 모공 관리하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "짠 음식·자극적인 음식 줄이기", icon: sunscreenIcon }, // TODO: 더 맞는 아이콘 확인 필요
-    { id: 3, title: "오늘의 운동", description: "가벼운 유산소로 PMS 완화하기", icon: sneakerIcon },
+    { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
+    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: sunscreenIcon }, // TODO: 더 맞는 아이콘 확인 필요
+    { id: 3, title: "오늘의 운동", description: "가벼운 유산소 하기", icon: sneakerIcon },
   ],
 };

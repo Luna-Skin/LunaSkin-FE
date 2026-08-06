@@ -19,18 +19,17 @@ const TABS = [
 ];
 
 const Nav = styled.nav`
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
   width: 100%;
   height: 60px;
+  flex-shrink: 0;
+
   display: flex;
   justify-content: center;
   align-items: center;
+
   background: #ffffff;
   border-top: 1px solid rgba(0, 0, 0, 0.2);
 `;
-
 const TabBox = styled.div`
   display: flex;
   justify-content: space-between;
