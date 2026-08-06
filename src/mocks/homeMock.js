@@ -124,12 +124,25 @@ export const MOCK_SKIN_RECORDS = {
 
 // 주기 단계별 안내 문구 (홈 화면 4번 영역)
 // 키는 Cycle_Phase 테이블의 phasetype ENUM 값과 동일하게 맞춤
+// title: 짧은 제목 / description: 상세 설명 
 // MENSTRUATION: 생리기 / FOLLICULAR: 난포기 / OVULATION: 배란기 / LUTEAL: 황체기
 export const PHASE_GUIDE = {
-  MENSTRUATION: "생리 중엔 피부 장벽이 약해져 건조·민감해지기 쉬워요",
-  FOLLICULAR: "난포기엔 피지 분비가 안정되어 컨디션이 좋아지는 시기예요",
-  OVULATION: "배란기엔 피지·수분 밸런스가 가장 좋아요. 가벼운 케어로 컨디션을 유지해보세요.",
-  LUTEAL: "황체기엔 피지 분비가 늘어 트러블이 생기기 쉬워요",
+  MENSTRUATION: {
+    title: "피부 예민 구간",
+    description: "생리 중엔 피부 장벽이 약해져 건조·민감해지기 쉬워요",
+  },
+  FOLLICULAR: {
+    title: "피부 컨디션 회복 구간",
+    description: "난포기엔 피지 분비가 안정되어 컨디션이 좋아지는 시기예요",
+  },
+  OVULATION: {
+    title: "피부 컨디션 최상 구간",
+    description: "배란기엔 피지·수분 밸런스가 가장 좋아요. 가벼운 케어로 컨디션을 유지해보세요.",
+  },
+  LUTEAL: {
+    title: "피부 트러블 주의 구간",
+    description: "황체기엔 피지 분비가 늘어 트러블이 생기기 쉬워요",
+  },
 };
 
 // 주기 단계별 추천 루틴 (홈 화면 6번 영역)
