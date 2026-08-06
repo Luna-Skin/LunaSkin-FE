@@ -49,3 +49,10 @@ export const PHASE_COLOR = {
   LUTEAL: "#F0E5FF",
   FOLLICULAR: "transparent",
 };
+
+export const PHASE_LABEL = {
+  MENSTRUATION: "생리기",
+  FOLLICULAR: "난포기",
+  OVULATION: "배란기",
+  LUTEAL: "황체기",
+};
