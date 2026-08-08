@@ -4,10 +4,10 @@ const HeaderWrapper = styled.header`
   position: sticky;
   top: 0;
   z-index: 10;
-  height: 70px;
+  height: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background: #ffffff;
 `;
 
