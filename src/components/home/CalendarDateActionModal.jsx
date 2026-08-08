@@ -5,7 +5,7 @@ import closeIcon from "../../assets/icons/modal_close.svg";
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
