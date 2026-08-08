@@ -8,7 +8,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  border-bottom: 0.5px dashed #ede8f8;
+  border-bottom: ${({ $hideBorder }) => ($hideBorder ? "none" : "0.5px dashed #ede8f8")};
   box-sizing: border-box;
 `;
 
@@ -28,9 +28,9 @@ const ChipList = styled.div`
   width: 100%;
 `;
 
-export default function ChipGroup({ title, options, isSelected, onSelect }) {
+export default function ChipGroup({ title, options, isSelected, onSelect, hideBorder }) {
   return (
-    <Container>
+    <Container $hideBorder={hideBorder}>
       <Title>{title}</Title>
       <ChipList>
         {options.map((option) => (
