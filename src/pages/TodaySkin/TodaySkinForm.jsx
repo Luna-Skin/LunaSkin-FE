@@ -1,9 +1,12 @@
+// pages/TodaySkin/TodaySkinForm.jsx (확인용 - 정식 연결 전 임시)
 import { useState } from "react";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
 import PhotoUploadBox from "../../components/todaySkin/PhotoUploadBox";
 import RecordForm from "../../components/todaySkin/RecordForm";
 import SaveButton from "../../components/todaySkin/SaveButton";
+import MakeupCheckModal from "../../components/todaySkin/MakeupCheckModal";
+import MakeupRetryModal from "../../components/todaySkin/MakeupRetryModal";
 
 const Content = styled.div`
   display: flex;
@@ -29,34 +32,32 @@ const SubmitButtonWrapper = styled.div`
 
 export default function TodaySkinForm() {
   const [photoTaken, setPhotoTaken] = useState(false);
-
-  const handlePhotoBoxClick = () => {
-    // TODO: 카메라 페이지(TodaySkinCamera) 구현되면 navigate("/today-skin/camera")로 교체
-    setPhotoTaken((prev) => !prev);
-  };
-
-  const handleAnalyze = () => {
-    alert("분석 시작!");
-  };
+  const [modalStep, setModalStep] = useState(null); // 확인용 임시: null | "check" | "retry"
 
   return (
     <div>
       <Header />
       <Content>
         <SectionLabel $marginTop={10}>1. 피부 사진</SectionLabel>
-        <PhotoUploadBox photoTaken={photoTaken} onClick={handlePhotoBoxClick} />
+        <PhotoUploadBox photoTaken={photoTaken} onClick={() => setModalStep("check")} />
 
         <SectionLabel $marginTop={24}>2. 기록하기</SectionLabel>
         <RecordForm />
 
         <SubmitButtonWrapper>
-          <SaveButton
-            label="분석하기"
-            disabled={!photoTaken}
-            onClick={handleAnalyze}
-          />
+          <SaveButton label="분석하기" disabled={!photoTaken} onClick={() => alert("분석 시작!")} />
         </SubmitButtonWrapper>
       </Content>
+
+      {modalStep === "check" && (
+        <MakeupCheckModal
+          onNoMakeup={() => alert("카메라로 이동 (다음 단계에서 연결)")}
+          onHasMakeup={() => setModalStep("retry")}
+          onClose={() => setModalStep(null)}
+        />
+      )}
+
+      {modalStep === "retry" && <MakeupRetryModal onClose={() => setModalStep(null)} />}
     </div>
   );
 }
