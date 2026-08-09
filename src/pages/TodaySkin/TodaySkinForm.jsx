@@ -1,5 +1,5 @@
-// pages/TodaySkin/TodaySkinForm.jsx (확인용 - 정식 연결 전 임시)
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
 import PhotoUploadBox from "../../components/todaySkin/PhotoUploadBox";
@@ -31,8 +31,16 @@ const SubmitButtonWrapper = styled.div`
 `;
 
 export default function TodaySkinForm() {
+  const navigate = useNavigate();
   const [photoTaken, setPhotoTaken] = useState(false);
-  const [modalStep, setModalStep] = useState(null); // 확인용 임시: null | "check" | "retry"
+  const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
+
+  const closeModal = () => setModalStep(null);
+
+  const handleNoMakeup = () => {
+    closeModal();
+    navigate("/today-skin/camera");
+  };
 
   return (
     <div>
@@ -51,13 +59,13 @@ export default function TodaySkinForm() {
 
       {modalStep === "check" && (
         <MakeupCheckModal
-          onNoMakeup={() => alert("카메라로 이동 (다음 단계에서 연결)")}
+          onNoMakeup={handleNoMakeup}
           onHasMakeup={() => setModalStep("retry")}
-          onClose={() => setModalStep(null)}
+          onClose={closeModal}
         />
       )}
 
-      {modalStep === "retry" && <MakeupRetryModal onClose={() => setModalStep(null)} />}
+      {modalStep === "retry" && <MakeupRetryModal onClose={closeModal} />}
     </div>
   );
 }
