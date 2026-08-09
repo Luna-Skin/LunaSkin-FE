@@ -1,3 +1,21 @@
+import { useRef, useEffect } from "react";
+
 export default function TodaySkinCamera() {
-  return <div>투데이 스킨 - 카메라</div>;
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      videoRef.current.srcObject = stream;
+    });
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      style={{ transform: "scaleX(-1)" }}
+    />
+  );
 }
