@@ -21,6 +21,8 @@ const AppFrame = styled.div`
   overflow: hidden;
 
   background: #ffffff;
+
+  position: relative;
 `;
 
 const Main = styled.main`

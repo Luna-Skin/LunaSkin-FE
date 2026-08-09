@@ -2,7 +2,7 @@ import styled from "styled-components";
 import closeIcon from "../../assets/icons/modal_close.svg";
 
 const Overlay = styled.div`
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.2);
   display: flex;
