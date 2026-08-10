@@ -14,7 +14,7 @@ const Container = styled.button`
   border: 2px solid rgba(0, 0, 0, 0.1);
   background: #fff;
   box-sizing: border-box;
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
 `;
 
 const Icon = styled.img`
@@ -34,7 +34,7 @@ const Label = styled.span`
 
 export default function PhotoUploadBox({ photoTaken, onClick }) {
   return (
-    <Container type="button" onClick={onClick}>
+    <Container type="button" onClick={onClick} disabled={photoTaken}>
       <Icon src={photoTaken ? checkIcon : cameraIcon} alt="" $photoTaken={photoTaken} />
       <Label>{photoTaken ? "피부 사진 찍기 완료" : "피부 사진 찍기"}</Label>
     </Container>
