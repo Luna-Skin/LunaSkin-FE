@@ -82,8 +82,8 @@ const Chip = styled.div`
   white-space: nowrap;
 
   img {
-    width: 15px;
-    height: 15px;
+    width: 8px;
+    height: 6px;
     flex-shrink: 0;
   }
 `;

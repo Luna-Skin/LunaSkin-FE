@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
 import PhotoUploadBox from "../../components/todaySkin/PhotoUploadBox";
@@ -32,7 +32,12 @@ const SubmitButtonWrapper = styled.div`
 
 export default function TodaySkinForm() {
   const navigate = useNavigate();
-  const [photoTaken, setPhotoTaken] = useState(false);
+  const location = useLocation();
+
+  // 카메라 화면에서 "계속 하기"를 누르고 돌아왔다면 location.state에 사진이 담겨있음
+  const capturedPhoto = location.state?.capturedPhoto ?? null;
+  const photoTaken = Boolean(capturedPhoto);
+
   const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
 
   const closeModal = () => setModalStep(null);

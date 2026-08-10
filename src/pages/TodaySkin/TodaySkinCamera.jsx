@@ -1,7 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import dayjs from "dayjs";
 import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 
 import FaceFrameGuide from "../../components/todaySkin/FaceFrameGuide";
@@ -429,13 +428,10 @@ export default function TodaySkinCamera() {
   };
 
   const handleContinue = () => {
-    const today = dayjs().format("YYYY-MM-DD");
-
-    navigate(`/today-skin/result/${today}`, {
-      state: {
-        capturedPhoto,
-        photoFeatures,
-      },
+    // 분석 결과 화면으로 바로 가지 않고, 생활 습관을 마저 입력할 수 있도록
+    // 폼 화면(TodaySkinForm)으로 돌아가면서 방금 찍은 사진을 함께 넘겨줌
+    navigate("/today-skin", {
+      state: { capturedPhoto },
     });
   };
 
