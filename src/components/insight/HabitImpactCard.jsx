@@ -4,10 +4,10 @@ const Card = styled.article`
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
+  min-height: 54px;
   padding: 10px 12px;
-  border: 1px solid #eee;
-  border-radius: 12px;
+  border: 1px solid #e9e9e9;
+  border-radius: 14px;
   background: #fff;
 `;
 
@@ -23,15 +23,15 @@ const EmojiBox = styled.div`
 
 const Content = styled.div`
   flex: 1;
+  color: #333;
   font-size: 13px;
   font-weight: 500;
-  color: #333;
 `;
 
 const Result = styled.span`
+  color: ${({ $color }) => $color};
   font-size: 12px;
   font-weight: 700;
-  color: ${({ $color }) => $color};
 `;
 
 export default function HabitImpactCard({ emoji, title, result, color }) {
