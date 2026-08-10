@@ -24,6 +24,15 @@ const CircleButton = styled.button`
   cursor: pointer;
 `;
 
+// 4-3-3: 입력 전엔 비활성(회색), 입력 후 활성(보라)
+const SendButton = styled(CircleButton)`
+  border: none;
+  background: ${({ $isActive }) => ($isActive ? "#a47af5" : "#e7e1ef")};
+  color: #fff;
+  cursor: ${({ $isActive }) => ($isActive ? "pointer" : "default")};
+  transition: background 0.15s ease;
+`;
+
 const Input = styled.textarea`
   flex: 1;
   min-height: 22px;
@@ -48,10 +57,12 @@ export default function ChatInputBar({
   onToggleMenu,
   isMenuOpen,
 }) {
+  const isActive = value.trim().length > 0;
+
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      onSubmit();
+      if (isActive) onSubmit();
     }
   };
 
@@ -59,7 +70,7 @@ export default function ChatInputBar({
     <Form
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit();
+        if (isActive) onSubmit();
       }}
     >
       <CircleButton type="button" onClick={onToggleMenu} aria-label="첨부 메뉴">
@@ -74,9 +85,14 @@ export default function ChatInputBar({
         rows="1"
       />
 
-      <CircleButton type="submit" aria-label="메시지 전송">
+      <SendButton
+        type="submit"
+        $isActive={isActive}
+        disabled={!isActive}
+        aria-label="메시지 전송"
+      >
         ↑
-      </CircleButton>
+      </SendButton>
     </Form>
   );
 }
