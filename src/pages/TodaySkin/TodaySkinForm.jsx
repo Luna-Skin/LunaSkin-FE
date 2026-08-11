@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
@@ -7,6 +7,11 @@ import RecordForm from "../../components/todaySkin/RecordForm";
 import SaveButton from "../../components/todaySkin/SaveButton";
 import MakeupCheckModal from "../../components/todaySkin/MakeupCheckModal";
 import MakeupRetryModal from "../../components/todaySkin/MakeupRetryModal";
+import AnalyzingLoader from "../../components/todaySkin/AnalyzingLoader";
+
+// 아직 실제 분석 API가 없어서, 임시로 mocks/homeMock.js에 있는 이 날짜의 데이터를
+// "방금 분석된 결과"인 것처럼 사용함 (API 연동되면 이 상수는 지우고 실제 응답 사용)
+const MOCK_RESULT_DATE = "2026-08-06";
 
 const Content = styled.div`
   display: flex;
@@ -34,11 +39,23 @@ export default function TodaySkinForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 카메라 화면에서 "계속 하기"를 누르고 돌아왔다면 location.state에 사진이 담겨있음
   const capturedPhoto = location.state?.capturedPhoto ?? null;
   const photoTaken = Boolean(capturedPhoto);
 
   const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
+  const [step, setStep] = useState("form"); // "form" | "analyzing"
+
+  useEffect(() => {
+    if (step !== "analyzing") return undefined;
+
+    const timer = setTimeout(() => {
+      navigate(`/today-skin/result/${MOCK_RESULT_DATE}`, {
+        state: { capturedPhoto },
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [step, navigate, capturedPhoto]);
 
   const closeModal = () => setModalStep(null);
 
@@ -46,6 +63,19 @@ export default function TodaySkinForm() {
     closeModal();
     navigate("/today-skin/camera");
   };
+
+  const handleAnalyze = () => {
+    setStep("analyzing");
+  };
+
+  if (step === "analyzing") {
+    return (
+      <div>
+        <Header />
+        <AnalyzingLoader />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -58,7 +88,7 @@ export default function TodaySkinForm() {
         <RecordForm />
 
         <SubmitButtonWrapper>
-          <SaveButton label="분석하기" disabled={!photoTaken} onClick={() => alert("분석 시작!")} />
+          <SaveButton label="분석하기" disabled={!photoTaken} onClick={handleAnalyze} />
         </SubmitButtonWrapper>
       </Content>
 
