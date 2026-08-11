@@ -12,7 +12,10 @@ const Overlay = styled.div`
 
 const Sheet = styled.section`
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(100%, 402px);
+  max-height: 60vh;
   padding: 18px 16px 20px;
   border-radius: 18px 18px 0 0;
   background: #fff;
@@ -35,6 +38,10 @@ const CloseButton = styled.button`
   color: #aaa;
   font-size: 24px;
   cursor: pointer;
+`;
+
+const OptionList = styled.div`
+  overflow-y: auto;
 `;
 
 const OptionButton = styled.button`
@@ -72,16 +79,18 @@ export default function PeriodOptionSheet({
           </CloseButton>
         </Header>
 
-        {options.map((option) => (
-          <OptionButton
-            key={option}
-            type="button"
-            onClick={() => onSelect(option)}
-          >
-            {option}
-            {selectedValue === option && <Check>✓</Check>}
-          </OptionButton>
-        ))}
+        <OptionList>
+          {options.map((option) => (
+            <OptionButton
+              key={option}
+              type="button"
+              onClick={() => onSelect(option)}
+            >
+              {option}
+              {selectedValue === option && <Check>✓</Check>}
+            </OptionButton>
+          ))}
+        </OptionList>
       </Sheet>
     </Overlay>
   );

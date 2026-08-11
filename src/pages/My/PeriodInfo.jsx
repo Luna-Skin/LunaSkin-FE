@@ -74,6 +74,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const CYCLE_OPTIONS = [
+  "20일",
   "21일",
   "22일",
   "23일",
@@ -89,6 +90,11 @@ const CYCLE_OPTIONS = [
   "33일",
   "34일",
   "35일",
+  "36일",
+  "37일",
+  "38일",
+  "39일",
+  "40일",
 ];
 
 const PERIOD_OPTIONS = [
