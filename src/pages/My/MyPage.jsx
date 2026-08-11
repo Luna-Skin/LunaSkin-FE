@@ -1,6 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
+import shieldIcon from "../../assets/images/shield.png";
+import bellIcon from "../../assets/images/bell.png";
+import boxIcon from "../../assets/images/box.png";
+import cardIcon from "../../assets/images/card.png";
+import personIcon from "../../assets/images/person.png";
+import calenderIcon from "../../assets/images/calender.png";
+
 const Page = styled.main`
   width: 100%;
   max-width: 402px;
@@ -80,7 +87,7 @@ const MenuItem = styled.button`
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 13px 12px;
+  padding: 9px 15px;
   border: 0;
   border-bottom: ${({ $last }) => ($last ? "0" : "1px solid #eee")};
   background: #fff;
@@ -91,9 +98,18 @@ const MenuItem = styled.button`
 `;
 
 const Icon = styled.span`
-  width: 22px;
-  color: #9b6dff;
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+  border-radius: 9px;
+
+  img {
+    width: 18px;
+    height: 18px;
+  }
 `;
 
 const MenuLabel = styled.span`
@@ -109,23 +125,23 @@ const MENU_GROUPS = [
   {
     title: "계정 관리",
     items: [
-      { icon: "♙", label: "내 정보" },
-      { icon: "▣", label: "생리 정보", path: "/my/period" },
-      { icon: "♙", label: "피부 정보", path: "/my/skin" },
+      { icon: personIcon, label: "내 정보" },
+      { icon: calenderIcon, label: "생리 정보", path: "/my/period" },
+      { icon: personIcon, label: "피부 정보", path: "/my/skin" },
     ],
   },
   {
     title: "계정 관리",
     items: [
-      { icon: "♧", label: "알림 설정" },
-      { icon: "♢", label: "개인정보 보호" },
+      { icon: bellIcon, label: "알림 설정" },
+      { icon: shieldIcon, label: "개인정보 보호" },
     ],
   },
   {
     title: "요금제",
     items: [
-      { icon: "▭", label: "구독 관리" },
-      { icon: "◇", label: "결제 내역" },
+      { icon: cardIcon, label: "구독 관리" },
+      { icon: boxIcon, label: "결제 내역" },
     ],
   },
 ];
@@ -159,7 +175,9 @@ export default function MyPage() {
                 $last={index === group.items.length - 1}
                 onClick={() => item.path && navigate(item.path)}
               >
-                <Icon>{item.icon}</Icon>
+                <Icon>
+                  {item.icon && <img src={item.icon} alt="" />}
+                </Icon>
                 <MenuLabel>{item.label}</MenuLabel>
                 <Arrow>›</Arrow>
               </MenuItem>
