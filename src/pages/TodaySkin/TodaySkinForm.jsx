@@ -7,6 +7,7 @@ import RecordForm from "../../components/todaySkin/RecordForm";
 import SaveButton from "../../components/todaySkin/SaveButton";
 import MakeupCheckModal from "../../components/todaySkin/MakeupCheckModal";
 import MakeupRetryModal from "../../components/todaySkin/MakeupRetryModal";
+import AnalyzingLoader from "../../components/todaySkin/AnalyzingLoader";
 
 const Content = styled.div`
   display: flex;
@@ -34,11 +35,11 @@ export default function TodaySkinForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 카메라 화면에서 "계속 하기"를 누르고 돌아왔다면 location.state에 사진이 담겨있음
   const capturedPhoto = location.state?.capturedPhoto ?? null;
   const photoTaken = Boolean(capturedPhoto);
 
   const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
+  const [step, setStep] = useState("form"); // "form" | "analyzing"
 
   const closeModal = () => setModalStep(null);
 
@@ -46,6 +47,20 @@ export default function TodaySkinForm() {
     closeModal();
     navigate("/today-skin/camera");
   };
+
+  const handleAnalyze = () => {
+    setStep("analyzing");
+    // TODO: 분석 끝나고 결과 화면으로 이동하는 부분은 다음 to-do에서 구현
+  };
+
+  if (step === "analyzing") {
+    return (
+      <div>
+        <Header />
+        <AnalyzingLoader />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -58,7 +73,7 @@ export default function TodaySkinForm() {
         <RecordForm />
 
         <SubmitButtonWrapper>
-          <SaveButton label="분석하기" disabled={!photoTaken} onClick={() => alert("분석 시작!")} />
+          <SaveButton label="분석하기" disabled={!photoTaken} onClick={handleAnalyze} />
         </SubmitButtonWrapper>
       </Content>
 
