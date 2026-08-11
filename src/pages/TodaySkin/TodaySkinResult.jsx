@@ -24,11 +24,11 @@ export default function TodaySkinResult() {
   const record = MOCK_SKIN_RECORDS[date];
   const photo = location.state?.capturedPhoto ?? record?.photoUrl ?? null;
 
-  // 홈 캘린더에서 "피부 정보 보기"로 들어온 경우엔 뒤로가기 헤더로 표시
-  const fromCalendar = Boolean(location.state?.fromCalendar);
-  const headerProps = fromCalendar
-    ? { variant: "back", title: "투데이스킨 기록", onBack: () => navigate("/") }
-    : {};
+// "결과를 확인하러 들어온" 경우(홈 캘린더, 오늘 상태 카드)엔 뒤로가기 헤더로 표시
+const showBackHeader = Boolean(location.state?.showBackHeader);
+const headerProps = showBackHeader
+  ? { variant: "back", title: "투데이스킨 기록", onBack: () => navigate("/") }
+  : {};
 
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
