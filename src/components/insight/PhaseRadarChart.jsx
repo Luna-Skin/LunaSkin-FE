@@ -52,7 +52,35 @@ const Tooltip = styled.div`
   }
 `;
 
-export default function PhaseRadarChart() {
+// 트러블(top) → 유분(우상단) → 칙칙함(우하단) → 수분(좌하단) → 탄력(좌상단) 순,
+// 기존 하드코딩 좌표(0,-70 / 67,-22 / 41,57 / -41,57 / -67,-22)와 각도가 일치하도록 맞춘 값.
+const ANGLES = [-90, -18, 54, 126, 198];
+const MAX_RADIUS = 70;
+const EMPTY_SCORE = 1; // 데이터 없을 때 중심에 거의 붙어있도록 하는 최소값
+
+const PHASE_META = {
+  MENSTRUATION: { label: "생리기", color: "#ff7d7d", fill: "rgba(255,125,125,0.15)" },
+  OVULATION: { label: "배란기", color: "#78d4d5", fill: "rgba(120,212,213,0.12)" },
+  LUTEAL: { label: "황체기", color: "#b495ff", fill: "rgba(180,149,255,0.12)" },
+};
+
+// scores: [트러블, 유분, 칙칙함, 수분, 탄력] (각 0~100). 없으면 EMPTY_SCORE로 대체.
+function buildPolygonPoints(scores) {
+  return ANGLES.map((angle, index) => {
+    const rawScore = scores?.[index];
+    const score = typeof rawScore === "number" ? rawScore : EMPTY_SCORE;
+    const clamped = Math.max(0, Math.min(100, score));
+    const radius = (clamped / 100) * MAX_RADIUS;
+    const rad = (angle * Math.PI) / 180;
+    const x = radius * Math.cos(rad);
+    const y = radius * Math.sin(rad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+}
+
+// data 예시: { MENSTRUATION: [40, 60, 55, 30, 50], OVULATION: [...], LUTEAL: [...] }
+// 특정 phase가 없으면 해당 도형은 중심에 모인 점으로 표시됨 (숨겨지지 않음).
+export default function PhaseRadarChart({ data = {} }) {
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   return (
@@ -75,12 +103,12 @@ export default function PhaseRadarChart() {
 
       <svg viewBox="0 0 340 210" width="100%" role="img" aria-label="주기 단계별 피부 비교 차트">
         <g fontSize="10" fill="#8a8a8a">
-          <circle cx="10" cy="12" r="4" fill="#ff7d7d" />
-          <text x="20" y="16">생리기</text>
-          <circle cx="10" cy="28" r="4" fill="#78d4d5" />
-          <text x="20" y="32">배란기</text>
-          <circle cx="10" cy="44" r="4" fill="#b495ff" />
-          <text x="20" y="48">황체기</text>
+          <circle cx="10" cy="12" r="4" fill={PHASE_META.MENSTRUATION.color} />
+          <text x="20" y="16">{PHASE_META.MENSTRUATION.label}</text>
+          <circle cx="10" cy="28" r="4" fill={PHASE_META.OVULATION.color} />
+          <text x="20" y="32">{PHASE_META.OVULATION.label}</text>
+          <circle cx="10" cy="44" r="4" fill={PHASE_META.LUTEAL.color} />
+          <text x="20" y="48">{PHASE_META.LUTEAL.label}</text>
         </g>
 
         <g transform="translate(170 118)" fill="none" stroke="#e4e4e4">
@@ -94,19 +122,19 @@ export default function PhaseRadarChart() {
           <line x1="0" y1="0" x2="-67" y2="-22" />
 
           <polygon
-            points="0,-38 43,-14 24,33 -28,38 -40,-13"
-            fill="rgba(255,125,125,0.15)"
-            stroke="#ff7d7d"
+            points={buildPolygonPoints(data.MENSTRUATION)}
+            fill={PHASE_META.MENSTRUATION.fill}
+            stroke={PHASE_META.MENSTRUATION.color}
           />
           <polygon
-            points="0,-57 52,-17 36,49 -41,57 -55,-18"
-            fill="rgba(120,212,213,0.12)"
-            stroke="#78d4d5"
+            points={buildPolygonPoints(data.OVULATION)}
+            fill={PHASE_META.OVULATION.fill}
+            stroke={PHASE_META.OVULATION.color}
           />
           <polygon
-            points="0,-68 62,-20 31,43 -33,45 -44,-14"
-            fill="rgba(180,149,255,0.12)"
-            stroke="#b495ff"
+            points={buildPolygonPoints(data.LUTEAL)}
+            fill={PHASE_META.LUTEAL.fill}
+            stroke={PHASE_META.LUTEAL.color}
           />
         </g>
 
