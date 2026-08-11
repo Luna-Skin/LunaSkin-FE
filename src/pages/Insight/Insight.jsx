@@ -4,6 +4,7 @@ import styled from "styled-components";
 import TroubleTrendChart from "../../components/insight/TroubleTrendChart";
 import PhaseRadarChart from "../../components/insight/PhaseRadarChart";
 import HabitImpactCard from "../../components/insight/HabitImpactCard";
+import { getHabitStatus, parseExerciseMinutes } from "../../utils/habitStatus";
 
 const getCurrentTime = () =>
   new Intl.DateTimeFormat("en-GB", {
@@ -82,8 +83,30 @@ const HabitList = styled.div`
   gap: 8px;
 `;
 
+const HabitListMessage = styled.p`
+  padding: 16px;
+  color: #999;
+  text-align: center;
+  font-size: 12px;
+`;
+
+// TODO: 실제 API 연동 필요.
+// todaySkin/RecordForm.jsx에서 기록한 값(sleepHours, waterIntake, exercise)을
+// 서버가 집계해서 내려주는 형태를 가정. 실제 응답 스펙이 정해지면 필드명 맞춰서 수정.
+// 예상 응답 형태: { sleepHours: number, waterIntake: number, exercise: "0분" | "30분" | "60분" | "90분+" }
+async function fetchHabitData() {
+  const response = await fetch("/api/insight/habits"); // 실제 엔드포인트로 교체
+  if (!response.ok) {
+    throw new Error("습관 데이터를 불러오지 못했습니다.");
+  }
+  return response.json();
+}
+
 export default function Insight() {
   const [currentTime, setCurrentTime] = useState(getCurrentTime);
+  const [habitData, setHabitData] = useState(null);
+  const [isLoadingHabits, setIsLoadingHabits] = useState(true);
+  const [habitError, setHabitError] = useState(null);
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -94,13 +117,43 @@ export default function Insight() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        setIsLoadingHabits(true);
+        const data = await fetchHabitData();
+        if (isMounted) setHabitData(data);
+      } catch (error) {
+        if (isMounted) setHabitError(error.message);
+      } finally {
+        if (isMounted) setIsLoadingHabits(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // API 값 → 카드에 필요한 emoji/title/result로 변환
+  const habitCards = habitData
+    ? [
+        { type: "sleep", value: habitData.sleepHours },
+        { type: "water", value: habitData.waterIntake },
+        { type: "exercise", value: parseExerciseMinutes(habitData.exercise) },
+      ]
+        .filter((habit) => typeof habit.value === "number")
+        .map((habit) => ({
+          type: habit.type,
+          ...getHabitStatus(habit.type, habit.value),
+        }))
+        .filter(Boolean)
+    : [];
+
   return (
     <Page>
-      <StatusBar>
-        <span>{currentTime}</span>
-        <StatusIcons>▮▮▮ ◒ ▰</StatusIcons>
-      </StatusBar>
-
       <Title>Skin Insight</Title>
 
       <Section>
@@ -122,24 +175,27 @@ export default function Insight() {
         <SectionTitle>생활 습관 영향 분석</SectionTitle>
 
         <HabitList>
-          <HabitImpactCard
-            emoji="😰"
-            title="수면 6시간 미만"
-            result="트러블 ↑"
-            color="#9B6DFF"
-          />
-          <HabitImpactCard
-            emoji="😰"
-            title="수분 섭취 부족"
-            result="건조도 ↑"
-            color="#9B6DFF"
-          />
-          <HabitImpactCard
-            emoji="😀"
-            title="운동 1시간 이상"
-            result="칙칙함 ↓"
-            color="#9B6DFF"
-          />
+          {isLoadingHabits && (
+            <HabitListMessage>불러오는 중...</HabitListMessage>
+          )}
+
+          {!isLoadingHabits && habitError && (
+            <HabitListMessage>
+              생활 습관 데이터를 불러오지 못했어요.
+            </HabitListMessage>
+          )}
+
+          {!isLoadingHabits &&
+            !habitError &&
+            habitCards.map((habit) => (
+              <HabitImpactCard
+                key={habit.type}
+                emoji={habit.emoji}
+                title={habit.title}
+                result={habit.result}
+                color="#9B6DFF"
+              />
+            ))}
         </HabitList>
       </Section>
     </Page>
