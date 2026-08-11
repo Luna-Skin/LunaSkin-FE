@@ -1,48 +1,46 @@
 import dayjs from "dayjs";
 
-// 생리주기 4단계 상수 (오타 방지용)
 export const CYCLE_PHASE = {
-  MENSTRUATION: "MENSTRUATION", // 생리기
-  FOLLICULAR: "FOLLICULAR", // 난포기 (캘린더엔 색 표시 안 하지만 계산상 필요)
-  OVULATION: "OVULATION", // 배란기
-  LUTEAL: "LUTEAL", // 황체기
+  MENSTRUATION: "MENSTRUATION",
+  FOLLICULAR: "FOLLICULAR",
+  OVULATION: "OVULATION",
+  LUTEAL: "LUTEAL",
 };
 
-const OVULATION_WINDOW = 1; // 배란예정일 앞뒤 1일씩, 총 3일 (스펙: 2~3일)
+const OVULATION_WINDOW = 1;
 
-/**
- * 특정 날짜가 생리주기 4단계 중 어디에 해당하는지 계산
- * @param {string} dateStr - 판정할 날짜 ("YYYY-MM-DD")
- * @param {Array} periodCycles - 사용자가 기록한 생리주기 목록
- * @returns {string|null} CYCLE_PHASE 중 하나, 또는 기록이 없으면 null
- */
-export function getPhaseForDate(dateStr, periodCycles) {
+// dateStr 기준으로 적용해야 할 주기 기록(cycle)을 찾는다.
+// dateStr 이전에 시작한 기록 중 가장 최근 것.
+export function findCurrentCycle(periodCycles, dateStr) {
   if (!periodCycles || periodCycles.length === 0) return null;
 
   const target = dayjs(dateStr);
 
-  // dateStr 이전에 시작한 기록 중 가장 최근 것을 기준으로 삼는다
-  const cycle = [...periodCycles]
-    .filter((c) => !dayjs(c.cycleStartDate).isAfter(target))
-    .sort((a, b) => dayjs(b.cycleStartDate).diff(dayjs(a.cycleStartDate)))[0];
+  return (
+    [...periodCycles]
+      .filter((c) => !dayjs(c.cycleStartDate).isAfter(target))
+      .sort((a, b) => dayjs(b.cycleStartDate).diff(dayjs(a.cycleStartDate)))[0] ??
+    null
+  );
+}
 
+export function getPhaseForDate(dateStr, periodCycles) {
+  const cycle = findCurrentCycle(periodCycles, dateStr);
   if (!cycle) return null;
 
+  const target = dayjs(dateStr);
   const { cycleStartDate, periodDuration, predictedCycleLength } = cycle;
 
-  // %를 쓰는 이유: 주기가 반복되므로, 기록이 1개뿐이어도 몇 달 뒤 미래까지 예측 가능
   const cycleDay = target.diff(dayjs(cycleStartDate), "day") % predictedCycleLength;
 
   if (cycleDay < periodDuration) return CYCLE_PHASE.MENSTRUATION;
 
-  // 배란예정일 = 다음 생ㄹ리 14일 전 
   const ovulationDay = predictedCycleLength - 14;
   if (Math.abs(cycleDay - ovulationDay) <= OVULATION_WINDOW) return CYCLE_PHASE.OVULATION;
 
   return cycleDay < ovulationDay ? CYCLE_PHASE.FOLLICULAR : CYCLE_PHASE.LUTEAL;
 }
 
-// FOLLICULAR는 스펙상 캘린더에 색을 표시하지 않으므로 transparent
 export const PHASE_COLOR = {
   MENSTRUATION: "#FCE3E8",
   OVULATION: "#D5F1EF",
