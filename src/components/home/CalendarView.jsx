@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import styled from "styled-components";
 import { getPhaseForDate, PHASE_COLOR } from "../../utils/cyclePhase";
@@ -192,8 +192,24 @@ const LegendDot = styled.span`
 
 export default function CalendarView({ periodCycles = [], skinRecords = {}, onDateClick }) {
   const today = dayjs();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [displayedMonth, setDisplayedMonth] = useState(today.startOf("month"));
+
+  // 홈 화면을 떠났다가(예: 결과 화면 보고 뒤로가기) 다시 돌아왔을 때
+  // 캘린더 펼침 상태·보고 있던 달이 초기화되지 않도록 sessionStorage에 저장해뒀다가 복원함
+  const [isExpanded, setIsExpanded] = useState(() => {
+    return sessionStorage.getItem("calendarIsExpanded") === "true";
+  });
+  const [displayedMonth, setDisplayedMonth] = useState(() => {
+    const saved = sessionStorage.getItem("calendarDisplayedMonth");
+    return saved ? dayjs(saved).startOf("month") : today.startOf("month");
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem("calendarIsExpanded", String(isExpanded));
+  }, [isExpanded]);
+
+  useEffect(() => {
+    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
+  }, [displayedMonth]);
 
   const days = useMemo(() => {
     if (!isExpanded) {

@@ -21,19 +21,21 @@ export default function TodaySkinResult() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 아직 실제 분석 API가 없어서, 점수·지표·인사이트는 mock 데이터를 그대로 사용
   const record = MOCK_SKIN_RECORDS[date];
-
-  // 사진은 방금 촬영한 사진(분석 흐름에서 넘어온 경우)이 있으면 그걸 우선 쓰고,
-  // 없으면 mock에 저장된 사진을 사용
   const photo = location.state?.capturedPhoto ?? record?.photoUrl ?? null;
+
+  // 홈 캘린더에서 "피부 정보 보기"로 들어온 경우엔 뒤로가기 헤더로 표시
+  const fromCalendar = Boolean(location.state?.fromCalendar);
+  const headerProps = fromCalendar
+    ? { variant: "back", title: "투데이스킨 기록", onBack: () => navigate("/") }
+    : {};
 
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
   if (!record) {
     return (
       <div>
-        <Header />
+        <Header {...headerProps} />
         <Content>해당 날짜의 기록을 찾을 수 없어요.</Content>
       </div>
     );
@@ -41,7 +43,7 @@ export default function TodaySkinResult() {
 
   return (
     <div>
-      <Header />
+      <Header {...headerProps} />
       <Content>
         <SkinScoreSummary
           date={date}
