@@ -10,7 +10,7 @@ const Page = styled.div`
   flex-direction: column;
   width: 100%;
   max-width: 402px;
-  min-height: 100dvh;
+  min-height: 100%;
   margin: 0 auto;
   background: #fff;
 `;
@@ -85,8 +85,7 @@ const AddButton = styled.button`
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: #b28cf5;
-  box-shadow: 0 6px 16px rgba(155, 109, 255, 0.35);
+  background: #CFB4FD;
   color: #fff;
   font-size: 24px;
   cursor: pointer;

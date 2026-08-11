@@ -13,7 +13,7 @@ const Room = styled.section`
   flex-direction: column;
   width: 100%;
   max-width: 402px;
-  height: calc(100dvh - 60px);
+  height: calc(100% - 60px);
   margin: 0 auto;
   overflow: hidden;
   background: #f7f1ff;
