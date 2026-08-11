@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import photoIcon from "../../assets/icons/photo.png";
+import fileIcon from "../../assets/icons/file.png";
 
 const Menu = styled.div`
   position: absolute;
@@ -13,14 +15,17 @@ const Menu = styled.div`
 `;
 
 const MenuButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 9px 8px;
+  padding: 3px 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: #555;
   text-align: left;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
 
   &:hover {
@@ -28,14 +33,22 @@ const MenuButton = styled.button`
   }
 `;
 
+const MenuIcon = styled.img`
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+`;
+
 export default function ChatPlusMenu({ onPhotoClick, onFileClick }) {
   return (
     <Menu>
       <MenuButton type="button" onClick={onPhotoClick}>
-        ▧ 사진 첨부하기
+        <MenuIcon src={photoIcon} alt="" />
+        사진 첨부하기
       </MenuButton>
       <MenuButton type="button" onClick={onFileClick}>
-        ▱ 파일 첨부하기
+        <MenuIcon src={fileIcon} alt="" />
+        파일 첨부하기
       </MenuButton>
     </Menu>
   );
