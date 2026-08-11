@@ -35,9 +35,9 @@ export default function Home() {
     setSelectedDate(null);
   };
 
-  const handleSelectSkinInfo = () => {
-    navigate(`/today-skin/result/${selectedDate}`);
-  };
+const handleSelectSkinInfo = () => {
+  navigate(`/today-skin/result/${selectedDate}`, { state: { fromCalendar: true } });
+};
 
   const handleSelectPeriodInfo = () => {
     // TODO: PeriodActionModal 구현되면 modalStep을 "periodAction"으로 전환 (별도 이슈)
