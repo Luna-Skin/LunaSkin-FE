@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
@@ -8,6 +8,10 @@ import SaveButton from "../../components/todaySkin/SaveButton";
 import MakeupCheckModal from "../../components/todaySkin/MakeupCheckModal";
 import MakeupRetryModal from "../../components/todaySkin/MakeupRetryModal";
 import AnalyzingLoader from "../../components/todaySkin/AnalyzingLoader";
+
+// 아직 실제 분석 API가 없어서, 임시로 mocks/homeMock.js에 있는 이 날짜의 데이터를
+// "방금 분석된 결과"인 것처럼 사용함 (API 연동되면 이 상수는 지우고 실제 응답 사용)
+const MOCK_RESULT_DATE = "2026-08-06";
 
 const Content = styled.div`
   display: flex;
@@ -41,6 +45,18 @@ export default function TodaySkinForm() {
   const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
   const [step, setStep] = useState("form"); // "form" | "analyzing"
 
+  useEffect(() => {
+    if (step !== "analyzing") return undefined;
+
+    const timer = setTimeout(() => {
+      navigate(`/today-skin/result/${MOCK_RESULT_DATE}`, {
+        state: { capturedPhoto },
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [step, navigate, capturedPhoto]);
+
   const closeModal = () => setModalStep(null);
 
   const handleNoMakeup = () => {
@@ -50,7 +66,6 @@ export default function TodaySkinForm() {
 
   const handleAnalyze = () => {
     setStep("analyzing");
-    // TODO: 분석 끝나고 결과 화면으로 이동하는 부분은 다음 to-do에서 구현
   };
 
   if (step === "analyzing") {
