@@ -12,7 +12,11 @@ import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
-import { getSkinScoreBucket, SKIN_SCORE_BUCKET, SKIN_SCORE_BUCKET_CONTENT } from "../../utils/skinScoreBucket";
+import {
+  getSkinScoreBucket,
+  SKIN_SCORE_BUCKET,
+  SKIN_SCORE_BUCKET_CONTENT,
+} from "../../utils/skinScoreBucket";
 import {
   MOCK_USER,
   MOCK_PERIOD_CYCLES,
@@ -67,7 +71,8 @@ export default function Home() {
 
   // 지금 "수정 중"으로 취급할 주기 기록 — 가장 최근에 기록된 것.
   // TODO: mocks 반영 to-do에서 실제로 이 기록을 갱신하는 로직으로 이어짐
-  const currentCycle = MOCK_PERIOD_CYCLES[MOCK_PERIOD_CYCLES.length - 1] ?? null;
+  const currentCycle =
+    MOCK_PERIOD_CYCLES[MOCK_PERIOD_CYCLES.length - 1] ?? null;
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalStep, setModalStep] = useState(null); // "dateAction" | "periodAction" | null
@@ -98,7 +103,9 @@ export default function Home() {
   };
 
   const handleSelectSkinInfo = () => {
-    navigate(`/today-skin/result/${selectedDate}`, { state: { showBackHeader: true } });
+    navigate(`/today-skin/result/${selectedDate}`, {
+      state: { showBackHeader: true },
+    });
   };
 
   const handleSelectPeriodInfo = () => {
@@ -131,12 +138,18 @@ export default function Home() {
 
   // TODO: 다음 to-do(mocks 반영)에서 여기에 실제 MOCK_PERIOD_CYCLES 갱신 로직 추가
   const handleConfirmPeriodSelect = () => {
-    if (periodSelectMode === "end" && periodSelectedDate === currentCycle?.cycleStartDate) {
+    if (
+      periodSelectMode === "end" &&
+      periodSelectedDate === currentCycle?.cycleStartDate
+    ) {
       setToastMessage("종료일과 시작일이 같을 수 없습니다");
       return; // 선택 모드는 유지해서 다른 날짜로 다시 고를 수 있게 함
     }
 
-    console.log(`${periodSelectMode === "start" ? "생리 시작일" : "생리 종료일"} 선택:`, periodSelectedDate);
+    console.log(
+      `${periodSelectMode === "start" ? "생리 시작일" : "생리 종료일"} 선택:`,
+      periodSelectedDate,
+    );
     setPeriodSelectMode(null);
     setPeriodSelectedDate(null);
   };
@@ -145,18 +158,28 @@ export default function Home() {
     if (scoreBucket === SKIN_SCORE_BUCKET.UNKNOWN) {
       navigate("/today-skin");
     } else {
-      navigate(`/today-skin/result/${today}`, { state: { showBackHeader: true } });
+      navigate(`/today-skin/result/${today}`, {
+        state: { showBackHeader: true },
+      });
     }
   };
 
   return (
     <div>
       <Header />
-      <UserInfo name={MOCK_USER.name} skinType={MOCK_USER.skinType} skinConcerns={MOCK_USER.skinConcerns} />
-
+      <UserInfo
+        name={MOCK_USER.name}
+        skinType={MOCK_USER.skinType}
+        skinConcerns={MOCK_USER.skinConcerns}
+        points={MOCK_USER.points}
+      />
       {periodSelectMode && (
         <PeriodSelectBanner
-          message={periodSelectMode === "start" ? "생리 시작일을 선택해주세요" : "생리 종료일을 선택해주세요"}
+          message={
+            periodSelectMode === "start"
+              ? "생리 시작일을 선택해주세요"
+              : "생리 종료일을 선택해주세요"
+          }
           onCancel={handleCancelPeriodSelect}
         />
       )}
@@ -170,7 +193,11 @@ export default function Home() {
       />
 
       {periodSelectMode && (
-        <ConfirmButton type="button" disabled={!periodSelectedDate} onClick={handleConfirmPeriodSelect}>
+        <ConfirmButton
+          type="button"
+          disabled={!periodSelectedDate}
+          onClick={handleConfirmPeriodSelect}
+        >
           확인
         </ConfirmButton>
       )}
@@ -182,9 +209,17 @@ export default function Home() {
         description={bucketContent.description}
         onClick={handleViewTodayStatus}
       />
-      {phaseGuide && <PhaseGuideBanner title={phaseGuide.title} description={phaseGuide.description} />}
+      {phaseGuide && (
+        <PhaseGuideBanner
+          title={phaseGuide.title}
+          description={phaseGuide.description}
+        />
+      )}
       {currentPhase && (
-        <RoutineSection phaseLabel={PHASE_LABEL[currentPhase]} routines={PHASE_ROUTINES[currentPhase]} />
+        <RoutineSection
+          phaseLabel={PHASE_LABEL[currentPhase]}
+          routines={PHASE_ROUTINES[currentPhase]}
+        />
       )}
 
       {modalStep === "dateAction" && (
@@ -211,7 +246,9 @@ export default function Home() {
         />
       )}
 
-      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
+      {toastMessage && (
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+      )}
     </div>
   );
 }
