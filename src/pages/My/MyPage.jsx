@@ -11,7 +11,7 @@ import calenderIcon from "../../assets/images/calender.png";
 const Page = styled.main`
   width: 100%;
   max-width: 402px;
-  min-height: calc(100dvh - 60px);
+  min-height: 100%;
   margin: 0 auto;
   padding: 58px 22px 30px;
   background: #fff;
