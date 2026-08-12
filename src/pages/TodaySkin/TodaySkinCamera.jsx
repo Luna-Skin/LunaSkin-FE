@@ -435,25 +435,17 @@ export default function TodaySkinCamera() {
     });
   };
 
-  const getGuideText = () => {
-    if (!cameraReady) {
-      return "카메라를 준비하고 있어요";
-    }
-
-    if (alignmentTimeout) {
-      if (!detected) {
-        return "얼굴이 잘 보이도록 위치를 조정해주세요";
-      }
-
-      return "얼굴을 가이드 안에 맞춰주세요";
-    }
-
-    if (faceAligned) {
-      return "촬영해주세요";
-    }
-
+ const getGuideText = () => {
+  if (!cameraReady) {
     return "밝은 곳에서 정면을 촬영해주세요";
-  };
+  }
+
+  if (faceAligned) {
+    return "이제 촬영 버튼을 눌러주세요!";
+  }
+
+  return "가이드 안에 얼굴을 맞춰주세요";
+};
 
   return (
     <Wrapper>
