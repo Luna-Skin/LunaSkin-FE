@@ -36,6 +36,18 @@ const SubmitButtonWrapper = styled.div`
 `;
 
 export default function TodaySkinForm() {
+
+
+
+  // 컴포넌트 안, 다른 useState들 있는 곳 근처에 잠깐 추가
+const [testValue, setTestValue] = useState(7);
+const [showSheet, setShowSheet] = useState(true);
+const [meals, setMeals] = useState([]);
+
+
+
+
+
   const navigate = useNavigate();
   const location = useLocation();
 

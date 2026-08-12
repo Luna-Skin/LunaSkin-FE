@@ -1,11 +1,45 @@
 import { useState } from "react";
 import styled from "styled-components";
-import StepperField from "./StepperField";
-import ChipGroup from "./ChipGroup";
+import RecordListRow from "./RecordListRow";
+import StepperBottomSheet from "./StepperBottomSheet";
+import ChipBottomSheet from "./ChipBottomSheet";
+
+function formatExerciseHours(hours) {
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours - wholeHours) * 60);
+  return minutes === 0 ? `${wholeHours}시간` : `${wholeHours}시간 ${minutes}분`;
+}
+
+const STEPPER_FIELDS = {
+  sleep: {
+    label: "수면",
+    min: 0,
+    max: 16,
+    step: 0.5,
+    default: 7,
+    formatValue: (v) => `${v}시간`,
+  },
+  water: {
+    label: "수분 섭취",
+    min: 0,
+    max: 4,
+    step: 0.5,
+    default: 0.5,
+    formatValue: (v) => `${v}L`,
+  },
+  exercise: {
+    label: "운동",
+    min: 0,
+    max: 4,
+    step: 0.5,
+    default: 1,
+    formatValue: formatExerciseHours,
+  },
+};
 
 const MEAL_OPTIONS = [
-  "해당 없음",
   "유제품",
+  "과일",
   "매운 음식",
   "카페인",
   "고지방",
@@ -13,74 +47,127 @@ const MEAL_OPTIONS = [
   "탄산음료",
   "음주",
 ];
-const EXERCISE_OPTIONS = ["0분", "30분", "60분", "90분+"];
 const SKIN_STATUS_OPTIONS = ["건조", "번들거림", "트러블", "칙칙함"];
 
-const Wrapper = styled.div`
-  width: 354px;
-  height: 410px;
-  border-radius: 18px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: #fff;
-  box-sizing: border-box;
-`;
-export default function RecordForm() {
-  const [sleepHours, setSleepHours] = useState(7);
-  const [waterIntake, setWaterIntake] = useState(1);
-  const [meals, setMeals] = useState([]);
-  const [exercise, setExercise] = useState(null);
-  const [skinStatus, setSkinStatus] = useState(null);
+// 선택된 식사 항목을 화면에 보여줄 문자열로 변환.
+// 4개 넘으면 4개까지 보여주고 그다음부터는 다음 줄로 넘김 (\n은 RecordListRow의
+// white-space: pre-line 덕분에 실제 줄바꿈으로 보여짐)
+function formatMeals(meals) {
+  if (meals.length === 0) return null;
+  if (meals.length <= 4) return meals.join(", ");
 
-  const toggleMeal = (value) => {
+  const firstLine = `${meals.slice(0, 4).join(", ")},`;
+  const secondLine = meals.slice(4).join(", ");
+  return `${firstLine}\n${secondLine}`;
+}
+
+const Container = styled.div`
+  width: 354px;
+  min-height: 302px;
+  border-radius: 18px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  // box-sizing: border-box;
+  overflow: hidden;
+`;
+
+export default function RecordForm() {
+  const [stepperValues, setStepperValues] = useState({
+    sleep: null,
+    water: null,
+    exercise: null,
+  });
+  const [meals, setMeals] = useState([]);
+  const [skinStatus, setSkinStatus] = useState(null);
+  const [activeSheet, setActiveSheet] = useState(null); // null | "sleep" | "water" | "exercise" | "meals" | "skinStatus"
+
+  const openStepperSheet = (key) => {
+    setStepperValues((prev) =>
+      prev[key] === null
+        ? { ...prev, [key]: STEPPER_FIELDS[key].default }
+        : prev,
+    );
+    setActiveSheet(key);
+  };
+
+  const updateStepperValue = (key, value) => {
+    setStepperValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const closeSheet = () => setActiveSheet(null);
+
+  const toggleMeal = (option) => {
     setMeals((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+      prev.includes(option)
+        ? prev.filter((meal) => meal !== option)
+        : [...prev, option],
     );
   };
 
-  const handleSelectExercise = (option) => {
-    setExercise((prev) => (prev === option ? null : option));
-  };
-
-  const handleSelectSkinStatus = (option) => {
+  const toggleSkinStatus = (option) => {
     setSkinStatus((prev) => (prev === option ? null : option));
   };
 
+  const activeStepperField = activeSheet ? STEPPER_FIELDS[activeSheet] : null;
+
   return (
-    <Wrapper>
-      <StepperField
-        title="수면"
-        value={sleepHours}
-        unit="시간"
-        onChange={setSleepHours}
-      />
-      <StepperField
-        title="수분 섭취"
-        value={waterIntake}
-        unit="잔"
-        onChange={setWaterIntake}
-      />
+    <Container>
+      {Object.entries(STEPPER_FIELDS).map(([key, field]) => (
+        <RecordListRow
+          key={key}
+          label={field.label}
+          value={
+            stepperValues[key] === null
+              ? null
+              : field.formatValue(stepperValues[key])
+          }
+          onClick={() => openStepperSheet(key)}
+        />
+      ))}
 
-      <ChipGroup
-        title="식사"
-        options={MEAL_OPTIONS}
-        isSelected={(value) => meals.includes(value)}
-        onSelect={toggleMeal}
+      <RecordListRow
+        label="식사"
+        value={formatMeals(meals)}
+        onClick={() => setActiveSheet("meals")}
       />
-
-      <ChipGroup
-        title="운동"
-        options={EXERCISE_OPTIONS}
-        isSelected={(value) => exercise === value}
-        onSelect={handleSelectExercise}
-      />
-
-      <ChipGroup
-        title="피부 상태"
-        options={SKIN_STATUS_OPTIONS}
-        isSelected={(value) => skinStatus === value}
-        onSelect={handleSelectSkinStatus}
+      <RecordListRow
+        label="피부 상태"
+        value={skinStatus}
+        onClick={() => setActiveSheet("skinStatus")}
         hideBorder
       />
-    </Wrapper>
+      {activeStepperField && (
+        <StepperBottomSheet
+          label={activeStepperField.label}
+          value={stepperValues[activeSheet]}
+          min={activeStepperField.min}
+          max={activeStepperField.max}
+          step={activeStepperField.step}
+          formatValue={activeStepperField.formatValue}
+          onChange={(value) => updateStepperValue(activeSheet, value)}
+          onClose={closeSheet}
+        />
+      )}
+
+      {activeSheet === "meals" && (
+        <ChipBottomSheet
+          label="식사"
+          options={MEAL_OPTIONS}
+          isSelected={(option) => meals.includes(option)}
+          onSelect={toggleMeal}
+          onClose={closeSheet}
+        />
+      )}
+
+      {activeSheet === "skinStatus" && (
+        <ChipBottomSheet
+          label="피부 상태"
+          options={SKIN_STATUS_OPTIONS}
+          isSelected={(option) => skinStatus === option}
+          onSelect={toggleSkinStatus}
+          onClose={closeSheet}
+        />
+      )}
+    </Container>
   );
 }
