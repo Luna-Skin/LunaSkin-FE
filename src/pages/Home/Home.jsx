@@ -25,14 +25,16 @@ import {
   PHASE_ROUTINES,
 } from "../../mocks/homeMock";
 
-// TODO: 나쁨/보통/좋음 아이콘 PO한테 받으면 각각 교체 (지금은 전부 모름 아이콘으로 임시 처리)
 import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
+import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
+import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
+import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
 
 const SKIN_SCORE_BUCKET_ICON = {
   [SKIN_SCORE_BUCKET.UNKNOWN]: skinStatusUnknownIcon,
-  [SKIN_SCORE_BUCKET.BAD]: skinStatusUnknownIcon,
-  [SKIN_SCORE_BUCKET.NORMAL]: skinStatusUnknownIcon,
-  [SKIN_SCORE_BUCKET.GOOD]: skinStatusUnknownIcon,
+  [SKIN_SCORE_BUCKET.BAD]: skinStatusBadIcon,
+  [SKIN_SCORE_BUCKET.NORMAL]: skinStatusNormalIcon,
+  [SKIN_SCORE_BUCKET.GOOD]: skinStatusGoodIcon,
 };
 
 const SectionLabel = styled.h2`

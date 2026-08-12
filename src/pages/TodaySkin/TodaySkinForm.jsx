@@ -96,7 +96,7 @@ const [meals, setMeals] = useState([]);
         <SectionLabel $marginTop={10}>1. 피부 사진</SectionLabel>
         <PhotoUploadBox photoTaken={photoTaken} onClick={() => setModalStep("check")} />
 
-        <SectionLabel $marginTop={24}>2. 기록하기</SectionLabel>
+        <SectionLabel $marginTop={24}>2. 생활 습관</SectionLabel>
         <RecordForm />
 
         <SubmitButtonWrapper>
