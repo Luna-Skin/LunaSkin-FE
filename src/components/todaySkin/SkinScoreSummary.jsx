@@ -14,7 +14,22 @@ const TopRow = styled.div`
   justify-content: space-between;
 `;
 
+const DateRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
 const DateText = styled.span`
+  color: #7e7979;
+  font-family: "Pretendard Variable";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+`;
+
+const PhaseText = styled.span`
   color: #7e7979;
   font-family: "Pretendard Variable";
   font-size: 14px;
@@ -70,16 +85,21 @@ const StatusSummary = styled.p`
   line-height: normal;
 `;
 
-const AskButton = styled.button`
-  align-self: flex-start;
-  display: inline-flex;
+const ButtonRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 19px;
+`;
+
+const ActionButton = styled.button`
+  display: flex;
   padding: 4px 8px;
   align-items: center;
   gap: 10px;
   border: none;
   border-radius: 6px;
   background: #a985e7;
-  margin-top: 19px;
   cursor: pointer;
   color: #fff;
   font-family: "Pretendard Variable";
@@ -89,16 +109,21 @@ const AskButton = styled.button`
 
 export default function SkinScoreSummary({
   date,
+  phaseLabel,
   score,
   statusText,
   statusSummary,
   onPhotoClick,
   onAskClick,
+  onCompareClick,
 }) {
   return (
     <Wrapper>
       <TopRow>
-        <DateText>{dayjs(date).format("YYYY년 M월 D일")}</DateText>
+        <DateRow>
+          <DateText>{dayjs(date).format("YYYY년 M월 D일")}</DateText>
+          {phaseLabel && <PhaseText>{phaseLabel}</PhaseText>}
+        </DateRow>
         <PhotoLink type="button" onClick={onPhotoClick}>
           사진 보기
         </PhotoLink>
@@ -109,9 +134,14 @@ export default function SkinScoreSummary({
         <TextBlock>
           <StatusTitle>{statusText}</StatusTitle>
           <StatusSummary>{statusSummary}</StatusSummary>
-          <AskButton type="button" onClick={onAskClick}>
-            끼끼에게 질문하기 &gt;
-          </AskButton>
+          <ButtonRow>
+            <ActionButton type="button" onClick={onAskClick}>
+              끼끼에게 질문하기
+            </ActionButton>
+            <ActionButton type="button" onClick={onCompareClick}>
+              기록 비교하기
+            </ActionButton>
+          </ButtonRow>
         </TextBlock>
       </ScoreRow>
     </Wrapper>
