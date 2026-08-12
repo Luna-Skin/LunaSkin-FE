@@ -42,6 +42,7 @@ const ButtonRow = styled.div`
 `;
 
 const ActionButton = styled.button`
+  min-width: 116px;
   display: inline-flex;
   padding: 14px 32px;
   justify-content: center;

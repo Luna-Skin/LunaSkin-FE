@@ -3,7 +3,7 @@ import styled from "styled-components";
 const Row = styled.div`
   display: flex;
   width: 322px;
-  height: 24px
+  height: 24px;
   justify-content: space-between;
   align-items: center;
 `;
