@@ -10,6 +10,7 @@ import RoutineSection from "../../components/home/RoutineSection";
 import ActionListModal from "../../components/home/ActionListModal";
 import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
+import Toast from "../../components/common/Toast";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
 import { getSkinScoreBucket, SKIN_SCORE_BUCKET, SKIN_SCORE_BUCKET_CONTENT } from "../../utils/skinScoreBucket";
 import {
@@ -64,12 +65,18 @@ export default function Home() {
   const currentPhase = getPhaseForDate(today, MOCK_PERIOD_CYCLES);
   const phaseGuide = currentPhase ? PHASE_GUIDE[currentPhase] : null;
 
+  // 지금 "수정 중"으로 취급할 주기 기록 — 가장 최근에 기록된 것.
+  // TODO: mocks 반영 to-do에서 실제로 이 기록을 갱신하는 로직으로 이어짐
+  const currentCycle = MOCK_PERIOD_CYCLES[MOCK_PERIOD_CYCLES.length - 1] ?? null;
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalStep, setModalStep] = useState(null); // "dateAction" | "periodAction" | null
 
   // 홈 캘린더에서 바로 생리 시작일/종료일을 고르는 중인지 관리
   const [periodSelectMode, setPeriodSelectMode] = useState(null); // "start" | "end" | null
   const [periodSelectedDate, setPeriodSelectedDate] = useState(null);
+
+  const [toastMessage, setToastMessage] = useState(null);
 
   const todayScore = MOCK_SKIN_RECORDS[today]?.score ?? null;
   const scoreBucket = getSkinScoreBucket(todayScore);
@@ -106,6 +113,13 @@ export default function Home() {
 
   const handleEditPeriodEnd = () => {
     closeModal();
+
+    // 아직 시작일이 기록된 주기가 하나도 없으면 종료일부터 고를 수 없음
+    if (!currentCycle) {
+      setToastMessage("시작일을 먼저 입력해야 합니다");
+      return;
+    }
+
     setPeriodSelectMode("end");
     setPeriodSelectedDate(null);
   };
@@ -115,8 +129,13 @@ export default function Home() {
     setPeriodSelectedDate(null);
   };
 
-  // TODO: 다음 to-do(유효성 검사 연결)에서 여기에 실제 검증 + mock 데이터 반영 로직 추가
+  // TODO: 다음 to-do(mocks 반영)에서 여기에 실제 MOCK_PERIOD_CYCLES 갱신 로직 추가
   const handleConfirmPeriodSelect = () => {
+    if (periodSelectMode === "end" && periodSelectedDate === currentCycle?.cycleStartDate) {
+      setToastMessage("종료일과 시작일이 같을 수 없습니다");
+      return; // 선택 모드는 유지해서 다른 날짜로 다시 고를 수 있게 함
+    }
+
     console.log(`${periodSelectMode === "start" ? "생리 시작일" : "생리 종료일"} 선택:`, periodSelectedDate);
     setPeriodSelectMode(null);
     setPeriodSelectedDate(null);
@@ -191,6 +210,8 @@ export default function Home() {
           ]}
         />
       )}
+
+      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
     </div>
   );
 }
