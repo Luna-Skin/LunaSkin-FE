@@ -252,7 +252,7 @@ export default function CalendarView({
         <NavButton $visible={effectiveExpanded} onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}>
           <img src={chevronLeft} alt="이전 달" />
         </NavButton>
-        <MonthLabel>{(effectiveExpanded ? displayedMonth : today).format("M월")}</MonthLabel>
+        <MonthLabel>{(effectiveExpanded ? displayedMonth : today).format("YYYY년 M월")}</MonthLabel>
         <NavButton $visible={effectiveExpanded} onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}>
           <img src={chevronRight} alt="다음 달" />
         </NavButton>
