@@ -11,10 +11,11 @@ const HeaderWrapper = styled.header`
   ${({ $variant }) =>
     $variant === "back"
       ? `
+    position: sticky;
+    height: 56px;
     display: flex;
-    padding: 15px 138px 15px 8px;
-    align-items: flex-start;
-    gap: 104px;
+    align-items: center;
+    justify-content: center;
     border-bottom: 1px solid #d9d9d9;
   `
       : `
@@ -28,12 +29,18 @@ const HeaderWrapper = styled.header`
 const BackButton = styled.button`
   display: flex;
   align-items: center;
+  justify-content: center;
   border: none;
   background: none;
   padding: 0;
   cursor: pointer;
   width: 26px;
   height: 26px;
+
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 `;
 
 const BackIcon = styled.img`
@@ -46,6 +53,7 @@ const Title = styled.h1`
   font-family: "Pretendard Variable";
   font-style: normal;
   line-height: normal;
+  white-space: nowrap;
 
   ${({ $variant }) =>
     $variant === "back"
@@ -61,14 +69,23 @@ const Title = styled.h1`
   `}
 `;
 
-export default function Header({ variant = "default", title = "TodaySkin", onBack }) {
+export default function Header({
+  variant = "default",
+  title = "TodaySkin",
+  onBack,
+}) {
   return (
     <HeaderWrapper $variant={variant}>
       {variant === "back" && (
-        <BackButton type="button" onClick={onBack} aria-label="뒤로 가기">
+        <BackButton
+          type="button"
+          onClick={onBack}
+          aria-label="뒤로 가기"
+        >
           <BackIcon src={backIcon} alt="" />
         </BackButton>
       )}
+
       <Title $variant={variant}>{title}</Title>
     </HeaderWrapper>
   );
