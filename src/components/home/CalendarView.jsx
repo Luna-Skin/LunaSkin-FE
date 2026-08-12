@@ -12,7 +12,7 @@ const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const SHOW_PHASE_HIGHLIGHT_IN_WEEK_VIEW = true;
 
 const Wrapper = styled.div`
-margin : 0 auto;
+  margin: 0 auto;
   position: relative;
   width: 354px;
   border-radius: 18px;
@@ -102,6 +102,10 @@ const DateCell = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &:disabled {
+    cursor: default;
+  }
 `;
 
 // left/right 오프셋은 "같은 줄에서 물리적으로 겹치는지"(mergeLeft/Right)만 따르고,
@@ -190,7 +194,11 @@ const LegendDot = styled.span`
   background: ${({ $color }) => $color};
 `;
 
-export default function CalendarView({ periodCycles = [], skinRecords = {}, onDateClick }) {
+export default function CalendarView({
+  periodCycles = [],
+  skinRecords = {},
+  onDateClick,
+}) {
   const today = dayjs();
 
   // 홈 화면을 떠났다가(예: 결과 화면 보고 뒤로가기) 다시 돌아왔을 때
@@ -208,7 +216,10 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
   }, [isExpanded]);
 
   useEffect(() => {
-    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
+    sessionStorage.setItem(
+      "calendarDisplayedMonth",
+      displayedMonth.format("YYYY-MM-DD"),
+    );
   }, [displayedMonth]);
 
   const days = useMemo(() => {
@@ -234,16 +245,27 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
   return (
     <Wrapper $isExpanded={isExpanded}>
       <Header>
-        <NavButton $visible={isExpanded} onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}>
+        <NavButton
+          $visible={isExpanded}
+          onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}
+        >
           <img src={chevronLeft} alt="이전 달" />
         </NavButton>
-        <MonthLabel>{(isExpanded ? displayedMonth : today).format("M월")}</MonthLabel>
-        <NavButton $visible={isExpanded} onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}>
+        <MonthLabel>
+          {(isExpanded ? displayedMonth : today).format("M월")}
+        </MonthLabel>
+        <NavButton
+          $visible={isExpanded}
+          onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}
+        >
           <img src={chevronRight} alt="다음 달" />
         </NavButton>
       </Header>
       <ToggleButton onClick={() => setIsExpanded((v) => !v)}>
-        <img src={isExpanded ? chevronUp : chevronDown} alt="달력 펼치기/접기" />
+        <img
+          src={isExpanded ? chevronUp : chevronDown}
+          alt="달력 펼치기/접기"
+        />
       </ToggleButton>
 
       <WeekdaysRow>
@@ -257,10 +279,15 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
           const dateStr = date.format("YYYY-MM-DD");
           const isToday = date.isSame(today, "day");
           const isFutureDate = date.isAfter(today, "day");
-          const isCurrentMonth = date.isSame(isExpanded ? displayedMonth : today, "month");
+          const isCurrentMonth = date.isSame(
+            isExpanded ? displayedMonth : today,
+            "month",
+          );
           const hasRecord = !isFutureDate && Boolean(skinRecords[dateStr]);
 
-          const phase = canShowPhase ? getPhaseForDate(dateStr, periodCycles) : null;
+          const phase = canShowPhase
+            ? getPhaseForDate(dateStr, periodCycles)
+            : null;
           const phaseColor = phase ? PHASE_COLOR[phase] : null;
 
           const columnIndex = index % 7;
@@ -269,9 +296,15 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
           const prevInRow = columnIndex > 0 ? days[index - 1] : null;
           const nextInRow = columnIndex < 6 ? days[index + 1] : null;
           const mergeLeft =
-            canShowPhase && prevInRow && getPhaseForDate(prevInRow.format("YYYY-MM-DD"), periodCycles) === phase;
+            canShowPhase &&
+            prevInRow &&
+            getPhaseForDate(prevInRow.format("YYYY-MM-DD"), periodCycles) ===
+              phase;
           const mergeRight =
-            canShowPhase && nextInRow && getPhaseForDate(nextInRow.format("YYYY-MM-DD"), periodCycles) === phase;
+            canShowPhase &&
+            nextInRow &&
+            getPhaseForDate(nextInRow.format("YYYY-MM-DD"), periodCycles) ===
+              phase;
 
           // 줄이 바뀌어도 실제 날짜상 이어지는지(위/아래 줄이 실제로 존재할 때만)
           const hasRowAbove = index - 7 >= 0;
@@ -280,18 +313,29 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
             canShowPhase &&
             columnIndex === 0 &&
             hasRowAbove &&
-            getPhaseForDate(date.subtract(1, "day").format("YYYY-MM-DD"), periodCycles) === phase;
+            getPhaseForDate(
+              date.subtract(1, "day").format("YYYY-MM-DD"),
+              periodCycles,
+            ) === phase;
           const continuesToBelow =
             canShowPhase &&
             columnIndex === 6 &&
             hasRowBelow &&
-            getPhaseForDate(date.add(1, "day").format("YYYY-MM-DD"), periodCycles) === phase;
+            getPhaseForDate(
+              date.add(1, "day").format("YYYY-MM-DD"),
+              periodCycles,
+            ) === phase;
 
           const roundLeft = !mergeLeft && !continuesFromAbove;
           const roundRight = !mergeRight && !continuesToBelow;
 
           return (
-            <DateCell key={dateStr} onClick={() => onDateClick?.(dateStr)}>
+            <DateCell
+              key={dateStr}
+              disabled={isFutureDate}
+              onClick={() => onDateClick?.(dateStr)}
+            >
+              {" "}
               {phaseColor && (
                 <HighlightPill
                   $color={phaseColor}
@@ -304,7 +348,9 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
               {isToday ? (
                 <TodayBadge>{date.date()}</TodayBadge>
               ) : (
-                <DateNumber $isCurrentMonth={isCurrentMonth}>{date.date()}</DateNumber>
+                <DateNumber $isCurrentMonth={isCurrentMonth}>
+                  {date.date()}
+                </DateNumber>
               )}
               {hasRecord && <RecordDot />}
             </DateCell>
@@ -314,9 +360,18 @@ export default function CalendarView({ periodCycles = [], skinRecords = {}, onDa
 
       {isExpanded && (
         <Legend>
-          <LegendItem><LegendDot $color={PHASE_COLOR.MENSTRUATION} />생리기간</LegendItem>
-          <LegendItem><LegendDot $color={PHASE_COLOR.OVULATION} />배란기</LegendItem>
-          <LegendItem><LegendDot $color={PHASE_COLOR.LUTEAL} />황체기</LegendItem>
+          <LegendItem>
+            <LegendDot $color={PHASE_COLOR.MENSTRUATION} />
+            생리기간
+          </LegendItem>
+          <LegendItem>
+            <LegendDot $color={PHASE_COLOR.OVULATION} />
+            배란기
+          </LegendItem>
+          <LegendItem>
+            <LegendDot $color={PHASE_COLOR.LUTEAL} />
+            황체기
+          </LegendItem>
         </Legend>
       )}
     </Wrapper>

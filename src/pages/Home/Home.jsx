@@ -7,7 +7,7 @@ import UserInfo from "../../components/home/UserInfo";
 import CalendarView from "../../components/home/CalendarView";
 import PhaseGuideBanner from "../../components/home/PhaseGuideBanner";
 import RoutineSection from "../../components/home/RoutineSection";
-import CalendarDateActionModal from "../../components/home/CalendarDateActionModal";
+import ActionListModal from "../../components/home/ActionListModal";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
 import { getSkinScoreBucket, SKIN_SCORE_BUCKET, SKIN_SCORE_BUCKET_CONTENT } from "../../utils/skinScoreBucket";
@@ -68,7 +68,16 @@ export default function Home() {
   };
 
   const handleSelectPeriodInfo = () => {
-    // TODO: PeriodActionModal 구현되면 modalStep을 "periodAction"으로 전환 (별도 이슈)
+    setModalStep("periodAction");
+  };
+
+  // TODO: 다음 to-do(PeriodDatePicker.jsx)에서 실제 날짜 선택 화면으로 교체
+  const handleEditPeriodStart = () => {
+    alert("생리 시작일 수정 화면은 다음 to-do에서 구현 예정");
+  };
+
+  const handleEditPeriodEnd = () => {
+    alert("생리 종료일 수정 화면은 다음 to-do에서 구현 예정");
   };
 
   const handleViewTodayStatus = () => {
@@ -101,12 +110,26 @@ export default function Home() {
       )}
 
       {modalStep === "dateAction" && (
-        <CalendarDateActionModal
-          date={selectedDate}
-          canViewSkinInfo={Boolean(MOCK_SKIN_RECORDS[selectedDate])}
-          onSelectSkinInfo={handleSelectSkinInfo}
-          onSelectPeriodInfo={handleSelectPeriodInfo}
+        <ActionListModal
+          title={dayjs(selectedDate).format("M월 D일")}
           onClose={closeModal}
+          options={[
+            { label: "생리 정보 수정", onClick: handleSelectPeriodInfo },
+            ...(MOCK_SKIN_RECORDS[selectedDate]
+              ? [{ label: "피부 정보 보기", onClick: handleSelectSkinInfo }]
+              : []),
+          ]}
+        />
+      )}
+
+      {modalStep === "periodAction" && (
+        <ActionListModal
+          title="생리 정보 수정"
+          onClose={closeModal}
+          options={[
+            { label: "생리 시작일 수정", onClick: handleEditPeriodStart },
+            { label: "생리 종료일 수정", onClick: handleEditPeriodEnd },
+          ]}
         />
       )}
     </div>
