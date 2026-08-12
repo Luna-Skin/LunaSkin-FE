@@ -12,7 +12,7 @@ const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 const SHOW_PHASE_HIGHLIGHT_IN_WEEK_VIEW = true;
 
 const Wrapper = styled.div`
-  margin: 0 auto;
+margin : 0 auto;
   position: relative;
   width: 354px;
   border-radius: 18px;
@@ -194,15 +194,19 @@ const LegendDot = styled.span`
   background: ${({ $color }) => $color};
 `;
 
+// selectMode: 생리 시작일/종료일을 고르는 중일 때 true. 이때는
+//   - 접힘 상태와 무관하게 항상 펼쳐진 월간 보기로 보여줌(단, 실제 접힘 저장값은 안 건드림)
+//   - "오늘" 대신 selectedDate가 보라색 원으로 표시됨
+//   - 펼치기/접기 토글 버튼은 숨김(어차피 강제로 펼쳐져 있어서 눌러도 의미 없음)
 export default function CalendarView({
   periodCycles = [],
   skinRecords = {},
   onDateClick,
+  selectMode = false,
+  selectedDate = null,
 }) {
   const today = dayjs();
 
-  // 홈 화면을 떠났다가(예: 결과 화면 보고 뒤로가기) 다시 돌아왔을 때
-  // 캘린더 펼침 상태·보고 있던 달이 초기화되지 않도록 sessionStorage에 저장해뒀다가 복원함
   const [isExpanded, setIsExpanded] = useState(() => {
     return sessionStorage.getItem("calendarIsExpanded") === "true";
   });
@@ -216,14 +220,14 @@ export default function CalendarView({
   }, [isExpanded]);
 
   useEffect(() => {
-    sessionStorage.setItem(
-      "calendarDisplayedMonth",
-      displayedMonth.format("YYYY-MM-DD"),
-    );
+    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
   }, [displayedMonth]);
 
+  // selectMode일 땐 실제 저장된 접힘 상태는 그대로 두고, 화면에 보여줄 때만 펼친 것처럼 취급함
+  const effectiveExpanded = isExpanded || selectMode;
+
   const days = useMemo(() => {
-    if (!isExpanded) {
+    if (!effectiveExpanded) {
       const startOfWeek = today.startOf("week");
       return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, "day"));
     }
@@ -238,35 +242,27 @@ export default function CalendarView({
       cursor = cursor.add(1, "day");
     }
     return list;
-  }, [isExpanded, displayedMonth, today]);
+  }, [effectiveExpanded, displayedMonth, today]);
 
-  const canShowPhase = isExpanded || SHOW_PHASE_HIGHLIGHT_IN_WEEK_VIEW;
+  const canShowPhase = effectiveExpanded || SHOW_PHASE_HIGHLIGHT_IN_WEEK_VIEW;
 
   return (
-    <Wrapper $isExpanded={isExpanded}>
+    <Wrapper $isExpanded={effectiveExpanded}>
       <Header>
-        <NavButton
-          $visible={isExpanded}
-          onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}
-        >
+        <NavButton $visible={effectiveExpanded} onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}>
           <img src={chevronLeft} alt="이전 달" />
         </NavButton>
-        <MonthLabel>
-          {(isExpanded ? displayedMonth : today).format("M월")}
-        </MonthLabel>
-        <NavButton
-          $visible={isExpanded}
-          onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}
-        >
+        <MonthLabel>{(effectiveExpanded ? displayedMonth : today).format("M월")}</MonthLabel>
+        <NavButton $visible={effectiveExpanded} onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}>
           <img src={chevronRight} alt="다음 달" />
         </NavButton>
       </Header>
-      <ToggleButton onClick={() => setIsExpanded((v) => !v)}>
-        <img
-          src={isExpanded ? chevronUp : chevronDown}
-          alt="달력 펼치기/접기"
-        />
-      </ToggleButton>
+
+      {!selectMode && (
+        <ToggleButton onClick={() => setIsExpanded((v) => !v)}>
+          <img src={isExpanded ? chevronUp : chevronDown} alt="달력 펼치기/접기" />
+        </ToggleButton>
+      )}
 
       <WeekdaysRow>
         {WEEKDAY_LABELS.map((label) => (
@@ -279,63 +275,41 @@ export default function CalendarView({
           const dateStr = date.format("YYYY-MM-DD");
           const isToday = date.isSame(today, "day");
           const isFutureDate = date.isAfter(today, "day");
-          const isCurrentMonth = date.isSame(
-            isExpanded ? displayedMonth : today,
-            "month",
-          );
+          const isCurrentMonth = date.isSame(effectiveExpanded ? displayedMonth : today, "month");
           const hasRecord = !isFutureDate && Boolean(skinRecords[dateStr]);
+          const isSelected = selectMode && selectedDate === dateStr;
+          const showBadge = selectMode ? isSelected : isToday;
 
-          const phase = canShowPhase
-            ? getPhaseForDate(dateStr, periodCycles)
-            : null;
+          const phase = canShowPhase ? getPhaseForDate(dateStr, periodCycles) : null;
           const phaseColor = phase ? PHASE_COLOR[phase] : null;
 
           const columnIndex = index % 7;
 
-          // 같은 줄 안에서 물리적으로 겹칠지(mergeLeft/Right)
           const prevInRow = columnIndex > 0 ? days[index - 1] : null;
           const nextInRow = columnIndex < 6 ? days[index + 1] : null;
           const mergeLeft =
-            canShowPhase &&
-            prevInRow &&
-            getPhaseForDate(prevInRow.format("YYYY-MM-DD"), periodCycles) ===
-              phase;
+            canShowPhase && prevInRow && getPhaseForDate(prevInRow.format("YYYY-MM-DD"), periodCycles) === phase;
           const mergeRight =
-            canShowPhase &&
-            nextInRow &&
-            getPhaseForDate(nextInRow.format("YYYY-MM-DD"), periodCycles) ===
-              phase;
+            canShowPhase && nextInRow && getPhaseForDate(nextInRow.format("YYYY-MM-DD"), periodCycles) === phase;
 
-          // 줄이 바뀌어도 실제 날짜상 이어지는지(위/아래 줄이 실제로 존재할 때만)
           const hasRowAbove = index - 7 >= 0;
           const hasRowBelow = index + 7 < days.length;
           const continuesFromAbove =
             canShowPhase &&
             columnIndex === 0 &&
             hasRowAbove &&
-            getPhaseForDate(
-              date.subtract(1, "day").format("YYYY-MM-DD"),
-              periodCycles,
-            ) === phase;
+            getPhaseForDate(date.subtract(1, "day").format("YYYY-MM-DD"), periodCycles) === phase;
           const continuesToBelow =
             canShowPhase &&
             columnIndex === 6 &&
             hasRowBelow &&
-            getPhaseForDate(
-              date.add(1, "day").format("YYYY-MM-DD"),
-              periodCycles,
-            ) === phase;
+            getPhaseForDate(date.add(1, "day").format("YYYY-MM-DD"), periodCycles) === phase;
 
           const roundLeft = !mergeLeft && !continuesFromAbove;
           const roundRight = !mergeRight && !continuesToBelow;
 
           return (
-            <DateCell
-              key={dateStr}
-              disabled={isFutureDate}
-              onClick={() => onDateClick?.(dateStr)}
-            >
-              {" "}
+            <DateCell key={dateStr} disabled={isFutureDate} onClick={() => onDateClick?.(dateStr)}>
               {phaseColor && (
                 <HighlightPill
                   $color={phaseColor}
@@ -345,12 +319,10 @@ export default function CalendarView({
                   $roundRight={roundRight}
                 />
               )}
-              {isToday ? (
+              {showBadge ? (
                 <TodayBadge>{date.date()}</TodayBadge>
               ) : (
-                <DateNumber $isCurrentMonth={isCurrentMonth}>
-                  {date.date()}
-                </DateNumber>
+                <DateNumber $isCurrentMonth={isCurrentMonth}>{date.date()}</DateNumber>
               )}
               {hasRecord && <RecordDot />}
             </DateCell>
@@ -358,20 +330,11 @@ export default function CalendarView({
         })}
       </Grid>
 
-      {isExpanded && (
+      {effectiveExpanded && (
         <Legend>
-          <LegendItem>
-            <LegendDot $color={PHASE_COLOR.MENSTRUATION} />
-            생리기간
-          </LegendItem>
-          <LegendItem>
-            <LegendDot $color={PHASE_COLOR.OVULATION} />
-            배란기
-          </LegendItem>
-          <LegendItem>
-            <LegendDot $color={PHASE_COLOR.LUTEAL} />
-            황체기
-          </LegendItem>
+          <LegendItem><LegendDot $color={PHASE_COLOR.MENSTRUATION} />생리기간</LegendItem>
+          <LegendItem><LegendDot $color={PHASE_COLOR.OVULATION} />배란기</LegendItem>
+          <LegendItem><LegendDot $color={PHASE_COLOR.LUTEAL} />황체기</LegendItem>
         </Legend>
       )}
     </Wrapper>

@@ -8,6 +8,7 @@ import CalendarView from "../../components/home/CalendarView";
 import PhaseGuideBanner from "../../components/home/PhaseGuideBanner";
 import RoutineSection from "../../components/home/RoutineSection";
 import ActionListModal from "../../components/home/ActionListModal";
+import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
 import { getSkinScoreBucket, SKIN_SCORE_BUCKET, SKIN_SCORE_BUCKET_CONTENT } from "../../utils/skinScoreBucket";
@@ -40,6 +41,23 @@ const SectionLabel = styled.h2`
   line-height: normal;
 `;
 
+const ConfirmButton = styled.button`
+  display: block;
+  width: 354px;
+  margin: 14px auto 0;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  background: ${({ disabled }) => (disabled ? "#c6c6c6" : "#9a71df")};
+  color: #fff;
+  cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
+  font-family: "Pretendard Variable";
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+`;
+
 export default function Home() {
   const navigate = useNavigate();
   const today = dayjs().format("YYYY-MM-DD");
@@ -49,11 +67,20 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalStep, setModalStep] = useState(null); // "dateAction" | "periodAction" | null
 
+  // 홈 캘린더에서 바로 생리 시작일/종료일을 고르는 중인지 관리
+  const [periodSelectMode, setPeriodSelectMode] = useState(null); // "start" | "end" | null
+  const [periodSelectedDate, setPeriodSelectedDate] = useState(null);
+
   const todayScore = MOCK_SKIN_RECORDS[today]?.score ?? null;
   const scoreBucket = getSkinScoreBucket(todayScore);
   const bucketContent = SKIN_SCORE_BUCKET_CONTENT[scoreBucket];
 
   const handleDateClick = (dateStr) => {
+    if (periodSelectMode) {
+      setPeriodSelectedDate(dateStr);
+      return;
+    }
+
     setSelectedDate(dateStr);
     setModalStep("dateAction");
   };
@@ -71,13 +98,28 @@ export default function Home() {
     setModalStep("periodAction");
   };
 
-  // TODO: 다음 to-do(PeriodDatePicker.jsx)에서 실제 날짜 선택 화면으로 교체
   const handleEditPeriodStart = () => {
-    alert("생리 시작일 수정 화면은 다음 to-do에서 구현 예정");
+    closeModal();
+    setPeriodSelectMode("start");
+    setPeriodSelectedDate(null);
   };
 
   const handleEditPeriodEnd = () => {
-    alert("생리 종료일 수정 화면은 다음 to-do에서 구현 예정");
+    closeModal();
+    setPeriodSelectMode("end");
+    setPeriodSelectedDate(null);
+  };
+
+  const handleCancelPeriodSelect = () => {
+    setPeriodSelectMode(null);
+    setPeriodSelectedDate(null);
+  };
+
+  // TODO: 다음 to-do(유효성 검사 연결)에서 여기에 실제 검증 + mock 데이터 반영 로직 추가
+  const handleConfirmPeriodSelect = () => {
+    console.log(`${periodSelectMode === "start" ? "생리 시작일" : "생리 종료일"} 선택:`, periodSelectedDate);
+    setPeriodSelectMode(null);
+    setPeriodSelectedDate(null);
   };
 
   const handleViewTodayStatus = () => {
@@ -92,11 +134,28 @@ export default function Home() {
     <div>
       <Header />
       <UserInfo name={MOCK_USER.name} skinType={MOCK_USER.skinType} skinConcerns={MOCK_USER.skinConcerns} />
+
+      {periodSelectMode && (
+        <PeriodSelectBanner
+          message={periodSelectMode === "start" ? "생리 시작일을 선택해주세요" : "생리 종료일을 선택해주세요"}
+          onCancel={handleCancelPeriodSelect}
+        />
+      )}
+
       <CalendarView
         periodCycles={MOCK_PERIOD_CYCLES}
         skinRecords={MOCK_SKIN_RECORDS}
         onDateClick={handleDateClick}
+        selectMode={Boolean(periodSelectMode)}
+        selectedDate={periodSelectedDate}
       />
+
+      {periodSelectMode && (
+        <ConfirmButton type="button" disabled={!periodSelectedDate} onClick={handleConfirmPeriodSelect}>
+          확인
+        </ConfirmButton>
+      )}
+
       <SectionLabel>오늘의 피부 상태</SectionLabel>
       <TodaySkinStatusCard
         icon={SKIN_SCORE_BUCKET_ICON[scoreBucket]}
