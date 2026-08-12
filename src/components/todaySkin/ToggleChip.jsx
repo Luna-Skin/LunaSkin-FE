@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 const Chip = styled.button`
   display: flex;
-  width: 74.5px;
+  width: 82.5px;
   height: 26px;
   padding: 6px 12px;
   flex-direction: column;
