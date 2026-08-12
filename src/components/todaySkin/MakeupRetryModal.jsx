@@ -39,9 +39,8 @@ const Message = styled.p`
 
 const CloseButton = styled.button`
   display: flex;
-  width: 137px;
   height: 52px;
-  padding: 14px 0;
+  padding: 14px 32px;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
@@ -66,7 +65,11 @@ export default function MakeupRetryModal({ onClose }) {
   return (
     <Overlay onClick={onClose}>
       <Container onClick={(e) => e.stopPropagation()}>
-        <Message>정확한 피부 분석을 위해 메이크업을 지우고 다시 시도해주세요!</Message>
+        <Message>
+          정확한 피부 분석을 위해
+          <br />
+          메이크업을 지우고 다시 시도해주세요!
+        </Message>
         <CloseButton onClick={onClose}>
           <CloseLabel>닫기</CloseLabel>
         </CloseButton>
