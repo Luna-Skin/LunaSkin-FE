@@ -8,11 +8,12 @@ const Wrapper = styled.div`
 
 const ControlButton = styled.button`
   display: flex;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   justify-content: center;
   align-items: center;
-  border-radius: 999px;
+  aspect-ratio: 1 / 1;
+  border-radius: 1000px;
   border: 1px solid #ede8f8;
   background: #f8f6fc;
   cursor: pointer;
@@ -33,23 +34,13 @@ const ButtonLabel = styled.span`
   line-height: 20px;
 `;
 
-const ValueText = styled.span`
-  color: #000;
-  text-align: right;
-  font-family: "Pretendard Variable";
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: normal;
-`;
-
-export default function Stepper({ value, unit, min = 0, max = 12, onChange }) {
+export default function Stepper({ value, min = 0, max = 12, step = 1, onChange }) {
   const handleDecrease = () => {
-    if (value > min) onChange(value - 1);
+    if (value > min) onChange(roundToStep(value - step));
   };
 
   const handleIncrease = () => {
-    if (value < max) onChange(value + 1);
+    if (value < max) onChange(roundToStep(value + step));
   };
 
   return (
@@ -57,12 +48,13 @@ export default function Stepper({ value, unit, min = 0, max = 12, onChange }) {
       <ControlButton onClick={handleDecrease} disabled={value <= min}>
         <ButtonLabel>-</ButtonLabel>
       </ControlButton>
-      <ValueText>
-        {value}{unit}
-      </ValueText>
       <ControlButton onClick={handleIncrease} disabled={value >= max}>
         <ButtonLabel>+</ButtonLabel>
       </ControlButton>
     </Wrapper>
   );
+}
+
+function roundToStep(n) {
+  return Math.round(n * 10) / 10;
 }

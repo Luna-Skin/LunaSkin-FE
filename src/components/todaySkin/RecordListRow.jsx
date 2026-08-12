@@ -1,16 +1,15 @@
 import styled from "styled-components";
 import plusIcon from "../../assets/icons/record_plus.svg";
 import editIcon from "../../assets/icons/record_edit.svg";
-
 const Row = styled.button`
   display: flex;
   width: 350px;
-  height: 59px;
+  min-height: 59px;
   padding: 16px;
   align-items: center;
   justify-content: space-between;
   border: none;
-  border-bottom: 1px dashed #ede8f8;
+  border-bottom: ${({ $hideBorder }) => ($hideBorder ? "none" : "1px dashed #ede8f8")};
   background: #fff;
   cursor: pointer;
   box-sizing: border-box;
@@ -40,6 +39,7 @@ const ValueText = styled.span`
   font-style: normal;
   font-weight: 500;
   line-height: normal;
+  white-space: pre-line;
 `;
 
 const IconCircle = styled.span`
@@ -61,11 +61,11 @@ const IconCircle = styled.span`
   }
 `;
 
-export default function RecordListRow({ label, value, onClick }) {
+export default function RecordListRow({ label, value, onClick, hideBorder }) {
   const isSet = value !== null && value !== undefined && value !== "";
 
   return (
-    <Row type="button" onClick={onClick}>
+    <Row type="button" onClick={onClick} $hideBorder={hideBorder}>
       <Label>{label}</Label>
       {isSet ? (
         <ValueGroup>
