@@ -30,6 +30,8 @@ import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
 import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
 import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
 
+const MAX_PERIOD_DURATION_DAYS = 10;
+
 const SKIN_SCORE_BUCKET_ICON = {
   [SKIN_SCORE_BUCKET.UNKNOWN]: skinStatusUnknownIcon,
   [SKIN_SCORE_BUCKET.BAD]: skinStatusBadIcon,
@@ -115,22 +117,33 @@ export default function Home() {
   };
 
   const handleEditPeriodStart = () => {
+    const targetDate = selectedDate;
+
     closeModal();
     setPeriodSelectMode("start");
-    setPeriodSelectedDate(null);
+    setPeriodSelectedDate(targetDate);
   };
 
   const handleEditPeriodEnd = () => {
+    const targetDate = selectedDate;
+
     closeModal();
 
-    // 아직 시작일이 기록된 주기가 하나도 없으면 종료일부터 고를 수 없음
     if (!currentCycle) {
       setToastMessage("시작일을 먼저 입력해야 합니다");
       return;
     }
 
+    const startDate = dayjs(currentCycle.cycleStartDate);
+    const diffDays = dayjs(targetDate).diff(startDate, "day");
+
+    if (diffDays < 0 || diffDays >= MAX_PERIOD_DURATION_DAYS) {
+      setToastMessage("시작일을 먼저 입력해야 합니다");
+      return;
+    }
+
     setPeriodSelectMode("end");
-    setPeriodSelectedDate(null);
+    setPeriodSelectedDate(targetDate);
   };
 
   const handleCancelPeriodSelect = () => {
@@ -145,13 +158,14 @@ export default function Home() {
       periodSelectedDate === currentCycle?.cycleStartDate
     ) {
       setToastMessage("종료일과 시작일이 같을 수 없습니다");
-      return; // 선택 모드는 유지해서 다른 날짜로 다시 고를 수 있게 함
+      return;
     }
 
     console.log(
       `${periodSelectMode === "start" ? "생리 시작일" : "생리 종료일"} 선택:`,
       periodSelectedDate,
     );
+
     setPeriodSelectMode(null);
     setPeriodSelectedDate(null);
   };
@@ -169,12 +183,14 @@ export default function Home() {
   return (
     <div>
       <Header />
+
       <UserInfo
         name={MOCK_USER.name}
         skinType={MOCK_USER.skinType}
         skinConcerns={MOCK_USER.skinConcerns}
         points={MOCK_USER.points}
       />
+
       {periodSelectMode && (
         <PeriodSelectBanner
           message={
@@ -205,18 +221,21 @@ export default function Home() {
       )}
 
       <SectionLabel>오늘의 피부 상태</SectionLabel>
+
       <TodaySkinStatusCard
         icon={SKIN_SCORE_BUCKET_ICON[scoreBucket]}
         label={bucketContent.label}
         description={bucketContent.description}
         onClick={handleViewTodayStatus}
       />
+
       {phaseGuide && (
         <PhaseGuideBanner
           title={phaseGuide.title}
           description={phaseGuide.description}
         />
       )}
+
       {currentPhase && (
         <RoutineSection
           phaseLabel={PHASE_LABEL[currentPhase]}
@@ -249,7 +268,10 @@ export default function Home() {
       )}
 
       {toastMessage && (
-        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+        <Toast
+          message={toastMessage}
+          onDismiss={() => setToastMessage(null)}
+        />
       )}
     </div>
   );
