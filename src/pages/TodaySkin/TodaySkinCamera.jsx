@@ -547,9 +547,6 @@ export default function TodaySkinCamera() {
             <FaceFrameWrapper ref={faceFrameRef} $angle={requestedAngle}>
               <FaceFrameGuide color={faceAligned ? "#4EBA69" : "white"} angle={requestedAngle} />
             </FaceFrameWrapper>
-
-            {/* TODO: 확인용 임시 표시. front/left/right 판정 로직 넣으면 지울 것 */}
-            <DebugYawText>yaw: {yawDegrees.toFixed(1)}°</DebugYawText>
           </VideoStage>
 
           <BottomSection>
