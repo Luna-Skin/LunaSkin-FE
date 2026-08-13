@@ -33,7 +33,10 @@ export default function TodaySkinResult() {
   const navigate = useNavigate();
 
   const record = MOCK_SKIN_RECORDS[date];
-  const photo = location.state?.capturedPhoto ?? record?.photoUrl ?? null;
+  // 방금 분석 완료하고 들어온 경우: capturedPhotos(여러 장) 그대로 사용
+  // 예전 기록을 보러 들어온 경우(홈 캘린더 등): mock 데이터엔 정면 사진 한 장만 있음
+  const photos =
+    location.state?.capturedPhotos ?? (record?.photoUrl ? [{ url: record.photoUrl, angle: "front" }] : []);
   const phase = getPhaseForDate(date, MOCK_PERIOD_CYCLES);
 
   // "결과를 확인하러 들어온" 경우(홈 캘린더, 오늘 상태 카드)엔 뒤로가기 헤더로 표시
@@ -80,7 +83,7 @@ export default function TodaySkinResult() {
           score={record.score}
           statusText={record.statusText}
           statusSummary={record.statusSummary}
-          onPhotoClick={() => (photo ? setPhotoModalOpen(true) : alert("저장된 사진이 없어요"))}
+          onPhotoClick={() => (photos.length > 0 ? setPhotoModalOpen(true) : alert("저장된 사진이 없어요"))}
           onAskClick={() => navigate("/chat")}
           onCompareClick={() => navigate(`/today-skin/compare/${date}`)}
         />
@@ -95,7 +98,7 @@ export default function TodaySkinResult() {
       </Content>
 
       {photoModalOpen && (
-        <TodaySkinPhotoModal photo={photo} onClose={() => setPhotoModalOpen(false)} />
+        <TodaySkinPhotoModal photos={photos} onClose={() => setPhotoModalOpen(false)} />
       )}
 
       {pointsRewardOpen && (
