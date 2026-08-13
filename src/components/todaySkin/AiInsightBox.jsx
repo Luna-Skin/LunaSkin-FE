@@ -32,10 +32,10 @@ const Description = styled.p`
   line-height: 16px;
 `;
 
-export default function AiInsightBox({ insight }) {
+export default function AiInsightBox({ title = "AI 인사이트", insight }) {
   return (
     <Box>
-      <Title>AI 인사이트</Title>
+      <Title>{title}</Title>
       <Description>{insight}</Description>
     </Box>
   );
