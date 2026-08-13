@@ -9,11 +9,12 @@ import { useChatContext } from "../../components/chat/ChatContext";
 import { requestAIReply } from "../../api/chatApi";
 
 const Room = styled.section`
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 402px;
-  height: calc(100dvh - 60px);
+  height: 100%;
   margin: 0 auto;
   overflow: hidden;
   background: #f7f1ff;
@@ -40,8 +41,9 @@ const BackButton = styled.button`
 
 const Conversation = styled.main`
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 24px 28px 16px;
+  padding: 24px 28px 100px;
 `;
 
 const DateText = styled.p`
@@ -52,86 +54,135 @@ const DateText = styled.p`
 `;
 
 const InputArea = styled.div`
-  position: relative;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
   padding: 10px 28px 14px;
-  background: #f7f1ff;
+  background: transparent;
+`;
+
+const InputBarWrapper = styled.div`
+  position: relative;
+  z-index: 11;
 `;
 
 function getTodayLabel() {
   const now = new Date();
-  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+
+  return `${now.getFullYear()}년 ${
+    now.getMonth() + 1
+  }월 ${now.getDate()}일`;
 }
 
 function formatTimeWithUnits(date = new Date()) {
   const hours = date.getHours();
   const minutes = date.getMinutes();
+
   const period = hours < 12 ? "오전" : "오후";
-  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
-  return `${period} ${displayHour}시 ${String(minutes).padStart(2, "0")}분`;
+
+  const displayHour =
+    hours % 12 === 0 ? 12 : hours % 12;
+
+  return `${period} ${displayHour}시 ${String(minutes).padStart(
+    2,
+    "0",
+  )}분`;
 }
 
-function buildInitialMessages(fromTodaySkin) {
+function buildInitialMessages(
+  fromTodaySkin,
+  attachedDate = getTodayLabel(),
+) {
   const now = new Date();
 
-  const messages = [
+  if (fromTodaySkin) {
+    return [
+      {
+        id: "today-skin-notice",
+        role: "bot",
+        text: `오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n→ ${attachedDate} 투데이스킨 첨부됨`,
+        time: formatTimeWithUnits(now),
+      },
+    ];
+  }
+
+  return [
     {
       id: "greeting",
       role: "bot",
       text: "안녕하세요! 끼끼의 피부상담소입니다.\n무엇이 궁금하신가요?",
     },
   ];
-
-  if (fromTodaySkin) {
-    messages.push({
-      id: "today-skin-notice",
-      role: "bot",
-      text: `오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n→ ${getTodayLabel()} 투데이스킨 첨부됨`,
-      time: formatTimeWithUnits(now),
-    });
-  }
-
-  return messages;
 }
 
 export default function ChatRoom() {
   const navigate = useNavigate();
   const location = useLocation();
   const { chatId } = useParams();
-  const { getChat, setChatMessages, updateChatTitleFromAI } = useChatContext();
+
+  const {
+    getChat,
+    setChatMessages,
+    updateChatTitleFromAI,
+  } = useChatContext();
 
   const [input, setInput] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
 
   const photoInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const messageEndRef = useRef(null);
 
   const chat = getChat(chatId);
-  const fromTodaySkin =
-    Boolean(location.state?.fromTodaySkin) || Boolean(chat?.fromTodaySkin);
 
-  // 이 채팅방이 처음 열렸을 때(메시지가 비어있을 때) 인사말 + 고정 안내 메시지로 초기화
+  const fromTodaySkin =
+    Boolean(location.state?.fromTodaySkin) ||
+    Boolean(chat?.fromTodaySkin);
+
+  const attachedTodaySkinDate =
+    location.state?.todaySkinDate ||
+    chat?.todaySkinDate ||
+    getTodayLabel();
+
   useEffect(() => {
     if (chat && chat.messages.length === 0) {
-      setChatMessages(chatId, buildInitialMessages(fromTodaySkin));
+      setChatMessages(
+        chatId,
+        buildInitialMessages(
+          fromTodaySkin,
+          attachedTodaySkinDate,
+        ),
+      );
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, chat?.messages.length]);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messageEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [chat?.messages, isReplying]);
 
   if (!chat) {
     return (
       <Room>
         <Header>
-          <BackButton onClick={() => navigate("/chat")} aria-label="목록으로">
+          <BackButton
+            onClick={() => navigate("/chat")}
+            aria-label="목록으로"
+          >
             ‹
           </BackButton>
         </Header>
+
         <Conversation>
-          <DateText>대화를 찾을 수 없어요.</DateText>
+          <DateText>
+            대화를 찾을 수 없어요.
+          </DateText>
         </Conversation>
       </Room>
     );
@@ -139,24 +190,37 @@ export default function ChatRoom() {
 
   const messages = chat.messages;
 
-  // AI agent에게 실제 응답 요청 (BE: /api/chat/:chatId/messages)
   const addBotReply = async (userMessage) => {
     setIsReplying(true);
 
     try {
-      const { reply, suggestedTitle } = await requestAIReply({
-        chatId,
-        messages: [...chat.messages, { role: "user", text: userMessage }],
-      });
+      const { reply, suggestedTitle } =
+        await requestAIReply({
+          chatId,
+          messages: [
+            ...chat.messages,
+            {
+              role: "user",
+              text: userMessage,
+            },
+          ],
+        });
 
       setChatMessages(chatId, (current) => [
         ...current,
-        { id: `${Date.now()}-bot`, role: "bot", text: reply, time: formatTime() },
+        {
+          id: `${Date.now()}-bot`,
+          role: "bot",
+          text: reply,
+          time: formatTime(),
+        },
       ]);
 
-      // AI가 대화 맥락을 요약해서 제목을 제안했다면 반영 (첫 응답 때만 내려오도록 BE와 협의)
       if (suggestedTitle) {
-        updateChatTitleFromAI(chatId, suggestedTitle);
+        updateChatTitleFromAI(
+          chatId,
+          suggestedTitle,
+        );
       }
     } catch (error) {
       setChatMessages(chatId, (current) => [
@@ -175,26 +239,35 @@ export default function ChatRoom() {
 
   const sendMessage = () => {
     const text = input.trim();
+
     if (!text) return;
 
     setChatMessages(chatId, (current) => [
       ...current,
-      { id: `${Date.now()}-user`, role: "user", text, time: formatTime() },
+      {
+        id: `${Date.now()}-user`,
+        role: "user",
+        text,
+        time: formatTime(),
+      },
     ]);
 
     setInput("");
     setIsMenuOpen(false);
+
     addBotReply(text);
   };
 
+  // 사진 선택
   const handlePhotoAttach = (event) => {
     const selectedFile = event.target.files?.[0];
+
     if (!selectedFile) return;
 
     const reader = new FileReader();
+
     reader.onload = () => {
       const imageUrl = reader.result;
-      const caption = `사진을 첨부했어요: ${selectedFile.name}`;
 
       setChatMessages(chatId, (current) => [
         ...current,
@@ -202,52 +275,107 @@ export default function ChatRoom() {
           id: `${Date.now()}-user-img`,
           role: "user",
           image: imageUrl,
-          text: caption,
+          text: `사진을 첨부했어요: ${selectedFile.name}`,
           time: formatTime(),
         },
       ]);
 
       setIsMenuOpen(false);
-      addBotReply(caption);
+
+      addBotReply(
+        `사진을 첨부했어요: ${selectedFile.name}`,
+      );
     };
+
     reader.readAsDataURL(selectedFile);
+
+    event.target.value = "";
+  };
+
+  // 파일 선택
+  const handleFileAttach = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) return;
+
+    const fileMessage =
+      `파일을 첨부했어요: ${selectedFile.name}`;
+
+    setChatMessages(chatId, (current) => [
+      ...current,
+      {
+        id: `${Date.now()}-user-file`,
+        role: "user",
+        text: fileMessage,
+        time: formatTime(),
+      },
+    ]);
+
+    setIsMenuOpen(false);
+
+    addBotReply(fileMessage);
+
     event.target.value = "";
   };
 
   return (
     <Room>
       <Header>
-        <BackButton onClick={() => navigate("/chat")} aria-label="목록으로">
+        <BackButton
+          onClick={() => navigate("/chat")}
+          aria-label="목록으로"
+        >
           ‹
         </BackButton>
       </Header>
 
       <Conversation>
-        <DateText>{getTodayLabel()}</DateText>
+        <DateText>
+          {getTodayLabel()}
+        </DateText>
 
         {messages.map((message) => (
-          <ChatBubble key={message.id} {...message} />
+          <ChatBubble
+            key={message.id}
+            {...message}
+          />
         ))}
 
-        {isReplying && <ChatBubble role="bot" isTyping />}
+        {isReplying && (
+          <ChatBubble
+            role="bot"
+            isTyping
+          />
+        )}
+
         <div ref={messageEndRef} />
       </Conversation>
 
       <InputArea>
         {isMenuOpen && (
           <ChatPlusMenu
-            onPhotoClick={() => photoInputRef.current?.click()}
-            onFileClick={() => setIsMenuOpen(false)}
+            onPhotoClick={() => {
+              photoInputRef.current?.click();
+            }}
+            onFileClick={() => {
+              fileInputRef.current?.click();
+            }}
           />
         )}
 
-        <ChatInputBar
-          value={input}
-          onChange={setInput}
-          onSubmit={sendMessage}
-          onToggleMenu={() => setIsMenuOpen((current) => !current)}
-          isMenuOpen={isMenuOpen}
-        />
+        <InputBarWrapper>
+          <ChatInputBar
+            value={input}
+            onChange={setInput}
+            onSubmit={sendMessage}
+            onToggleMenu={() =>
+              setIsMenuOpen(
+                (current) => !current,
+              )
+            }
+            isMenuOpen={isMenuOpen}
+          />
+        </InputBarWrapper>
 
         <input
           ref={photoInputRef}
@@ -255,6 +383,13 @@ export default function ChatRoom() {
           accept="image/*"
           hidden
           onChange={handlePhotoAttach}
+        />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          hidden
+          onChange={handleFileAttach}
         />
       </InputArea>
     </Room>

@@ -4,10 +4,18 @@ const Container = styled.div`
   display: flex;
   margin-bottom: 16px;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   height: 24px;
   padding-left: 24px;
+  padding-right: 25px;
   box-sizing: border-box;
+`;
+
+const LeftGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const UserName = styled.span`
@@ -40,6 +48,16 @@ const SkinTagText = styled.span`
   line-height: normal;
 `;
 
+const PointsText = styled.span`
+  color: #9a71df;
+  text-align: right;
+  font-family: "Pretendard Variable";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+`;
+
 // 고민은 1개만 보여주고 나머지는 +N으로 축약
 const MAX_VISIBLE_CONCERNS = 1;
 
@@ -50,15 +68,18 @@ function formatConcerns(concerns = []) {
   return `${shown} +${rest}`;
 }
 
-export default function UserInfo({ name, skinType, skinConcerns = [] }) {
+export default function UserInfo({ name, skinType, skinConcerns = [], points = 0 }) {
   return (
     <Container>
-      <UserName>{name}</UserName>
-      <SkinTag>
-        <SkinTagText>
-          {skinType} · {formatConcerns(skinConcerns)}
-        </SkinTagText>
-      </SkinTag>
+      <LeftGroup>
+        <UserName>{name}</UserName>
+        <SkinTag>
+          <SkinTagText>
+            {skinType} · {formatConcerns(skinConcerns)}
+          </SkinTagText>
+        </SkinTag>
+      </LeftGroup>
+      <PointsText>{points}P</PointsText>
     </Container>
   );
 }

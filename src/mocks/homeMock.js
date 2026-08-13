@@ -1,15 +1,13 @@
-import creamJarIcon from "../assets/icons/routine_cream_jar.svg";
-import sunscreenIcon from "../assets/icons/routine_sunscreen.svg";
 import serumIcon from "../assets/icons/routine_serum.svg";
 import waterGlassIcon from "../assets/icons/routine_water_glass.svg";
-import sneakerIcon from "../assets/icons/routine_sneaker.png";
-import strengthIcon from "../assets/icons/routine_strength.png";
+import sneakerIcon from "../assets/icons/routine_sneaker.svg";
 
 // 사용자 기본 정보 (User 테이블 대응)
 export const MOCK_USER = {
   name: "김끼끼", // 사용자 이름
   skinType: "지성", // 피부 타입 (예: 지성, 건성, 복합성...)
   skinConcerns: ["여드름", "블랙헤드"],  // 피부 고민 (예: 블랙헤드, 홍조, 트러블...). 배열 - SkinInfo 다중 선택과 동일한 구조. 여러 개 넣으면 자동으로 같이 표시됨
+  points: 4350, // 사용자가 모은 포인트
 };
 
 // Period_Cycle 테이블 대응
@@ -156,14 +154,14 @@ export const PHASE_GUIDE = {
 // title: 루틴 카테고리 이름 (스킨케어/행동/운동) / description: 실제 추천 내용
 export const PHASE_ROUTINES = {
   MENSTRUATION: [
-    { id: 1, title: "오늘의 스킨케어", description: "저자극 수분크림 사용하기", icon: creamJarIcon },
-    { id: 2, title: "오늘의 행동", description: "물 2L 마시기", icon: waterGlassIcon }, // TODO: 더 맞는 아이콘 확인 필요
+    { id: 1, title: "오늘의 스킨케어", description: "저자극 수분크림 사용하기", icon: serumIcon },
+    { id: 2, title: "오늘의 행동", description: "물 2L 마시기", icon: waterGlassIcon },
     { id: 3, title: "오늘의 운동", description: "무리하지 않는 가벼운 유산소", icon: sneakerIcon },
   ],
   FOLLICULAR: [
     { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: sunscreenIcon }, // TODO: 더 맞는 아이콘 확인 필요
-    { id: 3, title: "오늘의 운동", description: "평소보다 강도 높은 운동 도전하기", icon: strengthIcon },
+    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: waterGlassIcon },
+    { id: 3, title: "오늘의 운동", description: "평소보다 강도 높은 운동 도전하기", icon: sneakerIcon },
   ],
   OVULATION: [
     { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
@@ -172,7 +170,7 @@ export const PHASE_ROUTINES = {
   ],
   LUTEAL: [
     { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: sunscreenIcon }, // TODO: 더 맞는 아이콘 확인 필요
+    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: waterGlassIcon },
     { id: 3, title: "오늘의 운동", description: "가벼운 유산소 하기", icon: sneakerIcon },
   ],
 };

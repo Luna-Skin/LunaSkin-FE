@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import MinusIcon from "../../assets/icons/stepper-minus.svg";
+import PlusIcon from "../../assets/icons/stepper-plus.svg";
 
 const Wrapper = styled.div`
   display: flex;
@@ -12,26 +14,22 @@ const ControlButton = styled.button`
   height: 32px;
   justify-content: center;
   align-items: center;
-  aspect-ratio: 1 / 1;
-  border-radius: 1000px;
+  flex-shrink: 0;
+  padding: 0;
   border: 1px solid #ede8f8;
+  border-radius: 50%;
   background: #f8f6fc;
   cursor: pointer;
-  padding: 0;
 
   &:disabled {
     cursor: not-allowed;
   }
 `;
 
-const ButtonLabel = styled.span`
-  color: #2d1b4e;
-  text-align: center;
-  font-family: "Noto Sans KR";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 20px;
+const ControlIcon = styled.img`
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
 `;
 
 export default function Stepper({ value, min = 0, max = 12, step = 1, onChange }) {
@@ -45,11 +43,22 @@ export default function Stepper({ value, min = 0, max = 12, step = 1, onChange }
 
   return (
     <Wrapper>
-      <ControlButton onClick={handleDecrease} disabled={value <= min}>
-        <ButtonLabel>-</ButtonLabel>
+      <ControlButton
+        type="button"
+        onClick={handleDecrease}
+        disabled={value <= min}
+        aria-label="값 감소"
+      >
+        <ControlIcon src={MinusIcon} alt="" />
       </ControlButton>
-      <ControlButton onClick={handleIncrease} disabled={value >= max}>
-        <ButtonLabel>+</ButtonLabel>
+
+      <ControlButton
+        type="button"
+        onClick={handleIncrease}
+        disabled={value >= max}
+        aria-label="값 증가"
+      >
+        <ControlIcon src={PlusIcon} alt="" />
       </ControlButton>
     </Wrapper>
   );
