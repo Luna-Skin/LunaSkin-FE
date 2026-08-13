@@ -9,6 +9,17 @@ import MakeupCheckModal from "../../components/todaySkin/MakeupCheckModal";
 import MakeupRetryModal from "../../components/todaySkin/MakeupRetryModal";
 import AnalyzingLoader from "../../components/todaySkin/AnalyzingLoader";
 
+
+
+
+import ScoreCompareBlock from "../../components/todaySkin/compare/ScoreCompareBlock";
+import MetricCompareCard from "../../components/todaySkin/compare/MetricCompareCard";
+
+
+
+
+
+
 // 아직 실제 분석 API가 없어서, 임시로 mocks/homeMock.js에 있는 이 날짜의 데이터를
 // "방금 분석된 결과"인 것처럼 사용함 (API 연동되면 이 상수는 지우고 실제 응답 사용)
 const MOCK_RESULT_DATE = "2026-08-06";
@@ -102,6 +113,26 @@ const [meals, setMeals] = useState([]);
         <SubmitButtonWrapper>
           <SaveButton label="분석하기" disabled={!photoTaken} onClick={handleAnalyze} />
         </SubmitButtonWrapper>
+
+
+        <ScoreCompareBlock
+  past={{ dateLabel: "2026년 8월 1일", photoUrl: null, score: 56, statusText: "피부 상태 나쁨" }}
+  current={{ dateLabel: "2026년 8월 7일", photoUrl: null, score: 70, statusText: "피부 상태 보통" }}
+  onSelectPastDate={() => alert("왼쪽 날짜 선택")}
+  onSelectCurrentDate={() => alert("오른쪽 날짜 선택")}
+/>
+<MetricCompareCard
+  metrics={{
+    trouble: { past: 90, current: 70 },
+    oil: { past: 45, current: 85 },
+    dullness: { past: 35, current: 45 },
+    hydration: { past: 60, current: 90 },
+    elasticity: { past: 50, current: 60 },
+  }}
+/>
+
+
+
       </Content>
 
       {modalStep === "check" && (
