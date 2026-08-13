@@ -8,7 +8,6 @@ import ChatPlusMenu from "../../components/chat/ChatPlusMenu";
 import { useChatContext } from "../../components/chat/ChatContext";
 import { requestAIReply } from "../../api/chatApi";
 
-
 const Room = styled.section`
   position: relative;
   display: flex;
@@ -21,14 +20,12 @@ const Room = styled.section`
   background: #f7f1ff;
 `;
 
-
 const Header = styled.header`
   display: flex;
   align-items: center;
   padding: 14px 20px;
   background: #fff;
 `;
-
 
 const BackButton = styled.button`
   display: grid;
@@ -42,7 +39,6 @@ const BackButton = styled.button`
   cursor: pointer;
 `;
 
-
 const Conversation = styled.main`
   flex: 1;
   min-height: 0;
@@ -50,14 +46,12 @@ const Conversation = styled.main`
   padding: 24px 28px 100px;
 `;
 
-
 const DateText = styled.p`
   margin-bottom: 16px;
   color: #888;
   text-align: center;
   font-size: 12px;
 `;
-
 
 const InputArea = styled.div`
   position: absolute;
@@ -67,54 +61,61 @@ const InputArea = styled.div`
   z-index: 10;
   padding: 10px 28px 14px;
   background: transparent;
-  pointer-events: none;
 `;
-
 
 const InputBarWrapper = styled.div`
-  pointer-events: auto;
+  position: relative;
+  z-index: 11;
 `;
-
 
 function getTodayLabel() {
   const now = new Date();
-  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
-}
 
+  return `${now.getFullYear()}년 ${
+    now.getMonth() + 1
+  }월 ${now.getDate()}일`;
+}
 
 function formatTimeWithUnits(date = new Date()) {
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  const period = hours < 12 ? "오전" : "오후";
-  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
 
-  return `${period} ${displayHour}시 ${String(minutes).padStart(2, "0")}분`;
+  const period = hours < 12 ? "오전" : "오후";
+
+  const displayHour =
+    hours % 12 === 0 ? 12 : hours % 12;
+
+  return `${period} ${displayHour}시 ${String(minutes).padStart(
+    2,
+    "0",
+  )}분`;
 }
 
-
-function buildInitialMessages(fromTodaySkin) {
+function buildInitialMessages(
+  fromTodaySkin,
+  attachedDate = getTodayLabel(),
+) {
   const now = new Date();
 
-  const messages = [
+  if (fromTodaySkin) {
+    return [
+      {
+        id: "today-skin-notice",
+        role: "bot",
+        text: `오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n→ ${attachedDate} 투데이스킨 첨부됨`,
+        time: formatTimeWithUnits(now),
+      },
+    ];
+  }
+
+  return [
     {
       id: "greeting",
       role: "bot",
       text: "안녕하세요! 끼끼의 피부상담소입니다.\n무엇이 궁금하신가요?",
     },
   ];
-
-  if (fromTodaySkin) {
-    messages.push({
-      id: "today-skin-notice",
-      role: "bot",
-      text: `오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n→ ${getTodayLabel()} 투데이스킨 첨부됨`,
-      time: formatTimeWithUnits(now),
-    });
-  }
-
-  return messages;
 }
-
 
 export default function ChatRoom() {
   const navigate = useNavigate();
@@ -132,6 +133,7 @@ export default function ChatRoom() {
   const [isReplying, setIsReplying] = useState(false);
 
   const photoInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const messageEndRef = useRef(null);
 
   const chat = getChat(chatId);
@@ -140,25 +142,30 @@ export default function ChatRoom() {
     Boolean(location.state?.fromTodaySkin) ||
     Boolean(chat?.fromTodaySkin);
 
+  const attachedTodaySkinDate =
+    location.state?.todaySkinDate ||
+    chat?.todaySkinDate ||
+    getTodayLabel();
 
   useEffect(() => {
     if (chat && chat.messages.length === 0) {
       setChatMessages(
         chatId,
-        buildInitialMessages(fromTodaySkin),
+        buildInitialMessages(
+          fromTodaySkin,
+          attachedTodaySkinDate,
+        ),
       );
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, chat?.messages.length]);
 
-
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
   }, [chat?.messages, isReplying]);
-
 
   if (!chat) {
     return (
@@ -173,15 +180,15 @@ export default function ChatRoom() {
         </Header>
 
         <Conversation>
-          <DateText>대화를 찾을 수 없어요.</DateText>
+          <DateText>
+            대화를 찾을 수 없어요.
+          </DateText>
         </Conversation>
       </Room>
     );
   }
 
-
   const messages = chat.messages;
-
 
   const addBotReply = async (userMessage) => {
     setIsReplying(true);
@@ -230,7 +237,6 @@ export default function ChatRoom() {
     }
   };
 
-
   const sendMessage = () => {
     const text = input.trim();
 
@@ -252,7 +258,7 @@ export default function ChatRoom() {
     addBotReply(text);
   };
 
-
+  // 사진 선택
   const handlePhotoAttach = (event) => {
     const selectedFile = event.target.files?.[0];
 
@@ -262,7 +268,6 @@ export default function ChatRoom() {
 
     reader.onload = () => {
       const imageUrl = reader.result;
-      const caption = `사진을 첨부했어요: ${selectedFile.name}`;
 
       setChatMessages(chatId, (current) => [
         ...current,
@@ -270,19 +275,48 @@ export default function ChatRoom() {
           id: `${Date.now()}-user-img`,
           role: "user",
           image: imageUrl,
-          text: caption,
+          text: `사진을 첨부했어요: ${selectedFile.name}`,
           time: formatTime(),
         },
       ]);
 
       setIsMenuOpen(false);
-      addBotReply(caption);
+
+      addBotReply(
+        `사진을 첨부했어요: ${selectedFile.name}`,
+      );
     };
 
     reader.readAsDataURL(selectedFile);
+
     event.target.value = "";
   };
 
+  // 파일 선택
+  const handleFileAttach = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) return;
+
+    const fileMessage =
+      `파일을 첨부했어요: ${selectedFile.name}`;
+
+    setChatMessages(chatId, (current) => [
+      ...current,
+      {
+        id: `${Date.now()}-user-file`,
+        role: "user",
+        text: fileMessage,
+        time: formatTime(),
+      },
+    ]);
+
+    setIsMenuOpen(false);
+
+    addBotReply(fileMessage);
+
+    event.target.value = "";
+  };
 
   return (
     <Room>
@@ -296,7 +330,9 @@ export default function ChatRoom() {
       </Header>
 
       <Conversation>
-        <DateText>{getTodayLabel()}</DateText>
+        <DateText>
+          {getTodayLabel()}
+        </DateText>
 
         {messages.map((message) => (
           <ChatBubble
@@ -315,16 +351,15 @@ export default function ChatRoom() {
         <div ref={messageEndRef} />
       </Conversation>
 
-
       <InputArea>
         {isMenuOpen && (
           <ChatPlusMenu
-            onPhotoClick={() =>
-              photoInputRef.current?.click()
-            }
-            onFileClick={() =>
-              setIsMenuOpen(false)
-            }
+            onPhotoClick={() => {
+              photoInputRef.current?.click();
+            }}
+            onFileClick={() => {
+              fileInputRef.current?.click();
+            }}
           />
         )}
 
@@ -335,7 +370,7 @@ export default function ChatRoom() {
             onSubmit={sendMessage}
             onToggleMenu={() =>
               setIsMenuOpen(
-                (current) => !current
+                (current) => !current,
               )
             }
             isMenuOpen={isMenuOpen}
@@ -348,6 +383,13 @@ export default function ChatRoom() {
           accept="image/*"
           hidden
           onChange={handlePhotoAttach}
+        />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          hidden
+          onChange={handleFileAttach}
         />
       </InputArea>
     </Room>
