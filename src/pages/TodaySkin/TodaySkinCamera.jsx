@@ -1,16 +1,17 @@
 import { useRef, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
+import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 import FaceFrameGuide from "../../components/todaySkin/FaceFrameGuide";
 import PhotoConfirmSheet from "../../components/todaySkin/PhotoConfirmSheet";
 import captureIcon from "../../assets/icons/camera_capture_button.svg";
+import { getYawAngleDegrees, isFrontalYaw } from "../../utils/facePose";
 
-const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
+const WASM_BASE =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
-
+  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 // 확인 화면 UI 테스트용 임시 데이터
 const DEMO_PHOTO_FEATURES = [
   "안경 미착용",
@@ -19,8 +20,50 @@ const DEMO_PHOTO_FEATURES = [
   "피부 가림 없음",
 ];
 
-function isFaceAligned(detection, video, faceFrame) {
-  const { originX, originY, width, height } = detection.boundingBox;
+// 사진 배열(각 항목 { url, angle })을 보고, 지금 요청해야 할 각도를 정함.
+// 우선순위: front가 없으면 front, front는 있는데 left가 없으면 left, 나머지는 right
+const ANGLE_PRIORITY = ["front", "left", "right"];
+
+function getNextRequestedAngle(photos) {
+  const existingAngles = photos.map((photo) => photo.angle);
+  return (
+    ANGLE_PRIORITY.find((angle) => !existingAngles.includes(angle)) ?? "right"
+  );
+}
+
+const ANGLE_GUIDE_TEXT = {
+  front: "밝은 곳에서 정면을 촬영해주세요",
+  left: "밝은 곳에서 다른 각도로 촬영해주세요",
+  right: "밝은 곳에서 다른 각도로 촬영해주세요",
+};
+
+function getBoundingBoxFromLandmarks(landmarks, videoWidth, videoHeight) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const point of landmarks) {
+    if (point.x < minX) minX = point.x;
+    if (point.x > maxX) maxX = point.x;
+    if (point.y < minY) minY = point.y;
+    if (point.y > maxY) maxY = point.y;
+  }
+
+  return {
+    originX: minX * videoWidth,
+    originY: minY * videoHeight,
+    width: (maxX - minX) * videoWidth,
+    height: (maxY - minY) * videoHeight,
+  };
+}
+
+function isFaceAligned(landmarks, video, faceFrame) {
+  const { originX, originY, width, height } = getBoundingBoxFromLandmarks(
+    landmarks,
+    video.videoWidth,
+    video.videoHeight,
+  );
 
   const displayWidth = video.clientWidth;
   const displayHeight = video.clientHeight;
@@ -32,7 +75,10 @@ function isFaceAligned(detection, video, faceFrame) {
   }
 
   // object-fit: cover에 맞게 MediaPipe 좌표를 화면 좌표로 변환
-  const scale = Math.max(displayWidth / videoWidth, displayHeight / videoHeight);
+  const scale = Math.max(
+    displayWidth / videoWidth,
+    displayHeight / videoHeight,
+  );
   const offsetX = (videoWidth * scale - displayWidth) / 2;
   const offsetY = (videoHeight * scale - displayHeight) / 2;
 
@@ -49,8 +95,10 @@ function isFaceAligned(detection, video, faceFrame) {
   const guideCenterX = guideRect.left - videoRect.left + guideRect.width / 2;
   const guideCenterY = guideRect.top - videoRect.top + guideRect.height / 2;
 
-  const centeredX = Math.abs(faceCenterX - guideCenterX) < guideRect.width * 0.22;
-  const centeredY = Math.abs(faceCenterY - guideCenterY) < guideRect.height * 0.22;
+  const centeredX =
+    Math.abs(faceCenterX - guideCenterX) < guideRect.width * 0.22;
+  const centeredY =
+    Math.abs(faceCenterY - guideCenterY) < guideRect.height * 0.22;
 
   const rightSize =
     faceWidth > guideRect.width * 0.55 && faceWidth < guideRect.width * 1.05;
@@ -171,11 +219,37 @@ const Video = styled.video`
 
 const FaceFrameWrapper = styled.div`
   position: absolute;
-  top: 100px;
-  left: 58px;
-  width: 286px;
-  height: 300px;
   pointer-events: none;
+  ${({ $angle }) =>
+    $angle === "front"
+      ? `
+    top: 100px;
+    left: 58px;
+    width: 286px;
+    height: 300px;
+  `
+      : `
+    top: 100px;
+    left: 84px;
+    width: 234px;
+    height: 304px;
+  `}
+`;
+
+const DebugYawText = styled.p`
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-family: "Pretendard Variable";
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 10;
 `;
 
 const BottomSection = styled.div`
@@ -245,6 +319,12 @@ const PreviewImage = styled.img`
 
 export default function TodaySkinCamera() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // 홈 폼(TodaySkinForm)에서 "+" 눌러서 다시 들어온 경우, 기존에 찍은 사진들을 넘겨받음.
+  // 처음 들어온 경우엔 빈 배열
+  const existingPhotos = location.state?.photos ?? [];
+  const requestedAngle = getNextRequestedAngle(existingPhotos);
 
   const videoRef = useRef(null);
   const faceFrameRef = useRef(null);
@@ -252,12 +332,10 @@ export default function TodaySkinCamera() {
   const streamRef = useRef(null);
   const rafRef = useRef(null);
   const lastVideoTimeRef = useRef(-1);
-  const notAlignedSinceRef = useRef(null);
 
-  const [detected, setDetected] = useState(false);
   const [faceAligned, setFaceAligned] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
-  const [alignmentTimeout, setAlignmentTimeout] = useState(false);
+  const [yawDegrees, setYawDegrees] = useState(0); // 확인용. 다음 to-do에서 front/left/right 판정에 실제로 쓰일 예정
 
   const [step, setStep] = useState("shoot");
   const [capturedPhoto, setCapturedPhoto] = useState(null);
@@ -269,12 +347,9 @@ export default function TodaySkinCamera() {
     let cancelled = false;
 
     setCameraReady(false);
-    setDetected(false);
     setFaceAligned(false);
-    setAlignmentTimeout(false);
 
     lastVideoTimeRef.current = -1;
-    notAlignedSinceRef.current = null;
 
     function detectLoop() {
       const video = videoRef.current;
@@ -294,28 +369,20 @@ export default function TodaySkinCamera() {
         try {
           const now = performance.now();
           const result = detector.detectForVideo(video, now);
-          const detection = result.detections[0];
+          const landmarks = result.faceLandmarks?.[0];
 
-          const hasFace = Boolean(detection);
-          setDetected(hasFace);
-
-          const aligned = detection
-            ? isFaceAligned(detection, video, faceFrame)
+          const aligned = landmarks
+            ? isFaceAligned(landmarks, video, faceFrame)
             : false;
 
           setFaceAligned(aligned);
 
-          if (aligned) {
-            notAlignedSinceRef.current = null;
-            setAlignmentTimeout(false);
-          } else {
-            if (notAlignedSinceRef.current === null) {
-              notAlignedSinceRef.current = now;
-            }
-
-            if (now - notAlignedSinceRef.current >= 10000) {
-              setAlignmentTimeout(true);
-            }
+          // facialTransformationMatrixes[0]이 { data: [...] } 형태인지, 배열을 바로 주는지
+          // 확실치 않아서 둘 다 대응 (로컬에서 실제로 돌려보고 안 맞으면 이 부분만 조정)
+          const rawMatrix = result.facialTransformationMatrixes?.[0];
+          const matrixData = rawMatrix?.data ?? rawMatrix;
+          if (matrixData) {
+            setYawDegrees(getYawAngleDegrees(matrixData));
           }
         } catch (error) {
           console.error("얼굴 감지 오류:", error);
@@ -330,13 +397,14 @@ export default function TodaySkinCamera() {
         const vision = await FilesetResolver.forVisionTasks(WASM_BASE);
         if (cancelled) return;
 
-        const detector = await FaceDetector.createFromOptions(vision, {
+        const detector = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: MODEL_URL,
             delegate: "GPU",
           },
           runningMode: "VIDEO",
-          minDetectionConfidence: 0.5,
+          numFaces: 1,
+          outputFacialTransformationMatrixes: true,
         });
 
         if (cancelled) {
@@ -406,7 +474,7 @@ export default function TodaySkinCamera() {
   };
 
   const handleCapture = () => {
-    if (!faceAligned) return;
+    if (!faceAligned || !angleMatchesRequest) return;
 
     const video = videoRef.current;
     if (!video) return;
@@ -429,23 +497,34 @@ export default function TodaySkinCamera() {
 
   const handleContinue = () => {
     // 분석 결과 화면으로 바로 가지 않고, 생활 습관을 마저 입력할 수 있도록
-    // 폼 화면(TodaySkinForm)으로 돌아가면서 방금 찍은 사진을 함께 넘겨줌
+    // 폼 화면(TodaySkinForm)으로 돌아가면서 지금까지 찍은 사진 전체(기존 + 방금 찍은 것)를 넘겨줌
+    const newPhoto = { url: capturedPhoto, angle: requestedAngle };
+
     navigate("/today-skin", {
-      state: { capturedPhoto },
+      state: { photos: [...existingPhotos, newPhoto] },
     });
   };
 
- const getGuideText = () => {
-  if (!cameraReady) {
-    return "밝은 곳에서 정면을 촬영해주세요";
-  }
+  const angleMatchesRequest =
+    requestedAngle === "front"
+      ? isFrontalYaw(yawDegrees)
+      : !isFrontalYaw(yawDegrees);
 
-  if (faceAligned) {
-    return "이제 촬영 버튼을 눌러주세요!";
-  }
+  const getGuideText = () => {
+    if (!cameraReady) {
+      return "밝은 곳에서 정면을 촬영해주세요";
+    }
 
-  return "가이드 안에 얼굴을 맞춰주세요";
-};
+    if (faceAligned && angleMatchesRequest) {
+      return "이제 촬영 버튼을 눌러주세요!";
+    }
+
+    if (faceAligned) {
+      return ANGLE_GUIDE_TEXT[requestedAngle];
+    }
+
+    return "가이드 안에 얼굴을 맞춰주세요";
+  };
 
   return (
     <Wrapper>
@@ -465,8 +544,8 @@ export default function TodaySkinCamera() {
           <VideoStage>
             <Video ref={videoRef} autoPlay playsInline muted />
 
-            <FaceFrameWrapper ref={faceFrameRef}>
-              <FaceFrameGuide color={faceAligned ? "#4EBA69" : "white"} />
+            <FaceFrameWrapper ref={faceFrameRef} $angle={requestedAngle}>
+              <FaceFrameGuide color={faceAligned ? "#4EBA69" : "white"} angle={requestedAngle} />
             </FaceFrameWrapper>
           </VideoStage>
 
@@ -476,7 +555,7 @@ export default function TodaySkinCamera() {
             <CaptureButton
               type="button"
               onClick={handleCapture}
-              disabled={!faceAligned}
+              disabled={!faceAligned || !angleMatchesRequest}
               aria-label="촬영하기"
             >
               <img src={captureIcon} alt="" />
@@ -487,10 +566,7 @@ export default function TodaySkinCamera() {
         <ConfirmWrapper>
           <ConfirmHeader />
 
-          <PreviewImage
-            src={capturedPhoto}
-            alt="촬영한 피부 사진"
-          />
+          <PreviewImage src={capturedPhoto} alt="촬영한 피부 사진" />
 
           <PhotoConfirmSheet
             features={photoFeatures}

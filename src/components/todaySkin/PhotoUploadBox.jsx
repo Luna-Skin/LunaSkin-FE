@@ -1,8 +1,11 @@
 import styled from "styled-components";
+import PhotoThumbnail from "./PhotoThumbnail";
 import cameraIcon from "../../assets/icons/photo_upload_camera.svg";
-import checkIcon from "../../assets/icons/photo_upload_check.svg";
+import placeholderIcon from "../../assets/icons/photo_upload_placeholder.svg";
 
-const Container = styled.button`
+const MAX_PHOTOS = 3;
+
+const EmptyContainer = styled.button`
   display: flex;
   width: 354px;
   padding: 16px 0;
@@ -14,15 +17,15 @@ const Container = styled.button`
   border: 2px solid rgba(0, 0, 0, 0.1);
   background: #fff;
   box-sizing: border-box;
-  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
+  cursor: pointer;
 `;
 
-const Icon = styled.img`
-  width: ${({ $photoTaken }) => ($photoTaken ? "24px" : "28px")};
-  height: ${({ $photoTaken }) => ($photoTaken ? "24px" : "28px")};
+const EmptyIcon = styled.img`
+  width: 28px;
+  height: 28px;
 `;
 
-const Label = styled.span`
+const EmptyLabel = styled.span`
   color: #000;
   text-align: center;
   font-family: "Pretendard Variable";
@@ -32,11 +35,55 @@ const Label = styled.span`
   line-height: normal;
 `;
 
-export default function PhotoUploadBox({ photoTaken, onClick }) {
+const Container = styled.div`
+  width: 354px;
+  height: 152px;
+  border-radius: 18px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  padding: 16px 22px;
+  display: flex;
+  gap: 20px;
+  box-sizing: border-box;
+`;
+
+const AddButton = styled.button`
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  img {
+    display: block;
+    width: 90px;
+    height: 120px;
+  }
+`;
+
+// photos: [{ url, angle }, ...] (0~3개)
+// onAddClick: "+" 또는 최초 촬영 박스 클릭 시 (카메라로 이동)
+// onDeletePhoto: 특정 인덱스의 사진 삭제 요청 시
+export default function PhotoUploadBox({ photos, onAddClick, onDeletePhoto }) {
+  if (photos.length === 0) {
+    return (
+      <EmptyContainer type="button" onClick={onAddClick}>
+        <EmptyIcon src={cameraIcon} alt="" />
+        <EmptyLabel>피부 사진 찍기</EmptyLabel>
+      </EmptyContainer>
+    );
+  }
+
   return (
-    <Container type="button" onClick={onClick} disabled={photoTaken}>
-      <Icon src={photoTaken ? checkIcon : cameraIcon} alt="" $photoTaken={photoTaken} />
-      <Label>{photoTaken ? "피부 사진 찍기 완료" : "피부 사진 찍기"}</Label>
+    <Container>
+      {photos.map((photo, index) => (
+        <PhotoThumbnail key={photo.url} photoUrl={photo.url} onDelete={() => onDeletePhoto(index)} />
+      ))}
+      {photos.length < MAX_PHOTOS && (
+        <AddButton type="button" onClick={onAddClick} aria-label="사진 추가하기">
+          <img src={placeholderIcon} alt="" />
+        </AddButton>
+      )}
     </Container>
   );
 }
