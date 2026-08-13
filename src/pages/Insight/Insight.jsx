@@ -7,15 +7,8 @@ import TroubleTrendChart, {
 } from "../../components/insight/TroubleTrendChart";
 import PhaseRadarChart from "../../components/insight/PhaseRadarChart";
 import HabitImpactCard from "../../components/insight/HabitImpactCard";
-import { getHabitStatus, parseExerciseMinutes } from "../../utils/habitStatus";
 import { findCurrentCycle } from "../../utils/cyclePhase";
 
-const getCurrentTime = () =>
-  new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date());
 
 const Page = styled.div`
   width: 100%;
@@ -25,21 +18,6 @@ const Page = styled.div`
   background: #fff;
 `;
 
-const StatusBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding: 0 8px;
-  color: #111;
-  font-size: 14px;
-  font-weight: 700;
-`;
-
-const StatusIcons = styled.span`
-  font-size: 13px;
-  letter-spacing: 2px;
-`;
 
 const Title = styled.h1`
   margin: 20px 0 30px;
@@ -49,6 +27,7 @@ const Title = styled.h1`
   font-weight: 700;
 `;
 
+
 const Section = styled.section`
   margin-top: 18px;
 
@@ -57,12 +36,14 @@ const Section = styled.section`
   }
 `;
 
+
 const SectionTitle = styled.h2`
   margin-bottom: 8px;
   color: #292929;
   font-size: 15px;
   font-weight: 700;
 `;
+
 
 const Description = styled.div`
   margin-top: 8px;
@@ -80,11 +61,13 @@ const Description = styled.div`
   }
 `;
 
+
 const HabitList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
 `;
+
 
 const HabitListMessage = styled.p`
   padding: 12px 16px;
@@ -93,18 +76,16 @@ const HabitListMessage = styled.p`
   font-size: 12px;
 `;
 
-// TODO: 실제 API 연동 필요.
-// 생리 주기 기록 + 날짜별 피부 기록(트러블 지수 포함)을 함께 내려주는 엔드포인트를 가정.
-// 예상 응답 형태:
-// {
-//   periodCycles: [...],
-//   skinRecords: {
-//     "2026-08-01": { troubleScore: 42 },
-//     ...
-//   }
-// }
+
+/* =========================
+   API
+========================= */
+
+// 1. 생리 주기 + 피부 기록
 async function fetchCycleAndSkinData() {
-  const response = await fetch("/api/insight/cycle-skin-records");
+  const response = await fetch(
+    "/api/insight/cycle-skin-records",
+  );
 
   if (!response.ok) {
     throw new Error("주기/피부 데이터를 불러오지 못했습니다.");
@@ -113,16 +94,12 @@ async function fetchCycleAndSkinData() {
   return response.json();
 }
 
-// TODO: 실제 API 연동 필요.
-// 주기 단계(생리기/배란기/황체기)별 평균 피부 지표를 내려주는 엔드포인트.
-// 예상 응답 형태:
-// {
-//   MENSTRUATION: [...],
-//   OVULATION: [...],
-//   LUTEAL: [...]
-// }
+
+// 2. 주기 단계별 피부 비교
 async function fetchPhaseComparisonData() {
-  const response = await fetch("/api/insight/phase-comparison");
+  const response = await fetch(
+    "/api/insight/phase-comparison",
+  );
 
   if (!response.ok) {
     throw new Error("주기 단계별 비교 데이터를 불러오지 못했습니다.");
@@ -131,17 +108,60 @@ async function fetchPhaseComparisonData() {
   return response.json();
 }
 
-// TODO: 실제 AI 응답 API 연동 필요.
-// 트러블 지수 배열을 바탕으로 분석 문구를 생성.
-// 현재는 트러블 지수가 가장 급격하게 증가하는 지점을 찾는 로직으로 대체.
+
+// 3. 생활 습관 원본 데이터
+async function fetchHabitData() {
+  const response = await fetch(
+    "/api/insight/habits",
+  );
+
+  if (!response.ok) {
+    throw new Error("생활 습관 데이터를 불러오지 못했습니다.");
+  }
+
+  return response.json();
+}
+
+
+// 4. AI Agent 생활습관 분석
+async function fetchHabitAnalysis(habitData) {
+  const response = await fetch(
+    "/api/insight/habit-analysis",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(habitData),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("AI 생활 습관 분석에 실패했습니다.");
+  }
+
+  return response.json();
+}
+
+
+/* =========================
+   트러블 분석
+========================= */
+
+// TODO:
+// 추후 AI Agent API가 연결되면 이 함수 대신
+// AI가 생성한 분석 문구를 사용하면 됨.
 function buildTroubleAnalysisText(troubleData) {
-  if (!troubleData || troubleData.length < 2) return null;
+  if (!troubleData || troubleData.length < 2) {
+    return null;
+  }
 
   let maxIncreaseDay = null;
   let maxIncrease = -Infinity;
 
   for (let i = 1; i < troubleData.length; i += 1) {
-    const diff = troubleData[i].score - troubleData[i - 1].score;
+    const diff =
+      troubleData[i].score - troubleData[i - 1].score;
 
     if (diff > maxIncrease) {
       maxIncrease = diff;
@@ -149,7 +169,9 @@ function buildTroubleAnalysisText(troubleData) {
     }
   }
 
-  if (maxIncreaseDay == null) return null;
+  if (maxIncreaseDay == null) {
+    return null;
+  }
 
   const dayLabel =
     maxIncreaseDay === 0
@@ -161,28 +183,30 @@ function buildTroubleAnalysisText(troubleData) {
   return `끼끼님은 ${dayLabel} 트러블이 시작돼요.`;
 }
 
-export default function Insight() {
-  const [currentTime, setCurrentTime] = useState(getCurrentTime);
 
+/* =========================
+   Component
+========================= */
+
+export default function Insight() {
   const [periodCycles, setPeriodCycles] = useState([]);
   const [skinRecords, setSkinRecords] = useState({});
   const [isLoadingCycleData, setIsLoadingCycleData] = useState(true);
 
-  const [phaseComparisonData, setPhaseComparisonData] = useState({});
-  const [isLoadingPhaseData, setIsLoadingPhaseData] = useState(true);
+  const [phaseComparisonData, setPhaseComparisonData] =
+    useState({});
+  const [isLoadingPhaseData, setIsLoadingPhaseData] =
+    useState(true);
 
   const [habitData, setHabitData] = useState(null);
+  const [habitAnalysis, setHabitAnalysis] = useState([]);
   const [isLoadingHabits, setIsLoadingHabits] = useState(true);
   const [habitError, setHabitError] = useState(null);
 
-  useEffect(() => {
-    const timer = window.setInterval(
-      () => setCurrentTime(getCurrentTime()),
-      30000,
-    );
 
-    return () => window.clearInterval(timer);
-  }, []);
+  /* =========================
+     주기 + 피부 데이터
+  ========================= */
 
   useEffect(() => {
     let isMounted = true;
@@ -198,7 +222,10 @@ export default function Insight() {
           setSkinRecords(data.skinRecords ?? {});
         }
       } catch {
-        // 실패 시 빈 상태로 유지
+        if (isMounted) {
+          setPeriodCycles([]);
+          setSkinRecords({});
+        }
       } finally {
         if (isMounted) {
           setIsLoadingCycleData(false);
@@ -210,6 +237,11 @@ export default function Insight() {
       isMounted = false;
     };
   }, []);
+
+
+  /* =========================
+     주기 단계별 비교
+  ========================= */
 
   useEffect(() => {
     let isMounted = true;
@@ -224,7 +256,9 @@ export default function Insight() {
           setPhaseComparisonData(data ?? {});
         }
       } catch {
-        // 실패 시 빈 상태로 유지
+        if (isMounted) {
+          setPhaseComparisonData({});
+        }
       } finally {
         if (isMounted) {
           setIsLoadingPhaseData(false);
@@ -237,21 +271,38 @@ export default function Insight() {
     };
   }, []);
 
+
+  /* =========================
+     생활 습관 + AI 분석
+  ========================= */
+
   useEffect(() => {
     let isMounted = true;
 
     (async () => {
       try {
         setIsLoadingHabits(true);
+        setHabitError(null);
 
+        // 먼저 원본 생활습관 데이터를 가져옴
         const data = await fetchHabitData();
 
+        if (!isMounted) return;
+
+        setHabitData(data);
+
+        // 가져온 데이터를 AI Agent에게 전달
+        const analysis = await fetchHabitAnalysis(data);
+
         if (isMounted) {
-          setHabitData(data);
+          setHabitAnalysis(
+            analysis.habits ?? [],
+          );
         }
       } catch (error) {
         if (isMounted) {
           setHabitError(error.message);
+          setHabitAnalysis([]);
         }
       } finally {
         if (isMounted) {
@@ -265,34 +316,17 @@ export default function Insight() {
     };
   }, []);
 
-  // API 값 → 카드에 필요한 emoji/title/result로 변환
-  const habitCards = habitData
-    ? [
-        {
-          type: "sleep",
-          value: habitData.sleepHours,
-        },
-        {
-          type: "water",
-          value: habitData.waterIntake,
-        },
-        {
-          type: "exercise",
-          value: parseExerciseMinutes(habitData.exercise),
-        },
-      ]
-        .filter((habit) => typeof habit.value === "number")
-        .map((habit) => ({
-          type: habit.type,
-          ...getHabitStatus(habit.type, habit.value),
-        }))
-        .filter(Boolean)
-    : [];
 
-  // 트러블 지수 분석에 필요한 데이터
+  /* =========================
+     트러블 지수 계산
+  ========================= */
+
   const today = dayjs().format("YYYY-MM-DD");
 
-  const currentCycle = findCurrentCycle(periodCycles, today);
+  const currentCycle = findCurrentCycle(
+    periodCycles,
+    today,
+  );
 
   const troubleData = currentCycle
     ? buildTroubleDataFromRecords(
@@ -304,11 +338,25 @@ export default function Insight() {
   const troubleAnalysisText =
     buildTroubleAnalysisText(troubleData);
 
+
+  /* =========================
+     화면
+  ========================= */
+
   return (
     <Page>
-      <Title>Skin Insight</Title>
+
+      <Title>
+        Skin Insight
+      </Title>
+
+
+      {/* =====================
+          트러블 지수
+      ===================== */}
 
       <Section>
+
         <SectionTitle>
           생리 시작일 기준 트러블 지수
         </SectionTitle>
@@ -318,15 +366,26 @@ export default function Insight() {
           skinRecords={skinRecords}
         />
 
-        {!isLoadingCycleData && troubleAnalysisText && (
-          <Description>
-            <strong>ⓘ 트러블 지수 분석</strong>
-            {troubleAnalysisText}
-          </Description>
-        )}
+        {!isLoadingCycleData &&
+          troubleAnalysisText && (
+            <Description>
+              <strong>
+                ⓘ 트러블 지수 분석
+              </strong>
+
+              {troubleAnalysisText}
+            </Description>
+          )}
+
       </Section>
 
+
+      {/* =====================
+          주기 단계별 피부 비교
+      ===================== */}
+
       <Section>
+
         <SectionTitle>
           주기 단계별 피부 비교
         </SectionTitle>
@@ -338,37 +397,50 @@ export default function Insight() {
               : phaseComparisonData
           }
         />
+
       </Section>
 
+
+      {/* =====================
+          생활 습관 영향 분석
+      ===================== */}
+
       <Section>
+
         <SectionTitle>
           생활 습관 영향 분석
         </SectionTitle>
 
         <HabitList>
+
           {isLoadingHabits && (
             <HabitListMessage>
-              불러오는 중...
+              분석 중...
             </HabitListMessage>
           )}
 
-          {!isLoadingHabits && habitError && (
-            <HabitListMessage>
-              생활 습관 데이터를 불러오지 못했어요.
-            </HabitListMessage>
-          )}
+
+          {!isLoadingHabits &&
+            habitError && (
+              <HabitListMessage>
+                생활 습관 데이터를
+                불러오지 못했어요.
+              </HabitListMessage>
+            )}
+
 
           {!isLoadingHabits &&
             !habitError &&
-            habitCards.length === 0 && (
+            habitAnalysis.length === 0 && (
               <HabitListMessage>
                 아직 기록된 생활 습관 데이터가 없어요.
               </HabitListMessage>
             )}
 
+
           {!isLoadingHabits &&
             !habitError &&
-            habitCards.map((habit) => (
+            habitAnalysis.map((habit) => (
               <HabitImpactCard
                 key={habit.type}
                 emoji={habit.emoji}
@@ -377,22 +449,11 @@ export default function Insight() {
                 color="#9B6DFF"
               />
             ))}
+
         </HabitList>
+
       </Section>
+
     </Page>
   );
-}
-
-// TODO: 실제 API 연동 필요.
-// todaySkin/RecordForm.jsx에서 기록한 값
-// (sleepHours, waterIntake, exercise)을
-// 서버가 집계해서 내려주는 형태를 가정.
-async function fetchHabitData() {
-  const response = await fetch("/api/insight/habits");
-
-  if (!response.ok) {
-    throw new Error("습관 데이터를 불러오지 못했습니다.");
-  }
-
-  return response.json();
 }
