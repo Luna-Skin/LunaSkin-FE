@@ -26,7 +26,9 @@ const ANGLE_PRIORITY = ["front", "left", "right"];
 
 function getNextRequestedAngle(photos) {
   const existingAngles = photos.map((photo) => photo.angle);
-  return ANGLE_PRIORITY.find((angle) => !existingAngles.includes(angle)) ?? "right";
+  return (
+    ANGLE_PRIORITY.find((angle) => !existingAngles.includes(angle)) ?? "right"
+  );
 }
 
 const ANGLE_GUIDE_TEXT = {
@@ -217,11 +219,21 @@ const Video = styled.video`
 
 const FaceFrameWrapper = styled.div`
   position: absolute;
-  top: 100px;
-  left: 58px;
-  width: 286px;
-  height: 300px;
   pointer-events: none;
+  ${({ $angle }) =>
+    $angle === "front"
+      ? `
+    top: 100px;
+    left: 58px;
+    width: 286px;
+    height: 300px;
+  `
+      : `
+    top: 100px;
+    left: 84px;
+    width: 234px;
+    height: 304px;
+  `}
 `;
 
 const DebugYawText = styled.p`
@@ -494,7 +506,9 @@ export default function TodaySkinCamera() {
   };
 
   const angleMatchesRequest =
-    requestedAngle === "front" ? isFrontalYaw(yawDegrees) : !isFrontalYaw(yawDegrees);
+    requestedAngle === "front"
+      ? isFrontalYaw(yawDegrees)
+      : !isFrontalYaw(yawDegrees);
 
   const getGuideText = () => {
     if (!cameraReady) {
@@ -530,8 +544,8 @@ export default function TodaySkinCamera() {
           <VideoStage>
             <Video ref={videoRef} autoPlay playsInline muted />
 
-            <FaceFrameWrapper ref={faceFrameRef}>
-              <FaceFrameGuide color={faceAligned ? "#4EBA69" : "white"} />
+            <FaceFrameWrapper ref={faceFrameRef} $angle={requestedAngle}>
+              <FaceFrameGuide color={faceAligned ? "#4EBA69" : "white"} angle={requestedAngle} />
             </FaceFrameWrapper>
 
             {/* TODO: 확인용 임시 표시. front/left/right 판정 로직 넣으면 지울 것 */}
