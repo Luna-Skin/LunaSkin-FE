@@ -7,11 +7,13 @@ import boxIcon from "../../assets/images/box.png";
 import cardIcon from "../../assets/images/card.png";
 import personIcon from "../../assets/images/person.png";
 import calenderIcon from "../../assets/images/calender.png";
+import lunaIcon from "../../assets/images/luna.png";
+import skinIcon from "../../assets/images/skin.png";
 
 const Page = styled.main`
   width: 100%;
   max-width: 402px;
-  min-height: calc(100dvh - 60px);
+  min-height: 100%;
   margin: 0 auto;
   padding: 58px 22px 30px;
   background: #fff;
@@ -127,7 +129,7 @@ const MENU_GROUPS = [
     items: [
       { icon: personIcon, label: "내 정보" },
       { icon: calenderIcon, label: "생리 정보", path: "/my/period" },
-      { icon: personIcon, label: "피부 정보", path: "/my/skin" },
+      { icon: skinIcon, label: "피부 정보", path: "/my/skin" },
     ],
   },
   {
@@ -142,6 +144,7 @@ const MENU_GROUPS = [
     items: [
       { icon: cardIcon, label: "구독 관리" },
       { icon: boxIcon, label: "결제 내역" },
+      { icon: lunaIcon, label: "루나포인트" },
     ],
   },
 ];
