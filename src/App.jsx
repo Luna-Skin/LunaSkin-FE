@@ -7,6 +7,7 @@ import Home from "./pages/Home/Home";
 import TodaySkinForm from "./pages/TodaySkin/TodaySkinForm";
 import TodaySkinCamera from "./pages/TodaySkin/TodaySkinCamera";
 import TodaySkinResult from "./pages/TodaySkin/TodaySkinResult";
+import TodaySkinCompare from "./pages/TodaySkin/TodaySkinCompare";
 import Insight from "./pages/Insight/Insight";
 import ChatList from "./pages/Chat/ChatList";
 import ChatRoom from "./pages/Chat/ChatRoom";
@@ -25,6 +26,7 @@ function App() {
             <Route path="/today-skin" element={<TodaySkinForm />} />
             <Route path="/today-skin/camera" element={<TodaySkinCamera />} />
             <Route path="/today-skin/result/:date" element={<TodaySkinResult />} />
+            <Route path="/today-skin/compare/:date" element={<TodaySkinCompare />} />
 
             <Route path="/insight" element={<Insight />} />
 
