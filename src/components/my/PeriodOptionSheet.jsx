@@ -1,4 +1,8 @@
+import { useRef, useState } from "react";
 import styled from "styled-components";
+
+const DEFAULT_HEIGHT = 320; // 기본 노출 길이
+const MAX_HEIGHT_VH = 80; // 최대로 끌어올렸을 때 화면 대비 비율
 
 const Overlay = styled.div`
   position: fixed;
@@ -15,17 +19,33 @@ const Sheet = styled.section`
   display: flex;
   flex-direction: column;
   width: min(100%, 402px);
-  max-height: 60vh;
-  padding: 18px 16px 20px;
+  height: ${({ $height }) => $height}px;
+  max-height: ${MAX_HEIGHT_VH}vh;
   border-radius: 18px 18px 0 0;
   background: #fff;
+  transition: ${({ $isDragging }) => ($isDragging ? "none" : "height 0.2s ease")};
+`;
+
+const HandleArea = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+  cursor: grab;
+  touch-action: none;
+`;
+
+const HandleBar = styled.div`
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #e0e0e0;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  padding: 0 16px 12px;
 
   h2 {
     font-size: 16px;
@@ -41,7 +61,18 @@ const CloseButton = styled.button`
 `;
 
 const OptionList = styled.div`
+  flex: 1;
+  min-height: 0;
+  padding: 0 16px 20px;
   overflow-y: auto;
+
+  /* 스크롤은 되지만 스크롤바는 숨김 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const OptionButton = styled.button`
@@ -69,9 +100,48 @@ export default function PeriodOptionSheet({
   onSelect,
   onClose,
 }) {
+  const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(0);
+
+  const handlePointerDown = (event) => {
+    setIsDragging(true);
+    dragStartY.current = event.clientY;
+    dragStartHeight.current = height;
+    event.target.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event) => {
+    if (!isDragging) return;
+
+    const deltaY = dragStartY.current - event.clientY; // 위로 끌면 양수
+    const maxHeightPx = window.innerHeight * (MAX_HEIGHT_VH / 100);
+    const nextHeight = Math.min(
+      maxHeightPx,
+      Math.max(160, dragStartHeight.current + deltaY),
+    );
+
+    setHeight(nextHeight);
+  };
+
+  const handlePointerUp = () => {
+    setIsDragging(false);
+  };
+
   return (
     <Overlay>
-      <Sheet>
+      <Sheet $height={height} $isDragging={isDragging}>
+        <HandleArea
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        >
+          <HandleBar />
+        </HandleArea>
+
         <Header>
           <h2>{title}</h2>
           <CloseButton type="button" onClick={onClose} aria-label="닫기">
