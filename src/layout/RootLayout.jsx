@@ -4,6 +4,7 @@ import BottomNav from "../components/common/BottomNav";
 
 const HIDE_BOTTOM_NAV_PATHS = [
   "/today-skin/camera",
+  "/today-skin/compare",
   "/my/period",
   "/my/skin",
 ];
@@ -39,7 +40,7 @@ const Main = styled.main`
 export default function RootLayout() {
   const { pathname } = useLocation();
 
-  const hideBottomNav = HIDE_BOTTOM_NAV_PATHS.includes(pathname);
+  const hideBottomNav = HIDE_BOTTOM_NAV_PATHS.some((path) => pathname.startsWith(path));
 
   return (
     <AppFrame>
