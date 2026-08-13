@@ -15,7 +15,7 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
+  gap: 12px;
   padding: 24px 24px 40px;
 `;
 

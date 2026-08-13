@@ -12,6 +12,7 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 13px;
 `;
 
 const TitleRow = styled.div`
