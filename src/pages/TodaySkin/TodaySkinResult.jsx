@@ -17,7 +17,7 @@ import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
 const Content = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
   padding: 24px 24px 40px;
 `;
 
@@ -82,7 +82,7 @@ export default function TodaySkinResult() {
           statusSummary={record.statusSummary}
           onPhotoClick={() => (photo ? setPhotoModalOpen(true) : alert("저장된 사진이 없어요"))}
           onAskClick={() => navigate("/chat")}
-          onCompareClick={() => alert("기록 비교 화면은 별도 이슈에서 구현 예정")}
+          onCompareClick={() => navigate(`/today-skin/compare/${date}`)}
         />
         <SkinMetricsCard metrics={record.metrics} />
         <AiInsightBox insight={record.aiInsight} />
