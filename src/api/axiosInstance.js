@@ -10,12 +10,3 @@ export const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-// 필요하면 요청 시 토큰 자동 첨부
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
