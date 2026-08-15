@@ -12,6 +12,7 @@ import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
+import { getCycleCalendar } from "../../api/cycleApi";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
 import {
   getSkinScoreBucket,
@@ -30,6 +31,7 @@ import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
 import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
 import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
 import { getPoints } from "../../utils/pointsStorage";
+
 
 const MAX_PERIOD_DURATION_DAYS = 10;
 
@@ -88,6 +90,30 @@ export default function Home() {
         console.error("홈 프로필 조회 실패:", error);
       });
   }, []);
+
+  // 캘린더가 지금 보여주는 달. CalendarView 안에 있던 상태를 여기로 끌어올림 —
+  // API가 year/month 단위로만 조회 가능해서, 이 값이 바뀔 때마다 다시 불러와야 함
+  const [displayedMonth, setDisplayedMonth] = useState(() => {
+    const saved = sessionStorage.getItem("calendarDisplayedMonth");
+    return saved ? dayjs(saved).startOf("month") : dayjs().startOf("month");
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
+  }, [displayedMonth]);
+
+  // 캘린더 단계 구간 + 분석 완료 날짜. API 응답 오기 전엔 빈 값
+  const [calendarData, setCalendarData] = useState({ cycleResponses: [], analyses: [] });
+
+  useEffect(() => {
+    getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1)
+      .then(setCalendarData)
+      .catch((error) => {
+        console.error("캘린더 조회 실패:", error);
+      });
+  }, [displayedMonth]);
+
+  const analysisDates = calendarData.analyses.map((a) => a.date);
 
   // 지금 "수정 중"으로 취급할 주기 기록 — 가장 최근에 기록된 것.
   // TODO: mocks 반영 to-do에서 실제로 이 기록을 갱신하는 로직으로 이어짐
@@ -227,8 +253,10 @@ export default function Home() {
         )}
 
         <CalendarView
-          periodCycles={MOCK_PERIOD_CYCLES}
-          skinRecords={MOCK_SKIN_RECORDS}
+          cycleResponses={calendarData.cycleResponses}
+          analysisDates={analysisDates}
+          displayedMonth={displayedMonth}
+          onMonthChange={setDisplayedMonth}
           onDateClick={handleDateClick}
           selectMode={Boolean(periodSelectMode)}
           selectedDate={periodSelectedDate}
@@ -273,7 +301,7 @@ export default function Home() {
             onClose={closeModal}
             options={[
               { label: "생리 정보 수정", onClick: handleSelectPeriodInfo },
-              ...(MOCK_SKIN_RECORDS[selectedDate]
+              ...(analysisDates.includes(selectedDate)
                 ? [{ label: "피부 정보 보기", onClick: handleSelectSkinInfo }]
                 : []),
             ]}

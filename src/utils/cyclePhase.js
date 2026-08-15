@@ -86,3 +86,18 @@ export const PHASE_LABEL = {
   OVULATION: "배란기",
   LUTEAL: "황체기",
 };
+
+// API(/api/cycles/calendar)가 주는 구간 목록(cycleResponses)에서, 특정 날짜rk 어느 단계에 속하는지 찾기 
+//  기존 -> 프론트에서 평균 주기를 계산  
+// 이건 서버가 이미 계산해둔 구간을 그대로 조회만 
+export function getPhaseFromSegments(dateStr, cycleResponses = []) {
+  const target = dayjs(dateStr);
+
+  const match = cycleResponses.find(
+    (segment) =>
+      !target.isBefore(dayjs(segment.startDate), "day") &&
+      !target.isAfter(dayjs(segment.endDate), "day"),
+  );
+
+  return match?.phaseType ?? null;
+}
