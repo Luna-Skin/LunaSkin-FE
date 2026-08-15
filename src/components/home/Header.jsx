@@ -4,18 +4,15 @@ const HeaderWrapper = styled.header`
   position: sticky;
   top: 0;
   z-index: 10;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  height: 77px;
   background: #ffffff;
 `;
 
 const HeaderText = styled.h1`
-  height: 33px;
-  margin: 0 0 20px 24px;
-  display: flex;
-  align-items: center;
+  position: absolute;
+  top: 24px;
+  left: 23px;
+  margin: 0;
   color: #a876fc;
   font-family: "Pretendard Variable";
   font-size: 28px;
