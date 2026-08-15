@@ -16,7 +16,7 @@ const Content = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 24px 24px 40px;
+  padding: 24px 24px 24px;
 `;
 
 // 기록이 있는 날짜 문자열 목록, 오름차순 정렬 (한 번만 계산)

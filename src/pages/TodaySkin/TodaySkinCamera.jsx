@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
@@ -7,6 +7,10 @@ import FaceFrameGuide from "../../components/todaySkin/FaceFrameGuide";
 import PhotoConfirmSheet from "../../components/todaySkin/PhotoConfirmSheet";
 import captureIcon from "../../assets/icons/camera_capture_button.svg";
 import { getYawAngleDegrees, isFrontalYaw } from "../../utils/facePose";
+import {
+  loadCapturedPhotos,
+  saveCapturedPhotos,
+} from "../../utils/photoSessionStorage";
 
 const WASM_BASE =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
@@ -236,21 +240,8 @@ const FaceFrameWrapper = styled.div`
   `}
 `;
 
-const DebugYawText = styled.p`
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-family: "Pretendard Variable";
-  font-size: 12px;
-  font-weight: 500;
-  z-index: 10;
-`;
+
+
 
 const BottomSection = styled.div`
   width: 100%;
@@ -307,7 +298,7 @@ const ConfirmWrapper = styled.div`
 const ConfirmHeader = styled.div`
   width: 100%;
   height: 70px;
-  background: #fff;
+  background: #f0e8ff;
 `;
 
 const PreviewImage = styled.img`
@@ -319,11 +310,10 @@ const PreviewImage = styled.img`
 
 export default function TodaySkinCamera() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   // 홈 폼(TodaySkinForm)에서 "+" 눌러서 다시 들어온 경우, 기존에 찍은 사진들을 넘겨받음.
   // 처음 들어온 경우엔 빈 배열
-  const existingPhotos = location.state?.photos ?? [];
+  const existingPhotos = loadCapturedPhotos();
   const requestedAngle = getNextRequestedAngle(existingPhotos);
 
   const videoRef = useRef(null);
@@ -496,13 +486,12 @@ export default function TodaySkinCamera() {
   };
 
   const handleContinue = () => {
-    // 분석 결과 화면으로 바로 가지 않고, 생활 습관을 마저 입력할 수 있도록
-    // 폼 화면(TodaySkinForm)으로 돌아가면서 지금까지 찍은 사진 전체(기존 + 방금 찍은 것)를 넘겨줌
+    // 지금까지 찍은 사진 전체(기존 + 방금 찍은 것)를 sessionStorage에 저장해두고,
+    // 생활 습관을 마저 입력할 수 있도록 폼 화면(TodaySkinForm)으로 돌아감
     const newPhoto = { url: capturedPhoto, angle: requestedAngle };
+    saveCapturedPhotos([...existingPhotos, newPhoto]);
 
-    navigate("/today-skin", {
-      state: { photos: [...existingPhotos, newPhoto] },
-    });
+    navigate("/today-skin");
   };
 
   const angleMatchesRequest =
@@ -545,7 +534,10 @@ export default function TodaySkinCamera() {
             <Video ref={videoRef} autoPlay playsInline muted />
 
             <FaceFrameWrapper ref={faceFrameRef} $angle={requestedAngle}>
-              <FaceFrameGuide color={faceAligned ? "#4EBA69" : "white"} angle={requestedAngle} />
+              <FaceFrameGuide
+                color={faceAligned ? "#4EBA69" : "white"}
+                angle={requestedAngle}
+              />
             </FaceFrameWrapper>
           </VideoStage>
 

@@ -51,7 +51,7 @@ const Label = styled.span`
   font-family: "Pretendard Variable";
   font-size: 12px;
   font-style: normal;
-  font-weight: 500;
+  font-weight: ${({ $active }) => ($active ? 700 : 500)};
   line-height: normal;
   color: ${({ $active }) => ($active ? ACTIVE_COLOR : INACTIVE_COLOR)};
 `;

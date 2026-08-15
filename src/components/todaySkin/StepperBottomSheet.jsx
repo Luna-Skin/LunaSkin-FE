@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import Stepper from "./Stepper";
 
 const SHEET_HEIGHT = 168;
-const DISMISS_THRESHOLD = 60; // 이 이상 끌어내리면 닫힘으로 처리
 
 const Overlay = styled.div`
   position: absolute;
@@ -25,22 +24,19 @@ const Sheet = styled.div`
   align-items: center;
   box-sizing: border-box;
   transform: translateY(${({ $translateY }) => $translateY}px);
-  transition: ${({ $dragging }) => ($dragging ? "none" : "transform 0.25s ease")};
+  transition: transform 0.25s ease;
   will-change: transform;
 `;
 
-const DragHandle = styled.div`
+const DragHandle = styled.button`
   width: 80px;
   height: 4px;
   border-radius: 21px;
   background: #c6c6c6;
+  border: none;
+  padding: 0;
   margin-top: 8px;
-  cursor: grab;
-  touch-action: none;
-
-  &:active {
-    cursor: grabbing;
-  }
+  cursor: pointer;
 `;
 
 const Title = styled.p`
@@ -71,6 +67,7 @@ const ValueText = styled.span`
   line-height: normal;
 `;
 
+// 손잡이를 드래그하는 대신 클릭하면 닫히도록 수정 
 export default function StepperBottomSheet({
   label,
   value,
@@ -82,56 +79,21 @@ export default function StepperBottomSheet({
   onClose,
 }) {
   const [translateY, setTranslateY] = useState(SHEET_HEIGHT);
-  const [dragging, setDragging] = useState(false);
   const [closing, setClosing] = useState(false);
-  const dragStartYRef = useRef(0);
-  const dragStartTranslateRef = useRef(0);
 
-  // 처음엔 화면 아래(SHEET_HEIGHT만큼)에 숨겨서 그려졌다가, 다음 프레임에 0으로
-  // 바뀌면서 transition이 그 변화를 애니메이션으로 보여줌
   useEffect(() => {
     const frame = requestAnimationFrame(() => setTranslateY(0));
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // 실제로 언마운트하지 않고, 일단 다 내려간 위치로 애니메이션만 시작함
   const requestClose = () => {
     setClosing(true);
     setTranslateY(SHEET_HEIGHT);
   };
 
-  // transform 애니메이션이 끝난 시점에만(그리고 닫는 중일 때만) 진짜로 onClose 호출
   const handleTransitionEnd = (event) => {
     if (event.propertyName === "transform" && closing) {
       onClose();
-    }
-  };
-
-  const handlePointerDown = (event) => {
-    setDragging(true);
-    dragStartYRef.current = event.clientY;
-    dragStartTranslateRef.current = translateY;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event) => {
-    if (!dragging) return;
-
-    const deltaY = event.clientY - dragStartYRef.current;
-    // 위로는 원래 자리보다 더 못 올라가게 0에서 막음
-    const next = Math.max(0, dragStartTranslateRef.current + deltaY);
-    setTranslateY(next);
-  };
-
-  const handlePointerUp = () => {
-    if (!dragging) return;
-
-    setDragging(false);
-
-    if (translateY > DISMISS_THRESHOLD) {
-      requestClose();
-    } else {
-      setTranslateY(0);
     }
   };
 
@@ -141,16 +103,10 @@ export default function StepperBottomSheet({
     <Overlay onClick={requestClose}>
       <Sheet
         $translateY={translateY}
-        $dragging={dragging}
         onClick={(event) => event.stopPropagation()}
         onTransitionEnd={handleTransitionEnd}
       >
-        <DragHandle
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        />
+        <DragHandle type="button" onClick={requestClose} aria-label="닫기" />
 
         <Title>{label}</Title>
 

@@ -29,6 +29,8 @@ import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
 import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
 import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
 import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
+import { getPoints } from "../../utils/pointsStorage";
+
 
 const MAX_PERIOD_DURATION_DAYS = 10;
 
@@ -65,6 +67,10 @@ const ConfirmButton = styled.button`
   font-style: normal;
   font-weight: 600;
   line-height: normal;
+`;
+
+const PageWrapper = styled.div`
+  padding-bottom: 24px;
 `;
 
 export default function Home() {
@@ -137,8 +143,15 @@ export default function Home() {
     const startDate = dayjs(currentCycle.cycleStartDate);
     const diffDays = dayjs(targetDate).diff(startDate, "day");
 
-    if (diffDays < 0 || diffDays >= MAX_PERIOD_DURATION_DAYS) {
-      setToastMessage("시작일을 먼저 입력해야 합니다");
+    if (diffDays < 0) {
+      setToastMessage("종료일은 시작일 이후여야 해요");
+      return;
+    }
+
+    if (diffDays >= MAX_PERIOD_DURATION_DAYS) {
+      setToastMessage(
+        `생리 시작일로부터 ${MAX_PERIOD_DURATION_DAYS}일 이내의 날짜만 선택할 수 있어요`,
+      );
       return;
     }
 
@@ -182,97 +195,99 @@ export default function Home() {
 
   return (
     <div>
-      <Header />
+      <PageWrapper>
+        <Header />
 
-      <UserInfo
-        name={MOCK_USER.name}
-        skinType={MOCK_USER.skinType}
-        skinConcerns={MOCK_USER.skinConcerns}
-        points={MOCK_USER.points}
-      />
-
-      {periodSelectMode && (
-        <PeriodSelectBanner
-          message={
-            periodSelectMode === "start"
-              ? "생리 시작일을 선택해주세요"
-              : "생리 종료일을 선택해주세요"
-          }
-          onCancel={handleCancelPeriodSelect}
+        <UserInfo
+          name={MOCK_USER.name}
+          skinType={MOCK_USER.skinType}
+          skinConcerns={MOCK_USER.skinConcerns}
+          points={getPoints()}
         />
-      )}
 
-      <CalendarView
-        periodCycles={MOCK_PERIOD_CYCLES}
-        skinRecords={MOCK_SKIN_RECORDS}
-        onDateClick={handleDateClick}
-        selectMode={Boolean(periodSelectMode)}
-        selectedDate={periodSelectedDate}
-      />
+        {periodSelectMode && (
+          <PeriodSelectBanner
+            message={
+              periodSelectMode === "start"
+                ? "생리 시작일을 선택해주세요"
+                : "생리 종료일을 선택해주세요"
+            }
+            onCancel={handleCancelPeriodSelect}
+          />
+        )}
 
-      {periodSelectMode && (
-        <ConfirmButton
-          type="button"
-          disabled={!periodSelectedDate}
-          onClick={handleConfirmPeriodSelect}
-        >
-          확인
-        </ConfirmButton>
-      )}
-
-      <SectionLabel>오늘의 피부 상태</SectionLabel>
-
-      <TodaySkinStatusCard
-        icon={SKIN_SCORE_BUCKET_ICON[scoreBucket]}
-        label={bucketContent.label}
-        description={bucketContent.description}
-        onClick={handleViewTodayStatus}
-      />
-
-      {phaseGuide && (
-        <PhaseGuideBanner
-          title={phaseGuide.title}
-          description={phaseGuide.description}
+        <CalendarView
+          periodCycles={MOCK_PERIOD_CYCLES}
+          skinRecords={MOCK_SKIN_RECORDS}
+          onDateClick={handleDateClick}
+          selectMode={Boolean(periodSelectMode)}
+          selectedDate={periodSelectedDate}
         />
-      )}
 
-      {currentPhase && (
-        <RoutineSection
-          phaseLabel={PHASE_LABEL[currentPhase]}
-          routines={PHASE_ROUTINES[currentPhase]}
-        />
-      )}
+        {periodSelectMode && (
+          <ConfirmButton
+            type="button"
+            disabled={!periodSelectedDate}
+            onClick={handleConfirmPeriodSelect}
+          >
+            확인
+          </ConfirmButton>
+        )}
 
-      {modalStep === "dateAction" && (
-        <ActionListModal
-          title={dayjs(selectedDate).format("M월 D일")}
-          onClose={closeModal}
-          options={[
-            { label: "생리 정보 수정", onClick: handleSelectPeriodInfo },
-            ...(MOCK_SKIN_RECORDS[selectedDate]
-              ? [{ label: "피부 정보 보기", onClick: handleSelectSkinInfo }]
-              : []),
-          ]}
-        />
-      )}
+        <SectionLabel>오늘의 피부 상태</SectionLabel>
 
-      {modalStep === "periodAction" && (
-        <ActionListModal
-          title="생리 정보 수정"
-          onClose={closeModal}
-          options={[
-            { label: "생리 시작일 수정", onClick: handleEditPeriodStart },
-            { label: "생리 종료일 수정", onClick: handleEditPeriodEnd },
-          ]}
+        <TodaySkinStatusCard
+          icon={SKIN_SCORE_BUCKET_ICON[scoreBucket]}
+          label={bucketContent.label}
+          description={bucketContent.description}
+          onClick={handleViewTodayStatus}
         />
-      )}
 
-      {toastMessage && (
-        <Toast
-          message={toastMessage}
-          onDismiss={() => setToastMessage(null)}
-        />
-      )}
+        {phaseGuide && (
+          <PhaseGuideBanner
+            title={phaseGuide.title}
+            description={phaseGuide.description}
+          />
+        )}
+
+        {currentPhase && (
+          <RoutineSection
+            phaseLabel={PHASE_LABEL[currentPhase]}
+            routines={PHASE_ROUTINES[currentPhase]}
+          />
+        )}
+
+        {modalStep === "dateAction" && (
+          <ActionListModal
+            title={dayjs(selectedDate).format("M월 D일")}
+            onClose={closeModal}
+            options={[
+              { label: "생리 정보 수정", onClick: handleSelectPeriodInfo },
+              ...(MOCK_SKIN_RECORDS[selectedDate]
+                ? [{ label: "피부 정보 보기", onClick: handleSelectSkinInfo }]
+                : []),
+            ]}
+          />
+        )}
+
+        {modalStep === "periodAction" && (
+          <ActionListModal
+            title="생리 정보 수정"
+            onClose={closeModal}
+            options={[
+              { label: "생리 시작일 수정", onClick: handleEditPeriodStart },
+              { label: "생리 종료일 수정", onClick: handleEditPeriodEnd },
+            ]}
+          />
+        )}
+
+        {toastMessage && (
+          <Toast
+            message={toastMessage}
+            onDismiss={() => setToastMessage(null)}
+          />
+        )}
+      </PageWrapper>
     </div>
   );
 }

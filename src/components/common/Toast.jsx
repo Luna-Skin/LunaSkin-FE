@@ -31,7 +31,7 @@ const Wrapper = styled.div`
   border-radius: 18px;
   border: 1px solid rgba(0, 0, 0, 0);
   background: #f0e8ff;
-  box-shadow: 0 30px 150px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 30px 150px 0 rgba(0, 0, 0, 0.4);
 
   color: #9a71df;
   text-align: center;

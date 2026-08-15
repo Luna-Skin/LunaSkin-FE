@@ -13,12 +13,14 @@ import ProductRecommendSection from "../../components/todaySkin/ProductRecommend
 import ConfirmModal from "../../components/common/ConfirmModal";
 import { MOCK_SKIN_RECORDS, MOCK_PERIOD_CYCLES } from "../../mocks/homeMock";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
+import { hasClaimedToday, claimDailyPoints } from "../../utils/pointsStorage";
+import PointsRewardModal from "../../components/todaySkin/PointsRewardModal";
 
 const Content = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px 24px 40px;
+  padding: 24px 24px 24px;
 `;
 
 const BottomButtonRow = styled.div`
@@ -36,7 +38,8 @@ export default function TodaySkinResult() {
   // 방금 분석 완료하고 들어온 경우: capturedPhotos(여러 장) 그대로 사용
   // 예전 기록을 보러 들어온 경우(홈 캘린더 등): mock 데이터엔 정면 사진 한 장만 있음
   const photos =
-    location.state?.capturedPhotos ?? (record?.photoUrl ? [{ url: record.photoUrl, angle: "front" }] : []);
+    location.state?.capturedPhotos ??
+    (record?.photoUrl ? [{ url: record.photoUrl, angle: "front" }] : []);
   const phase = getPhaseForDate(date, MOCK_PERIOD_CYCLES);
 
   // "결과를 확인하러 들어온" 경우(홈 캘린더, 오늘 상태 카드)엔 뒤로가기 헤더로 표시
@@ -48,14 +51,14 @@ export default function TodaySkinResult() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [reanalyzeStep, setReanalyzeStep] = useState(null); // null | "confirm1" | "confirm2"
   const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
-  const [pointsClaimed, setPointsClaimed] = useState(false);
+  const [pointsClaimed, setPointsClaimed] = useState(() => hasClaimedToday());
 
   const closeReanalyzeFlow = () => setReanalyzeStep(null);
 
   const handleCloseRewardModal = () => {
     setPointsRewardOpen(false);
+    claimDailyPoints(50);
     setPointsClaimed(true);
-    // TODO: 실제 MOCK_USER.points 반영은 API 연동 이슈에서 진행 (지금은 mock이 고정값이라 반영 안 됨)
   };
 
   // TODO: 실제 기록 삭제는 MOCK_SKIN_RECORDS를 상태로 관리하게 되면 연결 (지금은 콘솔 로그만)
@@ -83,7 +86,11 @@ export default function TodaySkinResult() {
           score={record.score}
           statusText={record.statusText}
           statusSummary={record.statusSummary}
-          onPhotoClick={() => (photos.length > 0 ? setPhotoModalOpen(true) : alert("저장된 사진이 없어요"))}
+          onPhotoClick={() =>
+            photos.length > 0
+              ? setPhotoModalOpen(true)
+              : alert("저장된 사진이 없어요")
+          }
           onAskClick={() => navigate("/chat")}
           onCompareClick={() => navigate(`/today-skin/compare/${date}`)}
         />
@@ -92,21 +99,23 @@ export default function TodaySkinResult() {
         <ProductRecommendSection products={record.recommendedProducts} />
 
         <BottomButtonRow>
-          <PointsRewardButton claimed={pointsClaimed} onClick={() => setPointsRewardOpen(true)} />
+          <PointsRewardButton
+            claimed={pointsClaimed}
+            onClick={() => setPointsRewardOpen(true)}
+          />
           <ReanalyzeButton onClick={() => setReanalyzeStep("confirm1")} />
         </BottomButtonRow>
       </Content>
 
       {photoModalOpen && (
-        <TodaySkinPhotoModal photos={photos} onClose={() => setPhotoModalOpen(false)} />
+        <TodaySkinPhotoModal
+          photos={photos}
+          onClose={() => setPhotoModalOpen(false)}
+        />
       )}
 
       {pointsRewardOpen && (
-        <ConfirmModal
-          message="50P를 받았어요!"
-          options={[{ label: "닫기", variant: "dark", onClick: handleCloseRewardModal }]}
-          onClose={handleCloseRewardModal}
-        />
+        <PointsRewardModal points={50} onClose={handleCloseRewardModal} />
       )}
 
       {reanalyzeStep === "confirm1" && (
@@ -114,7 +123,11 @@ export default function TodaySkinResult() {
           message="현재 기록을 지우고 다시 분석할까요?"
           options={[
             { label: "아니요", variant: "light", onClick: closeReanalyzeFlow },
-            { label: "네", variant: "dark", onClick: () => setReanalyzeStep("confirm2") },
+            {
+              label: "네",
+              variant: "dark",
+              onClick: () => setReanalyzeStep("confirm2"),
+            },
           ]}
           onClose={closeReanalyzeFlow}
         />
@@ -130,8 +143,16 @@ export default function TodaySkinResult() {
             </>
           }
           options={[
-            { label: "뒤로가기", variant: "light", onClick: () => setReanalyzeStep("confirm1") },
-            { label: "촬영하기", variant: "dark", onClick: handleConfirmRecapture },
+            {
+              label: "뒤로가기",
+              variant: "light",
+              onClick: () => setReanalyzeStep("confirm1"),
+            },
+            {
+              label: "촬영하기",
+              variant: "dark",
+              onClick: handleConfirmRecapture,
+            },
           ]}
           onClose={closeReanalyzeFlow}
         />

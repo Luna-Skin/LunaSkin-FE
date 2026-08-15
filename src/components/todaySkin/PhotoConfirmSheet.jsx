@@ -1,26 +1,21 @@
-import { useLayoutEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import checkIcon from "../../assets/icons/photo_checklist_check.svg";
 
-const COLLAPSED_HEIGHT = 206;
+const MIN_SHEET_HEIGHT = 218;
 
 const Sheet = styled.div`
   position: absolute;
   left: 0;
   bottom: 0;
   width: 402px;
-  min-height: ${COLLAPSED_HEIGHT}px;
-  padding: 7px 24px 16px;
+  min-height: ${MIN_SHEET_HEIGHT}px;
+  padding: 7px 24px 24px;
   box-sizing: border-box;
   border-radius: 18px 18px 0 0;
   background: #f0e8ff;
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: ${({ $dragging }) =>
-    $dragging ? "none" : "transform 0.25s ease"};
-  transform: translateY(${({ $translateY }) => $translateY}px);
-  will-change: transform;
 `;
 
 const HandleArea = styled.div`
@@ -30,12 +25,6 @@ const HandleArea = styled.div`
   justify-content: center;
   align-items: flex-start;
   flex-shrink: 0;
-  cursor: grab;
-  touch-action: none;
-
-  &:active {
-    cursor: grabbing;
-  }
 `;
 
 const DragHandle = styled.div`
@@ -63,7 +52,7 @@ const ChipGroup = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 `;
 
 const Chip = styled.div`
@@ -110,7 +99,7 @@ const ContinueButton = styled.button`
   border: none;
   border-radius: 18px;
   background: #ae92e0;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   cursor: pointer;
   color: #fff;
   font-family: "Pretendard Variable";
@@ -131,76 +120,11 @@ const RetakeButton = styled.button`
   line-height: normal;
 `;
 
-export default function PhotoConfirmSheet({
-  features,
-  onContinue,
-  onRetake,
-}) {
-  const sheetRef = useRef(null);
-  const dragStartYRef = useRef(0);
-  const dragStartTranslateRef = useRef(0);
-
-  const [translateY, setTranslateY] = useState(0);
-  const [maxTranslate, setMaxTranslate] = useState(0);
-  const [dragging, setDragging] = useState(false);
-
-  // 206px보다 커진 영역만 처음에 아래로 숨김
-  useLayoutEffect(() => {
-    const sheet = sheetRef.current;
-    if (!sheet) return;
-
-    const fullHeight = sheet.scrollHeight;
-    const hiddenHeight = Math.max(0, fullHeight - COLLAPSED_HEIGHT);
-
-    setMaxTranslate(hiddenHeight);
-    setTranslateY(hiddenHeight);
-  }, [features]);
-
-  const handlePointerDown = (event) => {
-    if (maxTranslate === 0) return;
-
-    setDragging(true);
-
-    dragStartYRef.current = event.clientY;
-    dragStartTranslateRef.current = translateY;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event) => {
-    if (!dragging) return;
-
-    const deltaY = event.clientY - dragStartYRef.current;
-    const nextTranslate = dragStartTranslateRef.current + deltaY;
-    const clamped = Math.min(maxTranslate, Math.max(0, nextTranslate));
-
-    setTranslateY(clamped);
-  };
-
-  const handlePointerUp = () => {
-    if (!dragging) return;
-
-    setDragging(false);
-
-    if (translateY < maxTranslate / 2) {
-      setTranslateY(0);
-    } else {
-      setTranslateY(maxTranslate);
-    }
-  };
-
+// 항상 전체가 펼쳐진 채로 보이게 수정 (min-height만 바닥값으로 두고, 넘치면 그냥 시트 자체가 늘어나두록 함 )
+export default function PhotoConfirmSheet({ features, onContinue, onRetake }) {
   return (
-    <Sheet
-      ref={sheetRef}
-      $translateY={translateY}
-      $dragging={dragging}
-    >
-      <HandleArea
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
+    <Sheet>
+      <HandleArea>
         <DragHandle />
       </HandleArea>
 
