@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import styled from "styled-components";
@@ -11,6 +11,7 @@ import ActionListModal from "../../components/home/ActionListModal";
 import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
+import { getHomeProfile } from "../../api/userApi";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
 import {
   getSkinScoreBucket,
@@ -18,7 +19,6 @@ import {
   SKIN_SCORE_BUCKET_CONTENT,
 } from "../../utils/skinScoreBucket";
 import {
-  MOCK_USER,
   MOCK_PERIOD_CYCLES,
   MOCK_SKIN_RECORDS,
   PHASE_GUIDE,
@@ -30,7 +30,6 @@ import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
 import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
 import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
 import { getPoints } from "../../utils/pointsStorage";
-
 
 const MAX_PERIOD_DURATION_DAYS = 10;
 
@@ -78,6 +77,17 @@ export default function Home() {
   const today = dayjs().format("YYYY-MM-DD");
   const currentPhase = getPhaseForDate(today, MOCK_PERIOD_CYCLES);
   const phaseGuide = currentPhase ? PHASE_GUIDE[currentPhase] : null;
+
+  // 홈 헤더용 프로필(이름, 피부타입, 선택된 피부고민). API 응답 오기 전엔 null
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    getHomeProfile()
+      .then(setProfile)
+      .catch((error) => {
+        console.error("홈 프로필 조회 실패:", error);
+      });
+  }, []);
 
   // 지금 "수정 중"으로 취급할 주기 기록 — 가장 최근에 기록된 것.
   // TODO: mocks 반영 to-do에서 실제로 이 기록을 갱신하는 로직으로 이어짐
@@ -199,9 +209,9 @@ export default function Home() {
         <Header />
 
         <UserInfo
-          name={MOCK_USER.name}
-          skinType={MOCK_USER.skinType}
-          skinConcerns={MOCK_USER.skinConcerns}
+          name={profile?.name ?? ""}
+          skinType={profile?.skinType ?? ""}
+          skinConcerns={profile?.selectedSkinConcerns ?? []}
           points={getPoints()}
         />
 
