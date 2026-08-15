@@ -2,7 +2,9 @@ import { Outlet, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import BottomNav from "../components/common/BottomNav";
 
-const HIDE_BOTTOM_NAV_PATHS = [
+const HIDE_BOTTOM_NAV_EXACT_PATHS = ["/today-skin"];
+
+const HIDE_BOTTOM_NAV_PREFIX_PATHS = [
   "/today-skin/camera",
   "/today-skin/compare",
   "/my/period",
@@ -38,9 +40,17 @@ const Main = styled.main`
 `;
 
 export default function RootLayout() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
 
-  const hideBottomNav = HIDE_BOTTOM_NAV_PATHS.some((path) => pathname.startsWith(path));
+  // /today-skin/result/:date는 경로는 똑같아도 "어떻게 들어왔는지"에 따라 다르게 취급..
+  const isPastRecordView =
+    pathname.startsWith("/today-skin/result") && Boolean(location.state?.showBackHeader);
+
+  const hideBottomNav =
+    HIDE_BOTTOM_NAV_EXACT_PATHS.includes(pathname) ||
+    HIDE_BOTTOM_NAV_PREFIX_PATHS.some((path) => pathname.startsWith(path)) ||
+    isPastRecordView;
 
   return (
     <AppFrame>
