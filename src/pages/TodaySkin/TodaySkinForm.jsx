@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
 import PhotoUploadBox from "../../components/todaySkin/PhotoUploadBox";
@@ -8,6 +8,7 @@ import SaveButton from "../../components/todaySkin/SaveButton";
 import MakeupCheckModal from "../../components/todaySkin/MakeupCheckModal";
 import MakeupRetryModal from "../../components/todaySkin/MakeupRetryModal";
 import AnalyzingLoader from "../../components/todaySkin/AnalyzingLoader";
+import { loadCapturedPhotos, saveCapturedPhotos, clearCapturedPhotos } from "../../utils/photoSessionStorage";
 
 // 아직 실제 분석 API가 없어서, 임시로 mocks/homeMock.js에 있는 이 날짜의 데이터를
 // "방금 분석된 결과"인 것처럼 사용함 (API 연동되면 이 상수는 지우고 실제 응답 사용)
@@ -37,12 +38,15 @@ const SubmitButtonWrapper = styled.div`
 
 export default function TodaySkinForm() {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // 카메라에서 돌아올 때 location.state로 최신 사진 배열을 넘겨받음.
-  // 삭제 기능 때문에 이 목록 자체를 바꿀 수 있어야 해서, 그냥 읽기만 하지 않고
-  // 실제 state로 관리함 (처음 마운트될 때 한 번만 location.state에서 초기값을 가져옴)
-  const [capturedPhotos, setCapturedPhotos] = useState(() => location.state?.photos ?? []);
+  // sessionStorage를 진짜 기준으로 삼음 — location.state에 의존하면 브라우저
+  // 뒤로가기 시 삭제 전 목록이 되살아나는 문제가 있어서(자세한 이유는
+  // utils/photoSessionStorage.js 참고), 아예 그쪽에 안 기대는 방식으로 변경
+  const [capturedPhotos, setCapturedPhotos] = useState(() => loadCapturedPhotos());
+
+  useEffect(() => {
+    saveCapturedPhotos(capturedPhotos);
+  }, [capturedPhotos]);
 
   const hasFrontPhoto = capturedPhotos.some((photo) => photo.angle === "front");
 
@@ -65,7 +69,7 @@ export default function TodaySkinForm() {
 
   const handleNoMakeup = () => {
     closeModal();
-    navigate("/today-skin/camera", { state: { photos: capturedPhotos } });
+    navigate("/today-skin/camera");
   };
 
   // 사진이 하나도 없을 때(첫 촬영)만 메이크업 확인 모달을 띄우고,
@@ -74,7 +78,7 @@ export default function TodaySkinForm() {
     if (capturedPhotos.length === 0) {
       setModalStep("check");
     } else {
-      navigate("/today-skin/camera", { state: { photos: capturedPhotos } });
+      navigate("/today-skin/camera");
     }
   };
 
@@ -83,6 +87,7 @@ export default function TodaySkinForm() {
   };
 
   const handleAnalyze = () => {
+    clearCapturedPhotos(); // 이번 기록 세션 종료, 다음엔 빈 상태로 새로 시작
     setStep("analyzing");
   };
 
