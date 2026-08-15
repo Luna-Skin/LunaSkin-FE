@@ -18,7 +18,7 @@ const Column = styled.div`
 
 const DatePill = styled.button`
   display: flex;
-  width: 158px;
+  width: 165px;
   height: 30px;
   padding: 8px 16px;
   justify-content: space-between;

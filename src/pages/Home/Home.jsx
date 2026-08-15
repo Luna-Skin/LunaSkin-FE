@@ -67,6 +67,10 @@ const ConfirmButton = styled.button`
   line-height: normal;
 `;
 
+const PageWrapper = styled.div`
+  padding-bottom: 24px;
+`;
+
 export default function Home() {
   const navigate = useNavigate();
   const today = dayjs().format("YYYY-MM-DD");
@@ -182,6 +186,7 @@ export default function Home() {
 
   return (
     <div>
+      <PageWrapper>
       <Header />
 
       <UserInfo
@@ -273,6 +278,7 @@ export default function Home() {
           onDismiss={() => setToastMessage(null)}
         />
       )}
+      </PageWrapper>
     </div>
   );
 }
