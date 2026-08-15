@@ -13,6 +13,8 @@ import ProductRecommendSection from "../../components/todaySkin/ProductRecommend
 import ConfirmModal from "../../components/common/ConfirmModal";
 import { MOCK_SKIN_RECORDS, MOCK_PERIOD_CYCLES } from "../../mocks/homeMock";
 import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
+import { hasClaimedToday, claimDailyPoints } from "../../utils/pointsStorage";
+
 
 const Content = styled.div`
   display: flex;
@@ -48,15 +50,15 @@ export default function TodaySkinResult() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [reanalyzeStep, setReanalyzeStep] = useState(null); // null | "confirm1" | "confirm2"
   const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
-  const [pointsClaimed, setPointsClaimed] = useState(false);
+const [pointsClaimed, setPointsClaimed] = useState(() => hasClaimedToday());
 
   const closeReanalyzeFlow = () => setReanalyzeStep(null);
 
   const handleCloseRewardModal = () => {
-    setPointsRewardOpen(false);
-    setPointsClaimed(true);
-    // TODO: 실제 MOCK_USER.points 반영은 API 연동 이슈에서 진행 (지금은 mock이 고정값이라 반영 안 됨)
-  };
+  setPointsRewardOpen(false);
+  claimDailyPoints(50);
+  setPointsClaimed(true);
+};
 
   // TODO: 실제 기록 삭제는 MOCK_SKIN_RECORDS를 상태로 관리하게 되면 연결 (지금은 콘솔 로그만)
   const handleConfirmRecapture = () => {

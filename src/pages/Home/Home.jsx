@@ -29,6 +29,8 @@ import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
 import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
 import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
 import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
+import { getPoints } from "../../utils/pointsStorage";
+
 
 const MAX_PERIOD_DURATION_DAYS = 10;
 
@@ -200,7 +202,7 @@ export default function Home() {
           name={MOCK_USER.name}
           skinType={MOCK_USER.skinType}
           skinConcerns={MOCK_USER.skinConcerns}
-          points={MOCK_USER.points}
+          points={getPoints()}
         />
 
         {periodSelectMode && (
