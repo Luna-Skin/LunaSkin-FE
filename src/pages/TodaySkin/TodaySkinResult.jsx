@@ -18,7 +18,7 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px 24px 40px;
+  padding: 24px 24px 24px;
 `;
 
 const BottomButtonRow = styled.div`
