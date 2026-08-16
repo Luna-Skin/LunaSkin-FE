@@ -21,9 +21,9 @@ const Page = styled.main`
 
 const Title = styled.h1`
   margin-bottom: 18px;
-  color: #9b6dff;
+  color: #A876FC;
   text-align: center;
-  font-size: 24px;
+  font-size: 28px;
 `;
 
 const Profile = styled.section`
@@ -49,6 +49,8 @@ const ProfileText = styled.div`
 
   strong {
     display: block;
+    position: relative;
+    top: 4px;
     margin-bottom: 4px;
     color: #333;
     font-size: 14px;
@@ -57,15 +59,17 @@ const ProfileText = styled.div`
   span {
     color: #aaa;
     font-size: 11px;
+    position: relative;
+    top: -4px;
   }
 `;
 
 const Badge = styled.span`
   padding: 5px 8px;
   border-radius: 10px;
-  background: #eee3ff;
-  color: #a47af5;
-  font-size: 10px;
+  background: #DEC4FA;
+  color: #A876FC;
+  font-size: 12px;
 `;
 
 const Section = styled.section`
@@ -95,7 +99,8 @@ const MenuItem = styled.button`
   background: #fff;
   color: #444;
   text-align: left;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 470;
   cursor: ${({ $clickable }) => ($clickable ? "pointer" : "default")};
 `;
 
@@ -105,8 +110,10 @@ const Icon = styled.span`
   justify-content: center;
   width: 32px;
   height: 32px;
-  margin-right: 10px;
+  margin-right: -7px;
   border-radius: 9px;
+
+  transform: translateX(-9px);
 
   img {
     width: 18px;

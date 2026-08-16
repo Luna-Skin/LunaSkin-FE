@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import directionIcon from "../../assets/icons/direction.svg";
 
 const Field = styled.button`
   display: flex;
@@ -13,18 +14,20 @@ const Field = styled.button`
   color: #333;
   font-size: 14px;
   cursor: pointer;
+  font-weight: 550;
 `;
 
-const Arrow = styled.span`
-  color: #c5bdd3;
-  font-size: 18px;
+const DirectionIcon = styled.img`
+  width: 19px;
+  height: 19px;
+  object-fit: contain;
 `;
 
 export default function SelectableChip({ value, onClick }) {
   return (
     <Field type="button" onClick={onClick}>
       {value}
-      <Arrow>⌄</Arrow>
+      <DirectionIcon src={directionIcon} alt="" />
     </Field>
   );
 }
