@@ -13,7 +13,6 @@ const Room = styled.section`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 402px;
   height: 100%;
   margin: 0 auto;
   overflow: hidden;
@@ -25,6 +24,7 @@ const Header = styled.header`
   align-items: center;
   padding: 14px 20px;
   background: #fff;
+  border-bottom: 1px solid #e5e5e5;
 `;
 
 const BackButton = styled.button`
@@ -131,6 +131,7 @@ export default function ChatRoom() {
   const [input, setInput] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
+  const [attachedImage, setAttachedImage] = useState(null);
 
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -237,61 +238,57 @@ export default function ChatRoom() {
     }
   };
 
-  const sendMessage = () => {
-    const text = input.trim();
+    const sendMessage = () => {
+      const text = input.trim();
 
-    if (!text) return;
+      // 글도 없고 사진도 없으면 전송하지 않음
+      if (!text && !attachedImage) return;
 
-    setChatMessages(chatId, (current) => [
-      ...current,
-      {
+      const userMessage = {
         id: `${Date.now()}-user`,
         role: "user",
         text,
+        image: attachedImage?.url ?? null,
         time: formatTime(),
-      },
-    ]);
-
-    setInput("");
-    setIsMenuOpen(false);
-
-    addBotReply(text);
-  };
-
-  // 사진 선택
-  const handlePhotoAttach = (event) => {
-    const selectedFile = event.target.files?.[0];
-
-    if (!selectedFile) return;
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const imageUrl = reader.result;
+      };
 
       setChatMessages(chatId, (current) => [
         ...current,
-        {
-          id: `${Date.now()}-user-img`,
-          role: "user",
-          image: imageUrl,
-          text: `사진을 첨부했어요: ${selectedFile.name}`,
-          time: formatTime(),
-        },
+        userMessage,
       ]);
 
+      // AI에게 보낼 텍스트
+      const aiMessageText =
+        text || "사진을 첨부했어요.";
+
+      setInput("");
+      setAttachedImage(null);
       setIsMenuOpen(false);
 
-      addBotReply(
-        `사진을 첨부했어요: ${selectedFile.name}`,
-      );
+      addBotReply(aiMessageText);
     };
 
-    reader.readAsDataURL(selectedFile);
+  // 사진 선택
+    const handlePhotoAttach = (event) => {
+      const selectedFile = event.target.files?.[0];
 
-    event.target.value = "";
-  };
+      if (!selectedFile) return;
 
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        setAttachedImage({
+          file: selectedFile,
+          url: reader.result,
+        });
+
+        setIsMenuOpen(false);
+      };
+
+      reader.readAsDataURL(selectedFile);
+
+      event.target.value = "";
+    };
   // 파일 선택
   const handleFileAttach = (event) => {
     const selectedFile = event.target.files?.[0];
@@ -374,6 +371,8 @@ export default function ChatRoom() {
               )
             }
             isMenuOpen={isMenuOpen}
+            image={attachedImage?.url}
+  onRemoveImage={() => setAttachedImage(null)}
           />
         </InputBarWrapper>
 
