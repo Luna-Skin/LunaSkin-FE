@@ -20,8 +20,8 @@ const Page = styled.div`
 
 
 const Title = styled.h1`
-  margin: 20px 0 30px;
-  color: #9b6dff;
+  margin: 24px 100px; 20px; 99px;
+  color: #A876FC;
   text-align: center;
   font-size: 24px;
   font-weight: 700;
