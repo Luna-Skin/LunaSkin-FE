@@ -12,8 +12,8 @@ import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
-import { getCycleCalendar } from "../../api/cycleApi";
-import { getPhaseForDate, PHASE_LABEL } from "../../utils/cyclePhase";
+import { getCycleCalendar, getCyclePhaseComment } from "../../api/cycleApi";
+import { PHASE_LABEL } from "../../utils/cyclePhase";
 import {
   getSkinScoreBucket,
   SKIN_SCORE_BUCKET,
@@ -22,7 +22,6 @@ import {
 import {
   MOCK_PERIOD_CYCLES,
   MOCK_SKIN_RECORDS,
-  PHASE_GUIDE,
   PHASE_ROUTINES,
 } from "../../mocks/homeMock";
 
@@ -34,6 +33,15 @@ import { getPoints } from "../../utils/pointsStorage";
 
 
 const MAX_PERIOD_DURATION_DAYS = 10;
+
+// PhaseGuideBanner 제목 전용 문구. PHASE_LABEL(생리기/난포기/...)은 RoutineSection 등
+// 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
+const PHASE_BANNER_TITLE = {
+  MENSTRUATION: "피부 주의 구간",
+  FOLLICULAR: "피부 회복 구간",
+  OVULATION: "피부 컨디션 최상 구간",
+  LUTEAL: "피부 관리 필요 구간",
+};
 
 const SKIN_SCORE_BUCKET_ICON = {
   [SKIN_SCORE_BUCKET.UNKNOWN]: skinStatusUnknownIcon,
@@ -77,8 +85,19 @@ const PageWrapper = styled.div`
 export default function Home() {
   const navigate = useNavigate();
   const today = dayjs().format("YYYY-MM-DD");
-  const currentPhase = getPhaseForDate(today, MOCK_PERIOD_CYCLES);
-  const phaseGuide = currentPhase ? PHASE_GUIDE[currentPhase] : null;
+
+  // 오늘의 주기 단계 + 코멘트. API 응답 오기 전엔 null
+  const [phaseComment, setPhaseComment] = useState(null);
+
+  useEffect(() => {
+    getCyclePhaseComment()
+      .then(setPhaseComment)
+      .catch((error) => {
+        console.error("주기 단계 코멘트 조회 실패:", error);
+      });
+  }, []);
+
+  const currentPhase = phaseComment?.phaseType ?? null;
 
   // 홈 헤더용 프로필(이름, 피부타입, 선택된 피부고민). API 응답 오기 전엔 null
   const [profile, setProfile] = useState(null);
@@ -281,10 +300,10 @@ export default function Home() {
           onClick={handleViewTodayStatus}
         />
 
-        {phaseGuide && (
+        {phaseComment && (
           <PhaseGuideBanner
-            title={phaseGuide.title}
-            description={phaseGuide.description}
+            title={PHASE_BANNER_TITLE[currentPhase]}
+            description={phaseComment.comment}
           />
         )}
 

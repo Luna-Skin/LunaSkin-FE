@@ -8,3 +8,9 @@ export async function getCycleCalendar(year, month) {
   });
   return data.data;
 }
+
+// 오늘 주기 단계별 코멘트 조회
+export async function getCyclePhaseComment() {
+  const { data } = await apiClient.get("/api/cycles/comment");
+  return data.data;
+}
