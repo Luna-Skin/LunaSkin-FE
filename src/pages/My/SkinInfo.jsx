@@ -58,9 +58,9 @@ const ChipList = styled.div`
 
 const Chip = styled.button`
   padding: 6px 14px;
-  border: 1px solid ${({ $selected }) => ($selected ? "#D5BAFF" : "#e2e2e2")};
+  border: 1px solid ${({ $selected }) => ($selected ? "#D9D9D9" : "#e2e2e2")};
   border-radius: 20px;
-  background: ${({ $selected }) => ($selected ? "#DEC7FF" : "#fff")};
+  background: ${({ $selected }) => ($selected ? "#DEC4FA" : "#fff")};
   color: #444;
   font-size: 12px;
   cursor: pointer;
@@ -76,7 +76,7 @@ const SaveButton = styled.button`
   padding: 15px;
   border: 0;
   border-radius: 12px;
-  background: ${({ $enabled }) => ($enabled ? "#9B6DFF" : "#cfcfcf")};
+  background: ${({ $enabled }) => ($enabled ? "#A985E7" : "#cfcfcf")};
   color: #fff;
   font-size: 14px;
   font-weight: 700;

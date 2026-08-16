@@ -61,11 +61,13 @@ const SaveButton = styled.button`
   padding: 15px;
   border: 0;
   border-radius: 12px;
-  background: ${({ $changed }) => ($changed ? "#9B6DFF" : "#cfcfcf")};
+  background: ${({ $changed }) =>
+    $changed ? "#A985E7" : "#cfcfcf"};
   color: #fff;
   font-size: 14px;
   font-weight: 700;
-  cursor: ${({ $changed }) => ($changed ? "pointer" : "default")};
+  cursor: ${({ $changed }) =>
+    $changed ? "pointer" : "default"};
 `;
 
 const DEFAULT_SETTINGS = {
@@ -118,20 +120,29 @@ export default function PeriodInfo() {
   );
 
   const [settings, setSettings] = useState(savedSettings);
-  const [originalSettings, setOriginalSettings] = useState(savedSettings);
+  const [originalSettings, setOriginalSettings] =
+    useState(savedSettings);
   const [sheetType, setSheetType] = useState(null);
 
   const isChanged =
-    settings.cycleLength !== originalSettings.cycleLength ||
-    settings.periodLength !== originalSettings.periodLength;
+    settings.cycleLength !==
+      originalSettings.cycleLength ||
+    settings.periodLength !==
+      originalSettings.periodLength;
 
   const handleSelect = (value) => {
     if (sheetType === "cycle") {
-      setSettings((current) => ({ ...current, cycleLength: value }));
+      setSettings((current) => ({
+        ...current,
+        cycleLength: value,
+      }));
     }
 
     if (sheetType === "period") {
-      setSettings((current) => ({ ...current, periodLength: value }));
+      setSettings((current) => ({
+        ...current,
+        periodLength: value,
+      }));
     }
 
     setSheetType(null);
@@ -140,7 +151,11 @@ export default function PeriodInfo() {
   const handleSave = () => {
     if (!isChanged) return;
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(settings),
+    );
+
     setOriginalSettings(settings);
     navigate("/my");
   };
@@ -161,20 +176,26 @@ export default function PeriodInfo() {
   return (
     <Page>
       <Header>
-        <BackButton type="button" onClick={() => navigate("/my")}>
+        <BackButton
+          type="button"
+          onClick={() => navigate("/my")}
+        >
           ‹
         </BackButton>
+
         <h1>생리 정보</h1>
       </Header>
 
       <Content>
         <Label>생리 주기</Label>
+
         <SelectableChip
           value={settings.cycleLength}
           onClick={() => setSheetType("cycle")}
         />
 
         <Label>생리 기간</Label>
+
         <SelectableChip
           value={settings.periodLength}
           onClick={() => setSheetType("period")}
@@ -182,7 +203,11 @@ export default function PeriodInfo() {
       </Content>
 
       <SaveArea>
-        <SaveButton type="button" $changed={isChanged} onClick={handleSave}>
+        <SaveButton
+          type="button"
+          $changed={isChanged}
+          onClick={handleSave}
+        >
           저장
         </SaveButton>
       </SaveArea>

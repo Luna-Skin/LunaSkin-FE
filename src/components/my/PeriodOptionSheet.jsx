@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import styled from "styled-components";
+import checkIcon from "../../assets/icons/check.svg";
 
-const DEFAULT_HEIGHT = 320; // 기본 노출 길이
+const DEFAULT_HEIGHT = 235; // 기본 노출 길이
 const MAX_HEIGHT_VH = 80; // 최대로 끌어올렸을 때 화면 대비 비율
 
 const Overlay = styled.div`
@@ -86,11 +87,13 @@ const OptionButton = styled.button`
   text-align: left;
   font-size: 14px;
   cursor: pointer;
+  font-weight: 550;
 `;
 
-const Check = styled.span`
-  color: #9b6dff;
-  font-size: 18px;
+const Check = styled.img`
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 `;
 
 export default function PeriodOptionSheet({
@@ -157,7 +160,9 @@ export default function PeriodOptionSheet({
               onClick={() => onSelect(option)}
             >
               {option}
-              {selectedValue === option && <Check>✓</Check>}
+              {selectedValue === option && (
+                <Check src={checkIcon} alt="" />
+             )}
             </OptionButton>
           ))}
         </OptionList>
