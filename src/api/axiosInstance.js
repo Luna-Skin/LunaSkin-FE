@@ -8,5 +8,6 @@ export const apiClient = axios.create({
   baseURL,
   headers: {
     "Content-Type": "application/json",
+    "X-USER-ID": 1,
   },
 });

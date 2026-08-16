@@ -9,7 +9,7 @@ const Banner = styled.div`
   align-items: center;
   justify-content: center;
   padding: 17px 16px 16px 21px;
-  margin: 10px auto;
+  margin: 20px auto;
 `;
 
 const ContentBox = styled.div`
@@ -47,7 +47,7 @@ const Description = styled.p`
   color: #3c3c3c;
   text-align: left;
   font-family: "Pretendard Variable";
-  font-size: 16px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 500;
   line-height: normal;
