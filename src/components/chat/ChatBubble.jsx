@@ -1,5 +1,5 @@
 import styled, { keyframes } from "styled-components";
-import kikiAvatar from "../../assets/images/chat kki kki.png";
+import kikiAvatar from "../../assets/icons/chat kki kki.svg";
 
 const Row = styled.div`
   display: flex;
@@ -19,15 +19,16 @@ const Avatar = styled.div`
   flex-shrink: 0;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #e7e1ee;
+  border: 1.5px solid #dedede;
   border-radius: 50%;
   background: #fff;
 `;
 
 const AvatarImage = styled.img`
-  width: 100%;
+  display: block;
+  width: 38px;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 `;
 
 const MessageGroup = styled.div`
@@ -47,8 +48,7 @@ const Bubble = styled.div`
   padding: ${({ $hasImage }) =>
     $hasImage ? "6px" : "12px 14px"};
 
-  border: ${({ $isUser }) =>
-    $isUser ? "none" : "1px solid #ddd"};
+  border: 1px solid #ddd;
 
   border-radius: ${({ $isUser }) =>
     $isUser
@@ -56,9 +56,11 @@ const Bubble = styled.div`
       : "18px 18px 18px 4px"};
 
   background: ${({ $isUser }) =>
-    $isUser ? "#C6A5FF" : "#fff"};
+    $isUser ? "#CFB4FD" : "#fff"};
 
-  color: #222;
+  color: ${({ $isUser }) =>
+    $isUser ? "#fff" : "#222"};
+
   font-size: 14px;
   line-height: 1.45;
 
