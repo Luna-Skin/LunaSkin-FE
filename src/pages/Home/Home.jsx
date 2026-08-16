@@ -12,7 +12,7 @@ import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
-import { getCycleCalendar, getCyclePhaseComment } from "../../api/cycleApi";
+import { getCycleCalendar, getCyclePhaseComment, postCycleStart, postCycleEnd } from "../../api/cycleApi";
 import { getTodayRoutine } from "../../api/routineApi";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
 import {
@@ -20,10 +20,7 @@ import {
   SKIN_SCORE_BUCKET,
   SKIN_SCORE_BUCKET_CONTENT,
 } from "../../utils/skinScoreBucket";
-import {
-  MOCK_PERIOD_CYCLES,
-  MOCK_SKIN_RECORDS,
-} from "../../mocks/homeMock";
+import { MOCK_SKIN_RECORDS } from "../../mocks/homeMock";
 
 import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
 import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
@@ -35,10 +32,8 @@ import sneakerIcon from "../../assets/icons/routine_sneaker.svg";
 import { getPoints } from "../../utils/pointsStorage";
 
 
-const MAX_PERIOD_DURATION_DAYS = 10;
-
-// PhaseGuideBanner 제목 전용 문구. 
-// PHASE_LABEL(생리기/난포기/배란기/황체기)은 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
+// PhaseGuideBanner 제목 전용 문구. PHASE_LABEL(생리기/난포기/...)은 RoutineSection 등
+// 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
 const PHASE_BANNER_TITLE = {
   MENSTRUATION: "피부 주의 구간",
   FOLLICULAR: "피부 회복 구간",
@@ -46,14 +41,15 @@ const PHASE_BANNER_TITLE = {
   LUTEAL: "피부 관리 필요 구간",
 };
 
-// API가 routineCategory(SKINCARE/ACTION/EXERCISE)로 주는 걸, 카드 제목/아이콘으로 매핑하기
+// API가 routineCategory(SKINCARE/ACTION/EXERCISE)로 주는 걸, 카드 제목/아이콘으로 매핑
 const ROUTINE_CATEGORY_META = {
   SKINCARE: { title: "오늘의 스킨케어", icon: serumIcon },
   ACTION: { title: "오늘의 행동", icon: waterGlassIcon },
   EXERCISE: { title: "오늘의 운동", icon: sneakerIcon },
 };
 
-// 매핑에 없는 카테고리가 오면(백엔드가 나중에 종류를 추가하는 경우 등) 이걸로 대체하기 -> 깨진 이미지, 빈 텍스트가 뜨는 걸 방지
+// 매핑에 없는 카테고리가 오면(백엔드가 나중에 종류를 추가하는 경우 등) 이걸로 대체 —
+// icon/title이 undefined로 남아서 깨진 이미지·빈 텍스트가 뜨는 걸 방지
 const DEFAULT_ROUTINE_META = { title: "오늘의 루틴", icon: serumIcon };
 
 const SKIN_SCORE_BUCKET_ICON = {
@@ -112,7 +108,7 @@ export default function Home() {
 
   const currentPhase = phaseComment?.phaseType ?? null;
 
-  // 오늘의 추천 루틴. API 응답 오기 전엔 빈 배열로 놓기 
+  // 오늘의 추천 루틴. API 응답 오기 전엔 빈 배열
   const [routineData, setRoutineData] = useState(null);
 
   useEffect(() => {
@@ -168,17 +164,15 @@ export default function Home() {
 
   const analysisDates = calendarData.analyses.map((a) => a.date);
 
-  // 지금 "수정 중"으로 취급할 주기 기록 — 가장 최근에 기록된 것.
-  // TODO: mocks 반영 to-do에서 실제로 이 기록을 갱신하는 로직으로 이어짐
-  const currentCycle =
-    MOCK_PERIOD_CYCLES[MOCK_PERIOD_CYCLES.length - 1] ?? null;
-
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalStep, setModalStep] = useState(null); // "dateAction" | "periodAction" | null
 
   // 홈 캘린더에서 바로 생리 시작일/종료일을 고르는 중인지 관리
   const [periodSelectMode, setPeriodSelectMode] = useState(null); // "start" | "end" | null
   const [periodSelectedDate, setPeriodSelectedDate] = useState(null);
+
+  // start/end POST 요청 도중 확인 버튼 중복 클릭 방지용
+  const [isSaving, setIsSaving] = useState(false);
 
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -223,27 +217,6 @@ export default function Home() {
     const targetDate = selectedDate;
 
     closeModal();
-
-    if (!currentCycle) {
-      setToastMessage("시작일을 먼저 입력해야 합니다");
-      return;
-    }
-
-    const startDate = dayjs(currentCycle.cycleStartDate);
-    const diffDays = dayjs(targetDate).diff(startDate, "day");
-
-    if (diffDays < 0) {
-      setToastMessage("종료일은 시작일 이후여야 해요");
-      return;
-    }
-
-    if (diffDays >= MAX_PERIOD_DURATION_DAYS) {
-      setToastMessage(
-        `생리 시작일로부터 ${MAX_PERIOD_DURATION_DAYS}일 이내의 날짜만 선택할 수 있어요`,
-      );
-      return;
-    }
-
     setPeriodSelectMode("end");
     setPeriodSelectedDate(targetDate);
   };
@@ -253,23 +226,55 @@ export default function Home() {
     setPeriodSelectedDate(null);
   };
 
-  // TODO: 다음 to-do(mocks 반영)에서 여기에 실제 MOCK_PERIOD_CYCLES 갱신 로직 추가
-  const handleConfirmPeriodSelect = () => {
-    if (
-      periodSelectMode === "end" &&
-      periodSelectedDate === currentCycle?.cycleStartDate
-    ) {
-      setToastMessage("종료일과 시작일이 같을 수 없습니다");
+  const handleConfirmPeriodSelect = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      if (periodSelectMode === "start") {
+        await postCycleStart(periodSelectedDate);
+      } else {
+        await postCycleEnd(periodSelectedDate);
+      }
+    } catch (error) {
+      console.error("생리 정보 저장 실패:", error);
+      const serverMessage = error.response?.data?.message;
+      setToastMessage(serverMessage || "저장에 실패했어요. 다시 시도해주세요");
+      setIsSaving(false);
       return;
     }
 
-    console.log(
-      `${periodSelectMode === "start" ? "생리 시작일" : "생리 종료일"} 선택:`,
-      periodSelectedDate,
-    );
-
+    // 저장 자체는 성공했으니, 화면 반영 결과와 상관없이 선택 모드부터 먼저 종료
     setPeriodSelectMode(null);
     setPeriodSelectedDate(null);
+
+    // 캘린더/코멘트/루틴은 각각 따로 반영 — 하나(특히 루틴)가 실패해도
+    // 나머지는 정상적으로 최신 상태로 갱신되도록 allSettled 사용
+    const [calendarResult, commentResult, routineResult] = await Promise.allSettled([
+      getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1),
+      getCyclePhaseComment(),
+      getTodayRoutine(),
+    ]);
+
+    if (calendarResult.status === "fulfilled") {
+      setCalendarData(calendarResult.value);
+    } else {
+      console.error("캘린더 재조회 실패:", calendarResult.reason);
+    }
+
+    if (commentResult.status === "fulfilled") {
+      setPhaseComment(commentResult.value);
+    } else {
+      console.error("주기 단계 코멘트 재조회 실패:", commentResult.reason);
+    }
+
+    if (routineResult.status === "fulfilled") {
+      setRoutineData(routineResult.value);
+    } else {
+      console.error("루틴 재조회 실패:", routineResult.reason);
+    }
+
+    setIsSaving(false);
   };
 
   const handleViewTodayStatus = () => {
@@ -318,7 +323,7 @@ export default function Home() {
         {periodSelectMode && (
           <ConfirmButton
             type="button"
-            disabled={!periodSelectedDate}
+            disabled={!periodSelectedDate || isSaving}
             onClick={handleConfirmPeriodSelect}
           >
             확인
