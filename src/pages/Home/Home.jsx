@@ -13,6 +13,7 @@ import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
 import { getCycleCalendar, getCyclePhaseComment } from "../../api/cycleApi";
+import { getTodayRoutine } from "../../api/routineApi";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
 import {
   getSkinScoreBucket,
@@ -22,26 +23,38 @@ import {
 import {
   MOCK_PERIOD_CYCLES,
   MOCK_SKIN_RECORDS,
-  PHASE_ROUTINES,
 } from "../../mocks/homeMock";
 
 import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
 import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
 import skinStatusNormalIcon from "../../assets/icons/skin_status_normal.png";
 import skinStatusGoodIcon from "../../assets/icons/skin_status_good.png";
+import serumIcon from "../../assets/icons/routine_serum.svg";
+import waterGlassIcon from "../../assets/icons/routine_water_glass.svg";
+import sneakerIcon from "../../assets/icons/routine_sneaker.svg";
 import { getPoints } from "../../utils/pointsStorage";
 
 
 const MAX_PERIOD_DURATION_DAYS = 10;
 
-// PhaseGuideBanner 제목 전용 문구. PHASE_LABEL(생리기/난포기/...)은 RoutineSection 등
-// 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
+// PhaseGuideBanner 제목 전용 문구. 
+// PHASE_LABEL(생리기/난포기/배란기/황체기)은 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
 const PHASE_BANNER_TITLE = {
   MENSTRUATION: "피부 주의 구간",
   FOLLICULAR: "피부 회복 구간",
   OVULATION: "피부 컨디션 최상 구간",
   LUTEAL: "피부 관리 필요 구간",
 };
+
+// API가 routineCategory(SKINCARE/ACTION/EXERCISE)로 주는 걸, 카드 제목/아이콘으로 매핑하기
+const ROUTINE_CATEGORY_META = {
+  SKINCARE: { title: "오늘의 스킨케어", icon: serumIcon },
+  ACTION: { title: "오늘의 행동", icon: waterGlassIcon },
+  EXERCISE: { title: "오늘의 운동", icon: sneakerIcon },
+};
+
+// 매핑에 없는 카테고리가 오면(백엔드가 나중에 종류를 추가하는 경우 등) 이걸로 대체하기 -> 깨진 이미지, 빈 텍스트가 뜨는 걸 방지
+const DEFAULT_ROUTINE_META = { title: "오늘의 루틴", icon: serumIcon };
 
 const SKIN_SCORE_BUCKET_ICON = {
   [SKIN_SCORE_BUCKET.UNKNOWN]: skinStatusUnknownIcon,
@@ -98,6 +111,27 @@ export default function Home() {
   }, []);
 
   const currentPhase = phaseComment?.phaseType ?? null;
+
+  // 오늘의 추천 루틴. API 응답 오기 전엔 빈 배열로 놓기 
+  const [routineData, setRoutineData] = useState(null);
+
+  useEffect(() => {
+    getTodayRoutine()
+      .then(setRoutineData)
+      .catch((error) => {
+        console.error("오늘의 루틴 조회 실패:", error);
+      });
+  }, []);
+
+  const routines = (routineData?.routines ?? []).map((routine, index) => {
+    const meta = ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
+    return {
+      id: index,
+      icon: meta.icon,
+      title: meta.title,
+      description: routine.content,
+    };
+  });
 
   // 홈 헤더용 프로필(이름, 피부타입, 선택된 피부고민). API 응답 오기 전엔 null
   const [profile, setProfile] = useState(null);
@@ -307,10 +341,10 @@ export default function Home() {
           />
         )}
 
-        {currentPhase && (
+        {routineData && (
           <RoutineSection
-            phaseLabel={PHASE_LABEL[currentPhase]}
-            routines={PHASE_ROUTINES[currentPhase]}
+            phaseLabel={PHASE_LABEL[routineData.phaseType]}
+            routines={routines}
           />
         )}
 
