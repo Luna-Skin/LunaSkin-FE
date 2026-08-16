@@ -19,7 +19,7 @@ const Page = styled.div`
 `;
 
 const Header = styled.header`
-  padding: 20px 0 12px;
+  padding: 24px 0 12px;
   text-align: center;
 `;
 
