@@ -12,7 +12,10 @@ import PointsRewardButton from "../../components/todaySkin/PointsRewardButton";
 import ProductRecommendSection from "../../components/todaySkin/ProductRecommendSection";
 import ConfirmModal from "../../components/common/ConfirmModal";
 import PointsRewardModal from "../../components/todaySkin/PointsRewardModal";
-import { getDailyAnalysis } from "../../api/analysisApi";
+import {
+  getDailyAnalysis,
+  getRecommendedProducts,
+} from "../../api/analysisApi";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
 import { hasClaimedToday, claimDailyPoints } from "../../utils/pointsStorage";
 
@@ -33,9 +36,12 @@ const BottomButtonRow = styled.div`
 // 왼쪽/오른쪽은 선택 촬영이라 없을 수도 있어서, 값이 있는 것만 포함함
 function buildPhotos(analysis) {
   const photos = [];
-  if (analysis.imageUrl) photos.push({ url: analysis.imageUrl, angle: "front" });
-  if (analysis.leftImageUrl) photos.push({ url: analysis.leftImageUrl, angle: "left" });
-  if (analysis.rightImageUrl) photos.push({ url: analysis.rightImageUrl, angle: "right" });
+  if (analysis.imageUrl)
+    photos.push({ url: analysis.imageUrl, angle: "front" });
+  if (analysis.leftImageUrl)
+    photos.push({ url: analysis.leftImageUrl, angle: "left" });
+  if (analysis.rightImageUrl)
+    photos.push({ url: analysis.rightImageUrl, angle: "right" });
   return photos;
 }
 
@@ -57,8 +63,24 @@ export default function TodaySkinResult() {
       });
   }, [date]);
 
-  // 제품 추천은 다음 단계에서 연결... 지금은 빈 배열로 둠 
-  const [products] = useState([]);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    getRecommendedProducts(date)
+      .then((list) => {
+        setProducts(
+          list.map((p) => ({
+            id: p.productId,
+            name: p.prodName,
+            tag: p.ingredient,
+            url: p.purchaseUrl,
+          })),
+        );
+      })
+      .catch((error) => {
+        console.error("제품 추천 조회 실패:", error);
+      });
+  }, [date]);
 
   // "결과를 확인하러 들어온" 경우(홈 캘린더, 오늘 상태 카드)엔 뒤로가기 헤더로 표시
   const showBackHeader = Boolean(location.state?.showBackHeader);
