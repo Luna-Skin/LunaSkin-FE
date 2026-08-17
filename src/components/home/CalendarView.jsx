@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import styled from "styled-components";
-import { getPhaseForDate, PHASE_COLOR } from "../../utils/cyclePhase";
+import { getPhaseFromSegments, PHASE_COLOR } from "../../utils/cyclePhase";
 
 import chevronDown from "../../assets/icons/calendar_chevron_down.svg";
 import chevronUp from "../../assets/icons/calendar_chevron_up.svg";
@@ -221,8 +221,10 @@ const LegendDot = styled.span`
 //   - 오늘 날짜를 선택하면 보라색 원 위에 빨간색 테두리가 함께 표시됨
 //   - 펼치기/접기 토글 버튼은 숨김(어차피 강제로 펼쳐져 있어서 눌러도 의미 없음)
 export default function CalendarView({
-  periodCycles = [],
-  skinRecords = {},
+  cycleResponses = [],
+  analysisDates = [],
+  displayedMonth,
+  onMonthChange,
   onDateClick,
   selectMode = false,
   selectedDate = null,
@@ -233,18 +235,12 @@ export default function CalendarView({
     return sessionStorage.getItem("calendarIsExpanded") === "true";
   });
 
-  const [displayedMonth, setDisplayedMonth] = useState(() => {
-    const saved = sessionStorage.getItem("calendarDisplayedMonth");
-    return saved ? dayjs(saved).startOf("month") : today.startOf("month");
-  });
-
+  // 캘린더 접었을 때 displayedMonth를 오늘 달로 동기화 해주기 
   useEffect(() => {
-    sessionStorage.setItem("calendarIsExpanded", String(isExpanded));
+    if (!isExpanded) {
+    onMonthChange?.(today.startOf("month"));
+  }
   }, [isExpanded]);
-
-  useEffect(() => {
-    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
-  }, [displayedMonth]);
 
   // selectMode일 땐 실제 저장된 접힘 상태는 그대로 두고, 화면에 보여줄 때만 펼친 것처럼 취급함
   const effectiveExpanded = isExpanded || selectMode;
@@ -276,7 +272,7 @@ export default function CalendarView({
       <Header>
         <NavButton
           $visible={effectiveExpanded}
-          onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}
+          onClick={() => onMonthChange?.(displayedMonth.subtract(1, "month"))}
         >
           <img src={chevronLeft} alt="이전 달" />
         </NavButton>
@@ -287,7 +283,7 @@ export default function CalendarView({
 
         <NavButton
           $visible={effectiveExpanded}
-          onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}
+          onClick={() => onMonthChange?.(displayedMonth.add(1, "month"))}
         >
           <img src={chevronRight} alt="다음 달" />
         </NavButton>
@@ -314,10 +310,10 @@ export default function CalendarView({
             effectiveExpanded ? displayedMonth : today,
             "month",
           );
-          const hasRecord = !isFutureDate && Boolean(skinRecords[dateStr]);
+          const hasRecord = !isFutureDate && analysisDates.includes(dateStr);
           const isSelected = selectMode && selectedDate === dateStr;
 
-          const phase = canShowPhase ? getPhaseForDate(dateStr, periodCycles) : null;
+          const phase = canShowPhase ? getPhaseFromSegments(dateStr, cycleResponses) : null;
           const phaseColor = phase ? PHASE_COLOR[phase] : null;
 
           const columnIndex = index % 7;
@@ -328,12 +324,12 @@ export default function CalendarView({
           const mergeLeft =
             canShowPhase &&
             prevInRow &&
-            getPhaseForDate(prevInRow.format("YYYY-MM-DD"), periodCycles) === phase;
+            getPhaseFromSegments(prevInRow.format("YYYY-MM-DD"), cycleResponses) === phase;
 
           const mergeRight =
             canShowPhase &&
             nextInRow &&
-            getPhaseForDate(nextInRow.format("YYYY-MM-DD"), periodCycles) === phase;
+            getPhaseFromSegments(nextInRow.format("YYYY-MM-DD"), cycleResponses) === phase;
 
           const hasRowAbove = index - 7 >= 0;
           const hasRowBelow = index + 7 < days.length;
@@ -342,18 +338,18 @@ export default function CalendarView({
             canShowPhase &&
             columnIndex === 0 &&
             hasRowAbove &&
-            getPhaseForDate(
+            getPhaseFromSegments(
               date.subtract(1, "day").format("YYYY-MM-DD"),
-              periodCycles,
+              cycleResponses,
             ) === phase;
 
           const continuesToBelow =
             canShowPhase &&
             columnIndex === 6 &&
             hasRowBelow &&
-            getPhaseForDate(
+            getPhaseFromSegments(
               date.add(1, "day").format("YYYY-MM-DD"),
-              periodCycles,
+              cycleResponses,
             ) === phase;
 
           const roundLeft = !mergeLeft && !continuesFromAbove;

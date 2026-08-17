@@ -1,15 +1,3 @@
-import serumIcon from "../assets/icons/routine_serum.svg";
-import waterGlassIcon from "../assets/icons/routine_water_glass.svg";
-import sneakerIcon from "../assets/icons/routine_sneaker.svg";
-
-// 사용자 기본 정보 (User 테이블 대응)
-export const MOCK_USER = {
-  name: "김끼끼", // 사용자 이름
-  skinType: "지성", // 피부 타입 (예: 지성, 건성, 복합성...)
-  skinConcerns: ["여드름", "블랙헤드"],  // 피부 고민 (예: 블랙헤드, 홍조, 트러블...). 배열 - SkinInfo 다중 선택과 동일한 구조. 여러 개 넣으면 자동으로 같이 표시됨
-  // points: 4350, // 사용자가 모은 포인트
-};
-
 // Period_Cycle 테이블 대응
 // 사용자가 매달 실제로 생리 시작/종료를 기록하면 이 배열에 하나씩 쌓입니다.
 // - 과거 날짜를 물어보면: 그 시점에 실제로 기록되어 있던 항목이 사용됨
@@ -133,52 +121,4 @@ export const MOCK_SKIN_RECORDS = {
       { id: 3, name: "이니스프리 나이아신아마이드 세럼", tag: "브라이트닝", price: 22000 },
     ],
   },
-};
-
-// 주기 단계별 안내 문구 (홈 화면 4번 영역)
-// 키는 Cycle_Phase 테이블의 phasetype ENUM 값과 동일하게 맞춤
-// title: 짧은 제목 / description: 상세 설명 
-// MENSTRUATION: 생리기 / FOLLICULAR: 난포기 / OVULATION: 배란기 / LUTEAL: 황체기
-export const PHASE_GUIDE = {
-  MENSTRUATION: {
-    title: "피부 예민 구간",
-    description: "생리 중엔 피부 장벽이 약해져 건조·민감해지기 쉬워요",
-  },
-  FOLLICULAR: {
-    title: "피부 컨디션 회복 구간",
-    description: "난포기엔 피지 분비가 안정되어 컨디션이 좋아지는 시기예요",
-  },
-  OVULATION: {
-    title: "피부 컨디션 최상 구간",
-    description: "배란기엔 피지·수분 밸런스가 가장 좋아요. 가벼운 케어로 컨디션을 유지해보세요.",
-  },
-  LUTEAL: {
-    title: "피부 트러블 주의 구간",
-    description: "황체기엔 피지 분비가 늘어 트러블이 생기기 쉬워요",
-  },
-};
-
-// 주기 단계별 추천 루틴 (홈 화면 6번 영역)
-// title: 루틴 카테고리 이름 (스킨케어/행동/운동) / description: 실제 추천 내용
-export const PHASE_ROUTINES = {
-  MENSTRUATION: [
-    { id: 1, title: "오늘의 스킨케어", description: "저자극 수분크림 사용하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "물 2L 마시기", icon: waterGlassIcon },
-    { id: 3, title: "오늘의 운동", description: "무리하지 않는 가벼운 유산소", icon: sneakerIcon },
-  ],
-  FOLLICULAR: [
-    { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: waterGlassIcon },
-    { id: 3, title: "오늘의 운동", description: "평소보다 강도 높은 운동 도전하기", icon: sneakerIcon },
-  ],
-  OVULATION: [
-    { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "물 2L 마시기", icon: waterGlassIcon },
-    { id: 3, title: "오늘의 운동", description: "가벼운 운동하기", icon: sneakerIcon },
-  ],
-  LUTEAL: [
-    { id: 1, title: "오늘의 스킨케어", description: "진정 세럼으로 마무리하기", icon: serumIcon },
-    { id: 2, title: "오늘의 행동", description: "저자극 선크림 사용하기", icon: waterGlassIcon },
-    { id: 3, title: "오늘의 운동", description: "가벼운 유산소 하기", icon: sneakerIcon },
-  ],
 };
