@@ -38,3 +38,12 @@ export async function getDailyAnalysis(date) {
   const { data } = await apiClient.get(`/api/analysis/${date}`);
   return data.data;
 }
+
+// 제품 추천 조회
+// GET /api/products/recommend?date=YYYY-MM-DD
+export async function getRecommendedProducts(date) {
+  const { data } = await apiClient.get("/api/products/recommend", {
+    params: { date },
+  });
+  return data.data;
+}
