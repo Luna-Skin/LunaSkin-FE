@@ -8,7 +8,7 @@ export const METRIC_COMPARISON = {
   BETTER: "better",
 };
 
-const SIGNIFICANT_DIFFERENCE_THRESHOLD = 20;
+const SIGNIFICANT_DIFFERENCE_THRESHOLD = 10;
 
 export function getMetricComparison(pastValue, currentValue) {
   const diff = currentValue - pastValue;

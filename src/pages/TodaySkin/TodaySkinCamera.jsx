@@ -6,6 +6,7 @@ import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import FaceFrameGuide from "../../components/todaySkin/FaceFrameGuide";
 import PhotoConfirmSheet from "../../components/todaySkin/PhotoConfirmSheet";
 import captureIcon from "../../assets/icons/camera_capture_button.svg";
+import backChevron from "../../assets/icons/back-chevron.svg";
 import { getYawAngleDegrees, isFrontalYaw } from "../../utils/facePose";
 import {
   loadCapturedPhotos,
@@ -174,7 +175,7 @@ const Wrapper = styled.div`
 const TopBar = styled.div`
   width: 402px;
   height: 73px;
-  padding: 24px 24px 30px;
+  padding: 24px 24px 22px;
   box-sizing: border-box;
   display: flex;
   justify-content: flex-start;
@@ -186,20 +187,24 @@ const TopBar = styled.div`
 const BackArrow = styled.button`
   border: none;
   background: none;
-  padding: 0;
+  padding: 4px 8px;
   cursor: pointer;
-  color: #fff;
-  font-family: "Pretendard Variable";
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: normal;
+  width: 26px;
+height: 26px;
+display: flex;
+align-items: center;
+justify-content: center;
+`;
+
+const BackIcon = styled.img`
+  width: 10px;
+height: 18px;
 `;
 
 const TitleText = styled.span`
   color: #fff;
   font-family: "Pretendard Variable";
-  font-size: 16px;
+  font-size: 18px;
   font-style: normal;
   font-weight: 500;
   line-height: normal;
@@ -525,7 +530,7 @@ export default function TodaySkinCamera() {
               onClick={handleBack}
               aria-label="뒤로 가기"
             >
-              ←
+              <img src={backChevron} alt="뒤로가기" />
             </BackArrow>
             <TitleText>피부 기록하기</TitleText>
           </TopBar>
