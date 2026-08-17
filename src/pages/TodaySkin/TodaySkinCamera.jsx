@@ -1,0 +1,577 @@
+import { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+
+import FaceFrameGuide from "../../components/todaySkin/FaceFrameGuide";
+import PhotoConfirmSheet from "../../components/todaySkin/PhotoConfirmSheet";
+import captureIcon from "../../assets/icons/camera_capture_button.svg";
+import backChevron from "../../assets/icons/back-chevron.svg";
+import { getYawAngleDegrees, isFrontalYaw } from "../../utils/facePose";
+import {
+  loadCapturedPhotos,
+  saveCapturedPhotos,
+} from "../../utils/photoSessionStorage";
+
+const WASM_BASE =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
+const MODEL_URL =
+  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+// 확인 화면 UI 테스트용 임시 데이터
+const DEMO_PHOTO_FEATURES = [
+  "안경 미착용",
+  "조명 좋음",
+  "메이크업 없음",
+  "피부 가림 없음",
+];
+
+// 사진 배열(각 항목 { url, angle })을 보고, 지금 요청해야 할 각도를 정함.
+// 우선순위: front가 없으면 front, front는 있는데 left가 없으면 left, 나머지는 right
+const ANGLE_PRIORITY = ["front", "left", "right"];
+
+function getNextRequestedAngle(photos) {
+  const existingAngles = photos.map((photo) => photo.angle);
+  return (
+    ANGLE_PRIORITY.find((angle) => !existingAngles.includes(angle)) ?? "right"
+  );
+}
+
+const ANGLE_GUIDE_TEXT = {
+  front: "밝은 곳에서 정면을 촬영해주세요",
+  left: "밝은 곳에서 다른 각도로 촬영해주세요",
+  right: "밝은 곳에서 다른 각도로 촬영해주세요",
+};
+
+function getBoundingBoxFromLandmarks(landmarks, videoWidth, videoHeight) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const point of landmarks) {
+    if (point.x < minX) minX = point.x;
+    if (point.x > maxX) maxX = point.x;
+    if (point.y < minY) minY = point.y;
+    if (point.y > maxY) maxY = point.y;
+  }
+
+  return {
+    originX: minX * videoWidth,
+    originY: minY * videoHeight,
+    width: (maxX - minX) * videoWidth,
+    height: (maxY - minY) * videoHeight,
+  };
+}
+
+function isFaceAligned(landmarks, video, faceFrame) {
+  const { originX, originY, width, height } = getBoundingBoxFromLandmarks(
+    landmarks,
+    video.videoWidth,
+    video.videoHeight,
+  );
+
+  const displayWidth = video.clientWidth;
+  const displayHeight = video.clientHeight;
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+
+  if (!displayWidth || !displayHeight || !videoWidth || !videoHeight) {
+    return false;
+  }
+
+  // object-fit: cover에 맞게 MediaPipe 좌표를 화면 좌표로 변환
+  const scale = Math.max(
+    displayWidth / videoWidth,
+    displayHeight / videoHeight,
+  );
+  const offsetX = (videoWidth * scale - displayWidth) / 2;
+  const offsetY = (videoHeight * scale - displayHeight) / 2;
+
+  let faceCenterX = (originX + width / 2) * scale - offsetX;
+  const faceCenterY = (originY + height / 2) * scale - offsetY;
+  const faceWidth = width * scale;
+
+  // 화면이 좌우 반전되어 있으므로 X 좌표도 반전
+  faceCenterX = displayWidth - faceCenterX;
+
+  const videoRect = video.getBoundingClientRect();
+  const guideRect = faceFrame.getBoundingClientRect();
+
+  const guideCenterX = guideRect.left - videoRect.left + guideRect.width / 2;
+  const guideCenterY = guideRect.top - videoRect.top + guideRect.height / 2;
+
+  const centeredX =
+    Math.abs(faceCenterX - guideCenterX) < guideRect.width * 0.22;
+  const centeredY =
+    Math.abs(faceCenterY - guideCenterY) < guideRect.height * 0.22;
+
+  const rightSize =
+    faceWidth > guideRect.width * 0.55 && faceWidth < guideRect.width * 1.05;
+
+  return centeredX && centeredY && rightSize;
+}
+
+// 현재 카메라 화면을 3:4 비율로 캡처
+function captureThreeByFour(video) {
+  const canvas = document.createElement("canvas");
+
+  const targetWidth = 402;
+  const targetHeight = 536;
+  const targetRatio = targetWidth / targetHeight;
+
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+  const videoRatio = videoWidth / videoHeight;
+
+  let sourceX = 0;
+  let sourceY = 0;
+  let sourceWidth = videoWidth;
+  let sourceHeight = videoHeight;
+
+  if (videoRatio > targetRatio) {
+    sourceWidth = videoHeight * targetRatio;
+    sourceX = (videoWidth - sourceWidth) / 2;
+  } else {
+    sourceHeight = videoWidth / targetRatio;
+    sourceY = (videoHeight - sourceHeight) / 2;
+  }
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const ctx = canvas.getContext("2d");
+
+  // 사용자가 보는 화면과 동일하게 좌우 반전
+  ctx.translate(targetWidth, 0);
+  ctx.scale(-1, 1);
+
+  ctx.drawImage(
+    video,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    0,
+    0,
+    targetWidth,
+    targetHeight,
+  );
+
+  return canvas.toDataURL("image/jpeg", 0.92);
+}
+
+const Wrapper = styled.div`
+  position: relative;
+  width: 100%;
+  height: 812px;
+  background: #1e1b2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
+`;
+
+const TopBar = styled.div`
+  width: 402px;
+  height: 73px;
+  padding: 24px 24px 22px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+`;
+
+const BackArrow = styled.button`
+  border: none;
+  background: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  width: 26px;
+height: 26px;
+display: flex;
+align-items: center;
+justify-content: center;
+`;
+
+const BackIcon = styled.img`
+  width: 10px;
+height: 18px;
+`;
+
+const TitleText = styled.span`
+  color: #fff;
+  font-family: "Pretendard Variable";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+`;
+
+const VideoStage = styled.div`
+  position: relative;
+  width: 100%;
+  height: 536px;
+  flex-shrink: 0;
+  overflow: hidden;
+`;
+
+const Video = styled.video`
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+`;
+
+const FaceFrameWrapper = styled.div`
+  position: absolute;
+  pointer-events: none;
+  ${({ $angle }) =>
+    $angle === "front"
+      ? `
+    top: 100px;
+    left: 58px;
+    width: 286px;
+    height: 300px;
+  `
+      : `
+    top: 100px;
+    left: 84px;
+    width: 234px;
+    height: 304px;
+  `}
+`;
+
+
+
+
+const BottomSection = styled.div`
+  width: 100%;
+  height: 203px;
+  padding: 24px 98px 60px 99px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 28px;
+  flex-shrink: 0;
+`;
+
+const GuideText = styled.p`
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+  white-space: nowrap;
+  font-family: "Pretendard Variable";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+`;
+
+const CaptureButton = styled.button`
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
+  opacity: ${({ disabled }) => (disabled ? 0.45 : 1)};
+  transition: opacity 0.2s ease;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+const ConfirmWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  height: 812px;
+  background: #fff;
+  box-sizing: border-box;
+  overflow: hidden;
+`;
+
+const ConfirmHeader = styled.div`
+  width: 100%;
+  height: 70px;
+  background: #f0e8ff;
+`;
+
+const PreviewImage = styled.img`
+  display: block;
+  width: 100%;
+  height: 536px;
+  object-fit: cover;
+`;
+
+export default function TodaySkinCamera() {
+  const navigate = useNavigate();
+
+  // 홈 폼(TodaySkinForm)에서 "+" 눌러서 다시 들어온 경우, 기존에 찍은 사진들을 넘겨받음.
+  // 처음 들어온 경우엔 빈 배열
+  const existingPhotos = loadCapturedPhotos();
+  const requestedAngle = getNextRequestedAngle(existingPhotos);
+
+  const videoRef = useRef(null);
+  const faceFrameRef = useRef(null);
+  const detectorRef = useRef(null);
+  const streamRef = useRef(null);
+  const rafRef = useRef(null);
+  const lastVideoTimeRef = useRef(-1);
+
+  const [faceAligned, setFaceAligned] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [yawDegrees, setYawDegrees] = useState(0); // 확인용. 다음 to-do에서 front/left/right 판정에 실제로 쓰일 예정
+
+  const [step, setStep] = useState("shoot");
+  const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [photoFeatures, setPhotoFeatures] = useState([]);
+
+  useEffect(() => {
+    if (step !== "shoot") return undefined;
+
+    let cancelled = false;
+
+    setCameraReady(false);
+    setFaceAligned(false);
+
+    lastVideoTimeRef.current = -1;
+
+    function detectLoop() {
+      const video = videoRef.current;
+      const detector = detectorRef.current;
+      const faceFrame = faceFrameRef.current;
+
+      if (!video || !detector || !faceFrame) return;
+
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        rafRef.current = requestAnimationFrame(detectLoop);
+        return;
+      }
+
+      if (video.currentTime !== lastVideoTimeRef.current) {
+        lastVideoTimeRef.current = video.currentTime;
+
+        try {
+          const now = performance.now();
+          const result = detector.detectForVideo(video, now);
+          const landmarks = result.faceLandmarks?.[0];
+
+          const aligned = landmarks
+            ? isFaceAligned(landmarks, video, faceFrame)
+            : false;
+
+          setFaceAligned(aligned);
+
+          // facialTransformationMatrixes[0]이 { data: [...] } 형태인지, 배열을 바로 주는지
+          // 확실치 않아서 둘 다 대응 (로컬에서 실제로 돌려보고 안 맞으면 이 부분만 조정)
+          const rawMatrix = result.facialTransformationMatrixes?.[0];
+          const matrixData = rawMatrix?.data ?? rawMatrix;
+          if (matrixData) {
+            setYawDegrees(getYawAngleDegrees(matrixData));
+          }
+        } catch (error) {
+          console.error("얼굴 감지 오류:", error);
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(detectLoop);
+    }
+
+    async function setup() {
+      try {
+        const vision = await FilesetResolver.forVisionTasks(WASM_BASE);
+        if (cancelled) return;
+
+        const detector = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: MODEL_URL,
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          numFaces: 1,
+          outputFacialTransformationMatrixes: true,
+        });
+
+        if (cancelled) {
+          detector.close();
+          return;
+        }
+
+        detectorRef.current = detector;
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 720 },
+            height: { ideal: 1280 },
+          },
+          audio: false,
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+
+        const video = videoRef.current;
+
+        if (!video) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        video.srcObject = stream;
+        await video.play();
+
+        if (cancelled) return;
+
+        setCameraReady(true);
+        detectLoop();
+      } catch (error) {
+        console.error("카메라 또는 MediaPipe 초기화 실패:", error);
+        setCameraReady(false);
+      }
+    }
+
+    setup();
+
+    return () => {
+      cancelled = true;
+
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+
+      rafRef.current = null;
+
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+
+      detectorRef.current?.close();
+      detectorRef.current = null;
+    };
+  }, [step]);
+
+  const handleBack = () => {
+    navigate("/today-skin");
+  };
+
+  const handleCapture = () => {
+    if (!faceAligned || !angleMatchesRequest) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    const photoDataUrl = captureThreeByFour(video);
+
+    setCapturedPhoto(photoDataUrl);
+
+    // TODO: 이미지 분석 API 연결 후 실제 분석 결과로 교체
+    setPhotoFeatures(DEMO_PHOTO_FEATURES);
+
+    setStep("confirm");
+  };
+
+  const handleRetake = () => {
+    setCapturedPhoto(null);
+    setPhotoFeatures([]);
+    setStep("shoot");
+  };
+
+  const handleContinue = () => {
+    // 지금까지 찍은 사진 전체(기존 + 방금 찍은 것)를 sessionStorage에 저장해두고,
+    // 생활 습관을 마저 입력할 수 있도록 폼 화면(TodaySkinForm)으로 돌아감
+    const newPhoto = { url: capturedPhoto, angle: requestedAngle };
+    saveCapturedPhotos([...existingPhotos, newPhoto]);
+
+    navigate("/today-skin");
+  };
+
+  const angleMatchesRequest =
+    requestedAngle === "front"
+      ? isFrontalYaw(yawDegrees)
+      : !isFrontalYaw(yawDegrees);
+
+  const getGuideText = () => {
+    if (!cameraReady) {
+      return "밝은 곳에서 정면을 촬영해주세요";
+    }
+
+    if (faceAligned && angleMatchesRequest) {
+      return "이제 촬영 버튼을 눌러주세요!";
+    }
+
+    if (faceAligned) {
+      return ANGLE_GUIDE_TEXT[requestedAngle];
+    }
+
+    return "가이드 안에 얼굴을 맞춰주세요";
+  };
+
+  return (
+    <Wrapper>
+      {step === "shoot" ? (
+        <>
+          <TopBar>
+            <BackArrow
+              type="button"
+              onClick={handleBack}
+              aria-label="뒤로 가기"
+            >
+              <img src={backChevron} alt="뒤로가기" />
+            </BackArrow>
+            <TitleText>피부 기록하기</TitleText>
+          </TopBar>
+
+          <VideoStage>
+            <Video ref={videoRef} autoPlay playsInline muted />
+
+            <FaceFrameWrapper ref={faceFrameRef} $angle={requestedAngle}>
+              <FaceFrameGuide
+                color={faceAligned ? "#4EBA69" : "white"}
+                angle={requestedAngle}
+              />
+            </FaceFrameWrapper>
+          </VideoStage>
+
+          <BottomSection>
+            <GuideText>{getGuideText()}</GuideText>
+
+            <CaptureButton
+              type="button"
+              onClick={handleCapture}
+              disabled={!faceAligned || !angleMatchesRequest}
+              aria-label="촬영하기"
+            >
+              <img src={captureIcon} alt="" />
+            </CaptureButton>
+          </BottomSection>
+        </>
+      ) : (
+        <ConfirmWrapper>
+          <ConfirmHeader />
+
+          <PreviewImage src={capturedPhoto} alt="촬영한 피부 사진" />
+
+          <PhotoConfirmSheet
+            features={photoFeatures}
+            onContinue={handleContinue}
+            onRetake={handleRetake}
+          />
+        </ConfirmWrapper>
+      )}
+    </Wrapper>
+  );
+}
