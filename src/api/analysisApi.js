@@ -47,3 +47,11 @@ export async function getRecommendedProducts(date) {
   });
   return data.data;
 }
+
+// 홈 화면 오늘의 피부 상태 summary 조회
+// GET /api/analysis/today
+// 응답 data: { skinStatus, aiComment } — 숫자 점수가 아니라 문자열을 줌
+export async function getTodayAnalysisSummary() {
+  const { data } = await apiClient.get("/api/analysis/today");
+  return data.data;
+}
