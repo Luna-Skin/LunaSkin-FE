@@ -496,7 +496,7 @@ export default function TodaySkinCamera() {
     const newPhoto = { url: capturedPhoto, angle: requestedAngle };
     saveCapturedPhotos([...existingPhotos, newPhoto]);
 
-    navigate("/today-skin");
+    navigate("/today-skin", { state: { skipTodayCheck: true } });
   };
 
   const angleMatchesRequest =

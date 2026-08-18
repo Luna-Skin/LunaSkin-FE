@@ -164,7 +164,6 @@ export default function TodaySkinForm() {
         rightImageUrl: uploaded.rightImageUrl,
       };
 
-      const todayDate = dayjs().format("YYYY-MM-DD");
       await postDailyAnalysis(todayDate, payload);
 
       clearCapturedPhotos(); // 이번 기록 세션 종료, 다음엔 빈 상태로 새로 시작
