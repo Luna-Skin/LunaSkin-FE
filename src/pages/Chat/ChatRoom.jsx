@@ -1,9 +1,14 @@
-// ChatRoom.jsx
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import styled from "styled-components";
 
-import ChatBubble, { formatTime } from "../../components/chat/ChatBubble";
+import ChatBubble, {
+  formatTime,
+} from "../../components/chat/ChatBubble";
 import ChatInputBar from "../../components/chat/ChatInputBar";
 import ChatPlusMenu from "../../components/chat/ChatPlusMenu";
 import { useChatContext } from "../../components/chat/ChatContext";
@@ -143,9 +148,13 @@ function getTodayLabel() {
 }
 
 function formatDateLabel(dateString) {
-  if (!dateString) return getTodayLabel();
+  if (!dateString) {
+    return getTodayLabel();
+  }
 
-  const date = new Date(`${dateString}T00:00:00`);
+  const date = new Date(
+    `${dateString}T00:00:00`,
+  );
 
   if (Number.isNaN(date.getTime())) {
     return dateString;
@@ -157,7 +166,9 @@ function formatDateLabel(dateString) {
 }
 
 function formatMessageTime(value) {
-  if (!value) return formatTime();
+  if (!value) {
+    return formatTime();
+  }
 
   const date = new Date(value);
 
@@ -243,12 +254,15 @@ export default function ChatRoom() {
     useState(null);
   const [isUploading, setIsUploading] =
     useState(false);
-
-  // AI 답변 대기 중인지 여부
   const [isAiTyping, setIsAiTyping] =
     useState(false);
+  const [
+    isSocketConnected,
+    setIsSocketConnected,
+  ] = useState(false);
 
   const socketRef = useRef(null);
+
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const messageEndRef = useRef(null);
@@ -263,7 +277,9 @@ export default function ChatRoom() {
         const loadedMessages =
           await fetchChatMessages(chatId);
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         let nextMessages = [
           ...loadedMessages,
@@ -308,7 +324,7 @@ export default function ChatRoom() {
         });
       } catch (error) {
         console.error(
-          "대화 내역 조회 실패:",
+          "[ChatRoom] 대화 내역 조회 실패:",
           error,
         );
 
@@ -335,20 +351,29 @@ export default function ChatRoom() {
   ]);
 
   useEffect(() => {
-    if (!chatId) return undefined;
+    if (!chatId) {
+      return undefined;
+    }
+
+    console.log(
+      "[ChatRoom] WebSocket 연결 시작:",
+      chatId,
+    );
 
     setSocketError(null);
+    setIsSocketConnected(false);
 
-    const socket = connectChatSocket(
-      chatId,
-      {
-        // AI 답변 수신
+    const socket =
+      connectChatSocket(chatId, {
         onMessage: (payload) => {
+          console.log(
+            "[ChatRoom] WebSocket 메시지 수신:",
+            payload,
+          );
+
           const nextMessage =
             normalizeMessage(payload);
 
-          // AI 답변이 도착했으므로
-          // typing 표시 제거
           if (nextMessage.role === "bot") {
             setIsAiTyping(false);
           }
@@ -370,8 +395,12 @@ export default function ChatRoom() {
           });
         },
 
-        // AI 답변 중 오류 발생
         onError: (error) => {
+          console.error(
+            "[ChatRoom] 서버 채팅 오류:",
+            error,
+          );
+
           setIsAiTyping(false);
 
           setSocketError(
@@ -380,25 +409,54 @@ export default function ChatRoom() {
           );
         },
 
-        // 소켓 연결 오류
-        onConnectError: () => {
+        onConnect: () => {
+          console.log(
+            "[ChatRoom] WebSocket 연결 완료:",
+            chatId,
+          );
+
+          setIsSocketConnected(true);
+          setSocketError(null);
+        },
+
+        onDisconnect: () => {
+          console.warn(
+            "[ChatRoom] WebSocket 연결 종료",
+          );
+
+          setIsSocketConnected(false);
+        },
+
+        onConnectError: (error) => {
+          console.error(
+            "[ChatRoom] WebSocket 연결 실패:",
+            error,
+          );
+
+          setIsSocketConnected(false);
           setIsAiTyping(false);
 
           setSocketError(
             "채팅 서버에 연결하지 못했어요.",
           );
         },
-      },
-    );
+      });
 
     socketRef.current = socket;
 
     return () => {
+      console.log(
+        "[ChatRoom] WebSocket cleanup:",
+        chatId,
+      );
+
       socket.disconnect();
 
       if (socketRef.current === socket) {
         socketRef.current = null;
       }
+
+      setIsSocketConnected(false);
     };
   }, [chatId]);
 
@@ -406,16 +464,31 @@ export default function ChatRoom() {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-  }, [messages, isUploading, isAiTyping]);
+  }, [
+    messages,
+    isUploading,
+    isAiTyping,
+  ]);
 
   const handleGoBack = () => {
     navigate(-1);
   };
 
   const sendMessage = async () => {
+    console.log(
+      "[ChatRoom] sendMessage 호출",
+    );
+
     const text = input.trim();
 
-    if (!text && !attachedImage) return;
+    console.log(
+      "[ChatRoom] 입력값:",
+      text,
+    );
+
+    if (!text && !attachedImage) {
+      return;
+    }
 
     try {
       if (attachedImage) {
@@ -434,12 +507,30 @@ export default function ChatRoom() {
         return;
       }
 
-      const sent =
-        socketRef.current?.sendMessage(
-          text,
+      const socket = socketRef.current;
+
+      console.log(
+        "[ChatRoom] socket:",
+        socket,
+      );
+
+      if (!socket) {
+        console.error(
+          "[ChatRoom] socketRef가 없습니다.",
         );
 
-      if (!sent) {
+        setSocketError(
+          "채팅 서버에 연결되지 않았어요.",
+        );
+
+        return;
+      }
+
+      if (!socket.isConnected()) {
+        console.warn(
+          "[ChatRoom] 아직 WebSocket 연결이 완료되지 않았습니다.",
+        );
+
         setSocketError(
           "채팅 서버 연결 후 다시 시도해주세요.",
         );
@@ -447,20 +538,33 @@ export default function ChatRoom() {
         return;
       }
 
+      const sent =
+        socket.sendMessage(text);
+
+      console.log(
+        "[ChatRoom] 메시지 전송 결과:",
+        sent,
+      );
+
+      if (!sent) {
+        setSocketError(
+          "메시지를 전송하지 못했어요. 다시 시도해주세요.",
+        );
+
+        return;
+      }
+
       setInput("");
       setIsMenuOpen(false);
+      setSocketError(null);
 
-      // AI가 답변을 준비하는 동안
-      // typing 표시
       setIsAiTyping(true);
     } catch (error) {
       console.error(
-        "메시지 전송 실패:",
+        "[ChatRoom] 메시지 전송 실패:",
         error,
       );
 
-      // 전송 오류가 발생하면
-      // typing 표시 제거
       setIsAiTyping(false);
 
       setSocketError(
@@ -475,7 +579,9 @@ export default function ChatRoom() {
     const selectedFile =
       event.target.files?.[0];
 
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      return;
+    }
 
     const reader = new FileReader();
 
@@ -499,7 +605,9 @@ export default function ChatRoom() {
     const selectedFile =
       event.target.files?.[0];
 
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      return;
+    }
 
     try {
       setIsUploading(true);
@@ -512,7 +620,7 @@ export default function ChatRoom() {
       setIsMenuOpen(false);
     } catch (error) {
       console.error(
-        "파일 업로드 실패:",
+        "[ChatRoom] 파일 업로드 실패:",
         error,
       );
 
@@ -527,10 +635,6 @@ export default function ChatRoom() {
 
   return (
     <Room>
-      {/* 
-        Figma 기준 상단 흰색 컴포넌트
-        border-top / border-bottom 포함
-      */}
       <Header>
         <BackButton
           type="button"
@@ -553,6 +657,13 @@ export default function ChatRoom() {
             : getTodayLabel()}
         </DateText>
 
+        {!isSocketConnected &&
+          !isLoadingMessages && (
+            <MessageState>
+              채팅 서버에 연결하는 중이에요.
+            </MessageState>
+          )}
+
         {socketError && (
           <MessageState>
             {socketError}
@@ -573,7 +684,6 @@ export default function ChatRoom() {
             />
           ))}
 
-        {/* AI 답변 대기 중 typing bubble */}
         {isAiTyping && (
           <ChatBubble
             role="bot"

@@ -18,7 +18,7 @@ import SockJS from "sockjs-client";
 import { apiClient } from "./axiosInstance";
 
 function getUserId() {
-  return "1";
+  return 1;
 }
 
 export function connectChatSocket(
@@ -27,16 +27,35 @@ export function connectChatSocket(
     onMessage,
     onError,
     onConnect,
+    onDisconnect,
     onConnectError,
   } = {},
 ) {
   const userId = getUserId();
 
+  const baseURL =
+    apiClient.defaults.baseURL ||
+    "http://localhost:8080";
+
+  const socketUrl = `${baseURL}/ws/chat`;
+
+  console.log("[ChatSocket] create", {
+    socketUrl,
+    roomId: chatRoomId,
+    userId,
+  });
+
+  let isActive = true;
+
   const client = new Client({
-    webSocketFactory: () =>
-      new SockJS(
-        `${apiClient.defaults.baseURL}/ws/chat`,
-      ),
+    webSocketFactory: () => {
+      console.log(
+        "[ChatSocket] SockJS connect:",
+        socketUrl,
+      );
+
+      return new SockJS(socketUrl);
+    },
 
     connectHeaders: {
       "X-USER-ID": String(userId),
@@ -45,28 +64,64 @@ export function connectChatSocket(
 
     reconnectDelay: 3000,
 
-    onConnect: () => {
+    debug: (message) => {
+      console.log("[STOMP]", message);
+    },
+
+    onConnect: (frame) => {
+      if (!isActive) {
+        console.warn(
+          "[ChatSocket] 연결됐지만 이미 비활성화된 소켓입니다.",
+        );
+        return;
+      }
+
       console.log(
-        `[ChatSocket] connected room=${chatRoomId}`,
+        "[ChatSocket] CONNECTED",
+        frame,
+      );
+
+      const topic = `/topic/chat/${chatRoomId}`;
+
+      console.log(
+        "[ChatSocket] SUBSCRIBE:",
+        topic,
       );
 
       client.subscribe(
-        `/topic/chat/${chatRoomId}`,
+        topic,
         (frame) => {
+          console.log(
+            "[ChatSocket] RECEIVED RAW:",
+            frame.body,
+          );
+
           let payload;
 
           try {
             payload = JSON.parse(frame.body);
           } catch (error) {
             console.error(
-              "채팅 메시지 파싱에 실패했습니다.",
+              "[ChatSocket] 메시지 JSON 파싱 실패:",
               error,
             );
+
             return;
           }
 
+          console.log(
+            "[ChatSocket] RECEIVED:",
+            payload,
+          );
+
           if (payload?.type === "ERROR") {
+            console.error(
+              "[ChatSocket] SERVER ERROR:",
+              payload,
+            );
+
             onError?.(payload);
+
             return;
           }
 
@@ -79,9 +134,11 @@ export function connectChatSocket(
 
     onStompError: (frame) => {
       console.error(
-        "STOMP 에러",
-        frame.headers?.message,
-        frame.body,
+        "[ChatSocket] STOMP ERROR:",
+        {
+          headers: frame.headers,
+          body: frame.body,
+        },
       );
 
       onConnectError?.(frame);
@@ -89,11 +146,29 @@ export function connectChatSocket(
 
     onWebSocketError: (event) => {
       console.error(
-        "웹소켓 연결 에러",
+        "[ChatSocket] WEBSOCKET ERROR:",
         event,
       );
 
       onConnectError?.(event);
+    },
+
+    onWebSocketClose: (event) => {
+      console.warn(
+        "[ChatSocket] WEBSOCKET CLOSED:",
+        event,
+      );
+
+      onDisconnect?.(event);
+    },
+
+    onDisconnect: (frame) => {
+      console.log(
+        "[ChatSocket] STOMP DISCONNECTED:",
+        frame,
+      );
+
+      onDisconnect?.(frame);
     },
   });
 
@@ -101,24 +176,96 @@ export function connectChatSocket(
 
   return {
     sendMessage(content) {
-      if (!client.connected) {
+      const message =
+        String(content ?? "").trim();
+
+      if (!message) {
         console.warn(
-          "소켓이 아직 연결되지 않았습니다.",
+          "[ChatSocket] 빈 메시지는 전송하지 않습니다.",
         );
+
         return false;
       }
 
-      client.publish({
-        destination: "/pub/chat/send",
-        body: JSON.stringify({
-          content,
-        }),
-      });
+      console.log(
+        "[ChatSocket] sendMessage 호출:",
+        {
+          connected: client.connected,
+          active: isActive,
+          content: message,
+        },
+      );
 
-      return true;
+      if (!isActive) {
+        console.warn(
+          "[ChatSocket] 소켓이 비활성화되었습니다.",
+        );
+
+        return false;
+      }
+
+      if (!client.connected) {
+        console.warn(
+          "[ChatSocket] 아직 STOMP 연결이 완료되지 않았습니다.",
+        );
+
+        return false;
+      }
+
+      console.log(
+        "[ChatSocket] SEND:",
+        {
+          destination: "/pub/chat/send",
+          body: {
+            content: message,
+          },
+        },
+      );
+
+      try {
+        client.publish({
+          destination: "/pub/chat/send",
+          body: JSON.stringify({
+            content: message,
+          }),
+        });
+
+        console.log(
+          "[ChatSocket] SEND 완료",
+        );
+
+        return true;
+      } catch (error) {
+        console.error(
+          "[ChatSocket] SEND 실패:",
+          error,
+        );
+
+        return false;
+      }
+    },
+
+    isConnected() {
+      return (
+        isActive &&
+        client.connected
+      );
     },
 
     disconnect() {
+      if (!isActive) {
+        return;
+      }
+
+      console.log(
+        "[ChatSocket] disconnect",
+        {
+          roomId: chatRoomId,
+        },
+      );
+
+      isActive = false;
+
       client.deactivate();
     },
   };
