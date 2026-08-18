@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 import PeriodOptionSheet from "../../components/my/PeriodOptionSheet";
 import SelectableChip from "../../components/my/SelectableChip";
-
-const STORAGE_KEY = "lunaSkinPeriodSettings";
+import { getCycleInfo, updateCycleInfo } from "../../api/userApi";
 
 const Page = styled.main`
   display: flex;
@@ -70,94 +69,106 @@ const SaveButton = styled.button`
     $changed ? "pointer" : "default"};
 `;
 
-const DEFAULT_SETTINGS = {
-  cycleLength: "28일",
-  periodLength: "4일",
-};
-
 const CYCLE_OPTIONS = [
-  "20일",
-  "21일",
-  "22일",
-  "23일",
-  "24일",
-  "25일",
-  "26일",
-  "27일",
-  "28일",
-  "29일",
-  "30일",
-  "31일",
-  "32일",
-  "33일",
-  "34일",
-  "35일",
-  "36일",
-  "37일",
-  "38일",
-  "39일",
-  "40일",
+  "20일", "21일", "22일", "23일", "24일", "25일", "26일", "27일",
+  "28일", "29일", "30일", "31일", "32일", "33일", "34일", "35일",
+  "36일", "37일", "38일", "39일", "40일",
 ];
 
 const PERIOD_OPTIONS = [
-  "2일 이내",
-  "3일",
-  "4일",
-  "5일",
-  "6일",
-  "7일",
-  "8일",
-  "9일",
-  "10일 이상",
+  "2일 이내", "3일", "4일", "5일", "6일", "7일", "8일", "9일", "10일 이상",
 ];
+
+// 숫자(일수)를 화면에 보여줄 문자열로 변환
+function cycleLengthToLabel(days) {
+  return `${days}일`;
+}
+
+// "2일 이내" / "10일 이상" 같은 특수 표기는 최소/최대 경계값으로 처리
+function periodDurationToLabel(days) {
+  if (days <= 2) return "2일 이내";
+  if (days >= 10) return "10일 이상";
+  return `${days}일`;
+}
+
+function cycleLabelToLength(label) {
+  return parseInt(label, 10);
+}
+
+function periodLabelToDuration(label) {
+  if (label === "2일 이내") return 2;
+  if (label === "10일 이상") return 10;
+  return parseInt(label, 10);
+}
 
 export default function PeriodInfo() {
   const navigate = useNavigate();
 
-  const savedSettings = JSON.parse(
-    window.localStorage.getItem(STORAGE_KEY) ||
-      JSON.stringify(DEFAULT_SETTINGS),
-  );
-
-  const [settings, setSettings] = useState(savedSettings);
-  const [originalSettings, setOriginalSettings] =
-    useState(savedSettings);
+  const [settings, setSettings] = useState({ cycleLength: "", periodLength: "" });
+  const [originalSettings, setOriginalSettings] = useState({ cycleLength: "", periodLength: "" });
   const [sheetType, setSheetType] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const res = await getCycleInfo();
+        const data = res.data ?? {};
+
+        const loaded = {
+          cycleLength: cycleLengthToLabel(data.defaultCycleLength),
+          periodLength: periodDurationToLabel(data.defaultPeriodDuration),
+        };
+
+        if (isMounted) {
+          setSettings(loaded);
+          setOriginalSettings(loaded);
+        }
+      } catch (error) {
+        console.error("생리 주기 정보를 불러오지 못했습니다.", error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const isChanged =
-    settings.cycleLength !==
-      originalSettings.cycleLength ||
-    settings.periodLength !==
-      originalSettings.periodLength;
+    settings.cycleLength !== originalSettings.cycleLength ||
+    settings.periodLength !== originalSettings.periodLength;
 
   const handleSelect = (value) => {
     if (sheetType === "cycle") {
-      setSettings((current) => ({
-        ...current,
-        cycleLength: value,
-      }));
+      setSettings((current) => ({ ...current, cycleLength: value }));
     }
 
     if (sheetType === "period") {
-      setSettings((current) => ({
-        ...current,
-        periodLength: value,
-      }));
+      setSettings((current) => ({ ...current, periodLength: value }));
     }
 
     setSheetType(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isChanged) return;
 
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(settings),
-    );
+    try {
+      await updateCycleInfo(
+        cycleLabelToLength(settings.cycleLength),
+        periodLabelToDuration(settings.periodLength),
+      );
 
-    setOriginalSettings(settings);
-    navigate("/my");
+      setOriginalSettings(settings);
+      navigate("/my");
+    } catch (error) {
+      console.error("생리 주기 정보 저장에 실패했습니다.", error);
+      alert("저장에 실패했어요. 다시 시도해주세요.");
+    }
   };
 
   const sheetConfig =
@@ -173,13 +184,12 @@ export default function PeriodInfo() {
           selectedValue: settings.periodLength,
         };
 
+  if (isLoading) return null;
+
   return (
     <Page>
       <Header>
-        <BackButton
-          type="button"
-          onClick={() => navigate("/my")}
-        >
+        <BackButton type="button" onClick={() => navigate("/my")}>
           ‹
         </BackButton>
 

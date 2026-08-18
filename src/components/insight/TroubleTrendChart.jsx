@@ -1,6 +1,4 @@
-import dayjs from "dayjs";
 import styled from "styled-components";
-import { findCurrentCycle } from "../../utils/cyclePhase";
 
 const Card = styled.section`
   padding: 14px 12px 10px;
@@ -31,7 +29,7 @@ function dayToX(day) {
   return PLOT_LEFT + ratio * (PLOT_RIGHT - PLOT_LEFT);
 }
 
-// points를 x,y 좌표로 변환
+// points: [{ day, score }] 형태로 변환된 좌표 계산
 function toCoords(points) {
   const scores = points.map((p) => p.score);
   const minScore = Math.min(...scores);
@@ -87,31 +85,21 @@ const AXIS_LABELS = [
   { label: "D +14", day: 14 },
 ];
 
-// skinRecords: { "2026-08-01": { troubleScore: 42, ... }, ... } 형태를 가정.
-// TODO: 실제 필드명이 troubleScore가 아니면 아래 한 줄만 고치면 됨.
-export function buildTroubleDataFromRecords(cycleStartDate, skinRecords) {
-  if (!cycleStartDate || !skinRecords) return [];
+// API 응답의 troubleTimeline: [{ dayFromStart, troubleIndex }] 를
+// 차트가 쓰는 { day, score } 형태로 변환
+function normalizeTroubleTimeline(troubleTimeline) {
+  if (!Array.isArray(troubleTimeline)) return [];
 
-  const points = [];
-  for (let day = -DAY_RANGE; day <= DAY_RANGE; day += 1) {
-    const dateStr = dayjs(cycleStartDate).add(day, "day").format("YYYY-MM-DD");
-    const record = skinRecords[dateStr];
-    if (record && typeof record.troubleScore === "number") {
-      points.push({ day, score: record.troubleScore });
-    }
-  }
-  return points;
+  return troubleTimeline.map((item) => ({
+    day: item.dayFromStart,
+    score: item.troubleIndex,
+  }));
 }
 
-// periodCycles + skinRecords가 실제로 있어야만 그래프를 그림.
+// troubleTimeline이 실제로 있어야만 그래프를 그림.
 // 기록이 없으면 mock으로 대체하지 않고 빈 상태를 보여줌.
-export default function TroubleTrendChart({ periodCycles = [], skinRecords = {} }) {
-  const today = dayjs().format("YYYY-MM-DD");
-  const currentCycle = findCurrentCycle(periodCycles, today);
-
-  const chartData = currentCycle
-    ? buildTroubleDataFromRecords(currentCycle.cycleStartDate, skinRecords)
-    : [];
+export default function TroubleTrendChart({ troubleTimeline = [] }) {
+  const chartData = normalizeTroubleTimeline(troubleTimeline);
 
   if (chartData.length === 0) {
     return (
