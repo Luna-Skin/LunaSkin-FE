@@ -29,17 +29,17 @@ const Content = styled.div`
 `;
 
 const Result = styled.span`
-  color: ${({ $color }) => $color};
+  color: #825fbd;
   font-size: 12px;
   font-weight: 700;
 `;
 
-export default function HabitImpactCard({ emoji, title, result, color }) {
+export default function HabitImpactCard({ emoji, title, result }) {
   return (
     <Card>
       <EmojiBox>{emoji}</EmojiBox>
       <Content>{title}</Content>
-      <Result $color={color}>{result}</Result>
+      <Result>{result}</Result>
     </Card>
   );
 }

@@ -1,129 +1,234 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
-  useCallback,
 } from "react";
 
+import {
+  createChatRoom as createChatRoomApi,
+  createChatRoomFromAnalysis as createChatRoomFromAnalysisApi,
+  deleteChatRoom as deleteChatRoomApi,
+  getChatRoomMessages,
+  getChatRooms,
+  renameChatRoom as renameChatRoomApi,
+} from "../../api/chatApi";
+
 const ChatContext = createContext(null);
-const STORAGE_KEY = "chatkiki:chats";
 
-function loadChatsFromStorage() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+function unwrapData(response) {
+  return response?.data !== undefined
+    ? response.data
+    : response;
 }
 
-function saveChatsToStorage(chats) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
-  } catch {
-    // localStorage 사용 불가 환경에서는 조용히 무시
-  }
-}
-
-function createEmptyChat({
-  title = "새로운 대화",
-  fromTodaySkin = false,
-  todaySkinDate = null,
-} = {}) {
-  const now = Date.now();
-
+function normalizeChatRoom(room) {
   return {
-    id: `chat_${now}_${Math.random().toString(36).slice(2, 8)}`,
-    title,
-    createdAt: now,
-    updatedAt: now,
-
-    // 투데이스킨에서 시작한 채팅인지
-    fromTodaySkin,
-
-    // 몇 년 몇 월 며칠의 투데이스킨인지
-    todaySkinDate,
-
-    messages: [],
+    ...room,
+    chatRoomId:
+      room?.chatRoomId ??
+      room?.roomId ??
+      room?.id,
+    title:
+      room?.title ??
+      room?.name ??
+      "새로운 대화",
+    createdAt:
+      room?.createdAt ??
+      room?.createdDate ??
+      Date.now(),
+    updatedAt:
+      room?.updatedAt ??
+      room?.modifiedAt ??
+      room?.createdAt ??
+      Date.now(),
+    analysisId:
+      room?.analysisId ??
+      room?.analysis?.analysisId ??
+      null,
   };
 }
 
+function normalizeRooms(response) {
+  const data = unwrapData(response);
+
+  if (Array.isArray(data)) {
+    return data.map(normalizeChatRoom);
+  }
+
+  if (Array.isArray(data?.rooms)) {
+    return data.rooms.map(normalizeChatRoom);
+  }
+
+  if (Array.isArray(data?.chatRooms)) {
+    return data.chatRooms.map(normalizeChatRoom);
+  }
+
+  return [];
+}
+
+function normalizeMessage(message) {
+  const role =
+    message?.role === "AI"
+      ? "bot"
+      : message?.role === "USER"
+        ? "user"
+        : message?.role === "assistant"
+          ? "bot"
+          : message?.role ?? "bot";
+
+  return {
+    ...message,
+    id:
+      message?.chatMessageId ??
+      message?.messageId ??
+      message?.id ??
+      `${Date.now()}-${Math.random()}`,
+    chatMessageId:
+      message?.chatMessageId ??
+      message?.messageId ??
+      message?.id,
+    role,
+    text:
+      message?.content ??
+      message?.text ??
+      "",
+    image:
+      message?.fileUrl ??
+      message?.image ??
+      null,
+    time:
+      message?.createdAt ??
+      message?.time ??
+      null,
+    messageType:
+      message?.messageType ?? "TEXT",
+  };
+}
+
+function normalizeMessages(response) {
+  const data = unwrapData(response);
+
+  if (Array.isArray(data)) {
+    return data.map(normalizeMessage);
+  }
+
+  if (Array.isArray(data?.messages)) {
+    return data.messages.map(normalizeMessage);
+  }
+
+  if (Array.isArray(data?.content)) {
+    return data.content.map(normalizeMessage);
+  }
+
+  return [];
+}
+
 export function ChatProvider({ children }) {
-  const [chats, setChats] = useState(loadChatsFromStorage);
+  const [chats, setChats] = useState([]);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+
+  const fetchChatRooms = useCallback(async () => {
+    try {
+      setIsLoadingChats(true);
+
+      const response = await getChatRooms();
+      const rooms = normalizeRooms(response);
+
+      // 서버가 준 순서를 그대로 유지
+      setChats(rooms);
+
+      return rooms;
+    } finally {
+      setIsLoadingChats(false);
+    }
+  }, []);
 
   useEffect(() => {
-    saveChatsToStorage(chats);
-  }, [chats]);
+    fetchChatRooms().catch((error) => {
+      console.error("채팅방 목록을 불러오지 못했습니다.", error);
+    });
+  }, [fetchChatRooms]);
 
   const getChat = useCallback(
     (chatId) =>
-      chats.find((chat) => chat.id === chatId) ?? null,
+      chats.find(
+        (chat) =>
+          String(chat.chatRoomId) === String(chatId),
+      ) ?? null,
     [chats],
   );
 
-  const createChat = useCallback((options) => {
-    const newChat = createEmptyChat(options);
+  const createChat = useCallback(
+    async (title = "새로운 대화") => {
+      const response = await createChatRoomApi(title);
 
-    setChats((current) => [newChat, ...current]);
+      const newChat = normalizeChatRoom(
+        unwrapData(response),
+      );
 
-    return newChat;
+      setChats((current) => [
+        newChat,
+        ...current.filter(
+          (chat) =>
+            String(chat.chatRoomId) !==
+            String(newChat.chatRoomId),
+        ),
+      ]);
+
+      return newChat;
+    },
+    [],
+  );
+
+  const createChatFromAnalysis = useCallback(
+    async (analysisId) => {
+      if (!analysisId) {
+        throw new Error("analysisId가 없습니다.");
+      }
+
+      const response =
+        await createChatRoomFromAnalysisApi(analysisId);
+
+      const chat = normalizeChatRoom(
+        unwrapData(response),
+      );
+
+      setChats((current) => [
+        chat,
+        ...current.filter(
+          (item) =>
+            String(item.chatRoomId) !==
+            String(chat.chatRoomId),
+        ),
+      ]);
+
+      return chat;
+    },
+    [],
+  );
+
+  const fetchChatMessages = useCallback(async (chatId) => {
+    const response = await getChatRoomMessages(chatId);
+
+    return normalizeMessages(response);
   }, []);
 
-  const renameChat = useCallback((chatId, newTitle) => {
-    const trimmed = newTitle.trim();
-
-    if (!trimmed) return;
-
-    setChats((current) =>
-      current.map((chat) =>
-        chat.id === chatId
-          ? {
-              ...chat,
-              title: trimmed,
-            }
-          : chat,
-      ),
-    );
-  }, []);
-
-  const deleteChat = useCallback((chatId) => {
-    setChats((current) =>
-      current.filter((chat) => chat.id !== chatId),
-    );
-  }, []);
-
-  const setChatMessages = useCallback((chatId, updater) => {
-    setChats((current) =>
-      current.map((chat) => {
-        if (chat.id !== chatId) return chat;
-
-        const nextMessages =
-          typeof updater === "function"
-            ? updater(chat.messages)
-            : updater;
-
-        return {
-          ...chat,
-          messages: nextMessages,
-          updatedAt: Date.now(),
-        };
-      }),
-    );
-  }, []);
-
-  const updateChatTitleFromAI = useCallback(
-    (chatId, aiTitle) => {
-      const trimmed = aiTitle?.trim();
+  const renameChat = useCallback(
+    async (chatId, newTitle) => {
+      const trimmed = newTitle.trim();
 
       if (!trimmed) return;
 
+      await renameChatRoomApi(chatId, trimmed);
+
       setChats((current) =>
         current.map((chat) =>
-          chat.id === chatId
+          String(chat.chatRoomId) === String(chatId)
             ? {
                 ...chat,
-                title: trimmed.slice(0, 20),
+                title: trimmed,
               }
             : chat,
         ),
@@ -132,14 +237,27 @@ export function ChatProvider({ children }) {
     [],
   );
 
+  const deleteChat = useCallback(async (chatId) => {
+    await deleteChatRoomApi(chatId);
+
+    setChats((current) =>
+      current.filter(
+        (chat) =>
+          String(chat.chatRoomId) !== String(chatId),
+      ),
+    );
+  }, []);
+
   const value = {
     chats,
+    isLoadingChats,
     getChat,
     createChat,
+    createChatFromAnalysis,
+    fetchChatRooms,
+    fetchChatMessages,
     renameChat,
     deleteChat,
-    setChatMessages,
-    updateChatTitleFromAI,
   };
 
   return (

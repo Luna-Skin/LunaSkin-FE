@@ -12,18 +12,23 @@ import PointsRewardButton from "../../components/todaySkin/PointsRewardButton";
 import ProductRecommendSection from "../../components/todaySkin/ProductRecommendSection";
 import ConfirmModal from "../../components/common/ConfirmModal";
 import PointsRewardModal from "../../components/todaySkin/PointsRewardModal";
+
 import {
   getDailyAnalysis,
   getRecommendedProducts,
 } from "../../api/analysisApi";
+import { useChatContext } from "../../components/chat/ChatContext";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
-import { hasClaimedToday, claimDailyPoints } from "../../utils/pointsStorage";
+import {
+  hasClaimedToday,
+  claimDailyPoints,
+} from "../../utils/pointsStorage";
 
 const Content = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px 24px 24px;
+  padding: 24px 24px;
 `;
 
 const BottomButtonRow = styled.div`
@@ -32,16 +37,21 @@ const BottomButtonRow = styled.div`
   gap: 12px;
 `;
 
-// API가 준 정면/왼쪽/오른쪽 URL을, 사진 보기 모달이 쓰는 { url, angle } 배열로 변환
-// 왼쪽/오른쪽은 선택 촬영이라 없을 수도 있어서, 값이 있는 것만 포함함
 function buildPhotos(analysis) {
   const photos = [];
-  if (analysis.imageUrl)
+
+  if (analysis.imageUrl) {
     photos.push({ url: analysis.imageUrl, angle: "front" });
-  if (analysis.leftImageUrl)
+  }
+
+  if (analysis.leftImageUrl) {
     photos.push({ url: analysis.leftImageUrl, angle: "left" });
-  if (analysis.rightImageUrl)
+  }
+
+  if (analysis.rightImageUrl) {
     photos.push({ url: analysis.rightImageUrl, angle: "right" });
+  }
+
   return photos;
 }
 
@@ -49,24 +59,30 @@ export default function TodaySkinResult() {
   const { date } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { createChatFromAnalysis } = useChatContext();
 
-  // 해당 날짜 분석 기록. API 응답 오기 전엔 null
   const [analysis, setAnalysis] = useState(null);
   const [loadError, setLoadError] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [reanalyzeStep, setReanalyzeStep] = useState(null);
+  const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
+  const [pointsClaimed, setPointsClaimed] = useState(() =>
+    hasClaimedToday(),
+  );
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   useEffect(() => {
     setAnalysis(null);
-  setLoadError(false);
+    setLoadError(false);
 
     getDailyAnalysis(date)
       .then(setAnalysis)
       .catch((error) => {
-        console.error("피부 분석 기록 조회 실패:", error);
+        console.error("일일 분석 기록 조회 실패:", error);
         setLoadError(true);
       });
   }, [date]);
-
-  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     setProducts([]);
@@ -74,11 +90,11 @@ export default function TodaySkinResult() {
     getRecommendedProducts(date)
       .then((list) => {
         setProducts(
-          list.map((p) => ({
-            id: p.productId,
-            name: p.prodName,
-            tag: p.ingredient,
-            url: p.purchaseUrl,
+          list.map((product) => ({
+            id: product.productId,
+            name: product.prodName,
+            tag: product.ingredient,
+            url: product.purchaseUrl,
           })),
         );
       })
@@ -87,18 +103,19 @@ export default function TodaySkinResult() {
       });
   }, [date]);
 
-  // "결과를 확인하러 들어온" 경우(홈 캘린더, 오늘 상태 카드)엔 뒤로가기 헤더로 표시
   const showBackHeader = Boolean(location.state?.showBackHeader);
+
   const headerProps = showBackHeader
-    ? { variant: "back", title: "투데이스킨 기록", onBack: () => navigate("/") }
+    ? {
+        variant: "back",
+        title: "투데이스킨 기록",
+        onBack: () => navigate("/"),
+      }
     : {};
 
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
-  const [reanalyzeStep, setReanalyzeStep] = useState(null); // null | "confirm1" | "confirm2"
-  const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
-  const [pointsClaimed, setPointsClaimed] = useState(() => hasClaimedToday());
-
-  const closeReanalyzeFlow = () => setReanalyzeStep(null);
+  const closeReanalyzeFlow = () => {
+    setReanalyzeStep(null);
+  };
 
   const handleCloseRewardModal = () => {
     setPointsRewardOpen(false);
@@ -108,6 +125,36 @@ export default function TodaySkinResult() {
 
   const handleConfirmRecapture = () => {
     navigate("/today-skin/camera");
+  };
+
+  const handleAskKiki = async () => {
+    if (isCreatingChat) return;
+
+    // 백엔드 응답 필드명이 analysisId 또는 id인 경우 모두 대응
+    const analysisId = analysis?.analysisId ?? analysis?.id;
+
+    if (!analysisId) {
+      alert("분석 기록 ID를 찾을 수 없어요.");
+      return;
+    }
+
+    try {
+      setIsCreatingChat(true);
+
+      const chat = await createChatFromAnalysis(analysisId);
+
+      navigate(`/chat/${chat.chatRoomId}`, {
+        state: {
+          fromTodaySkin: true,
+          todaySkinDate: date,
+        },
+      });
+    } catch (error) {
+      console.error("분석 기반 채팅방 생성 실패:", error);
+      alert("채팅방을 열지 못했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsCreatingChat(false);
+    }
   };
 
   if (loadError) {
@@ -129,7 +176,6 @@ export default function TodaySkinResult() {
 
   const photos = buildPhotos(analysis);
 
-  // API 필드명 SkinMetricsCard가 쓰는 이름으로 변환
   const metrics = {
     trouble: analysis.detailedMetrics.trouble,
     oil: analysis.detailedMetrics.sebum,
@@ -141,6 +187,7 @@ export default function TodaySkinResult() {
   return (
     <div>
       <Header {...headerProps} />
+
       <Content>
         <SkinScoreSummary
           date={date}
@@ -148,14 +195,19 @@ export default function TodaySkinResult() {
           score={analysis.overallScore}
           statusText={`피부 상태 ${analysis.skinStatus}`}
           statusSummary={analysis.phaseComment}
-          onPhotoClick={() =>
-            photos.length > 0
-              ? setPhotoModalOpen(true)
-              : alert("저장된 사진이 없어요")
+          onPhotoClick={() => {
+            if (photos.length > 0) {
+              setPhotoModalOpen(true);
+            } else {
+              alert("저장된 사진이 없어요.");
+            }
+          }}
+          onAskClick={handleAskKiki}
+          onCompareClick={() =>
+            navigate(`/today-skin/compare/${date}`)
           }
-          onAskClick={() => navigate("/chat")}
-          onCompareClick={() => navigate(`/today-skin/compare/${date}`)}
         />
+
         <SkinMetricsCard metrics={metrics} />
         <AiInsightBox insight={analysis.aiComment} />
         <ProductRecommendSection products={products} />
@@ -165,7 +217,9 @@ export default function TodaySkinResult() {
             claimed={pointsClaimed}
             onClick={() => setPointsRewardOpen(true)}
           />
-          <ReanalyzeButton onClick={() => setReanalyzeStep("confirm1")} />
+          <ReanalyzeButton
+            onClick={() => setReanalyzeStep("confirm1")}
+          />
         </BottomButtonRow>
       </Content>
 
@@ -177,14 +231,21 @@ export default function TodaySkinResult() {
       )}
 
       {pointsRewardOpen && (
-        <PointsRewardModal points={50} onClose={handleCloseRewardModal} />
+        <PointsRewardModal
+          points={50}
+          onClose={handleCloseRewardModal}
+        />
       )}
 
       {reanalyzeStep === "confirm1" && (
         <ConfirmModal
           message="현재 기록을 지우고 다시 분석할까요?"
           options={[
-            { label: "아니요", variant: "light", onClick: closeReanalyzeFlow },
+            {
+              label: "아니요",
+              variant: "light",
+              onClick: closeReanalyzeFlow,
+            },
             {
               label: "네",
               variant: "dark",
