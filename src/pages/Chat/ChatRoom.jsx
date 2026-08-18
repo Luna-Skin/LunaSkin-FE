@@ -1,86 +1,132 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+// ChatRoom.jsx
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
-import ChatBubble, {
-  formatTime,
-} from "../../components/chat/ChatBubble";
+import ChatBubble, { formatTime } from "../../components/chat/ChatBubble";
 import ChatInputBar from "../../components/chat/ChatInputBar";
 import ChatPlusMenu from "../../components/chat/ChatPlusMenu";
 import { useChatContext } from "../../components/chat/ChatContext";
 import { connectChatSocket } from "../../api/chatSocket";
 import { uploadChatFile } from "../../api/chatApi";
 
+import goBackIcon from "../../assets/icons/go back.svg";
+
 const DEFAULT_GREETING =
   "안녕하세요! 끼끼의 피부상담소입니다.\n무엇이 궁금하신가요?";
 
 const Room = styled.section`
   position: relative;
+
   display: flex;
   flex-direction: column;
+
   width: 100%;
   height: 100%;
   margin: 0 auto;
+
   overflow: hidden;
-  background: #f7f1ff;
+
+  background: #f7f2ff;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
 const Header = styled.header`
+  width: 100%;
+  height: 48px;
+
+  box-sizing: border-box;
+
   display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  border-bottom: 1px solid #e5e5e5;
-  background: #fff;
+  align-items: flex-start;
+
+  padding: 8px 15px 15px 15px;
+
+  background: white;
+
+  border-top: 1px solid #d9d9d9;
+  border-bottom: 1px solid #d9d9d9;
+
+  flex-shrink: 0;
 `;
 
 const BackButton = styled.button`
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
+  width: 26px;
+  height: 26px;
+
+  padding: 0;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border: 0;
   background: transparent;
-  color: #333;
-  font-size: 22px;
+
   cursor: pointer;
+`;
+
+const BackIcon = styled.img`
+  width: 26px;
+  height: 26px;
+
+  display: block;
 `;
 
 const Conversation = styled.main`
   flex: 1;
   min-height: 0;
+
   overflow-y: auto;
-  padding: 24px 28px 100px;
+
+  box-sizing: border-box;
+
+  padding: 24px 24px 100px;
 `;
 
 const DateText = styled.p`
-  margin-bottom: 16px;
-  color: #888;
-  text-align: center;
+  margin: 0 0 20px;
+
+  color: #7e7979;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
   font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+
+  text-align: center;
+  word-wrap: break-word;
 `;
 
 const MessageState = styled.p`
-  margin-bottom: 12px;
-  color: #999;
+  margin: 0 0 12px;
+
+  color: #a7a7a7;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 20px;
+
   text-align: center;
-  font-size: 11px;
+  word-wrap: break-word;
 `;
 
 const InputArea = styled.div`
   position: absolute;
+
   right: 0;
   bottom: 0;
   left: 0;
+
   z-index: 10;
-  padding: 10px 28px 14px;
+
+  box-sizing: border-box;
+
+  padding: 10px 24px 14px;
 `;
 
 const InputBarWrapper = styled.div`
@@ -91,7 +137,9 @@ const InputBarWrapper = styled.div`
 function getTodayLabel() {
   const now = new Date();
 
-  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  return `${now.getFullYear()}년 ${
+    now.getMonth() + 1
+  }월 ${now.getDate()}일`;
 }
 
 function formatDateLabel(dateString) {
@@ -103,7 +151,9 @@ function formatDateLabel(dateString) {
     return dateString;
   }
 
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+  return `${date.getFullYear()}년 ${
+    date.getMonth() + 1
+  }월 ${date.getDate()}일`;
 }
 
 function formatMessageTime(value) {
@@ -121,28 +171,45 @@ function formatMessageTime(value) {
 function normalizeMessage(message) {
   return {
     ...message,
+
     id:
       message.id ??
       message.chatMessageId ??
       message.messageId ??
       `${Date.now()}-${Math.random()}`,
+
     role:
       message.role === "AI"
         ? "bot"
         : message.role === "USER"
           ? "user"
           : message.role,
-    text: message.text ?? message.content ?? "",
-    image: message.image ?? message.fileUrl ?? null,
+
+    text:
+      message.text ??
+      message.content ??
+      "",
+
+    image:
+      message.image ??
+      message.fileUrl ??
+      null,
+
     time: formatMessageTime(
-      message.time ?? message.createdAt,
+      message.time ??
+        message.createdAt,
     ),
   };
 }
 
-function hasSameMessage(messages, nextMessage) {
+function hasSameMessage(
+  messages,
+  nextMessage,
+) {
   return messages.some(
-    (message) => String(message.id) === String(nextMessage.id),
+    (message) =>
+      String(message.id) ===
+      String(nextMessage.id),
   );
 }
 
@@ -151,21 +218,35 @@ export default function ChatRoom() {
   const location = useLocation();
   const { chatId } = useParams();
 
-  const { fetchChatMessages } = useChatContext();
+  const { fetchChatMessages } =
+    useChatContext();
 
   const fromTodaySkin = Boolean(
     location.state?.fromTodaySkin,
   );
 
-  const todaySkinDate = location.state?.todaySkinDate;
+  const todaySkinDate =
+    location.state?.todaySkinDate;
 
   const [input, setInput] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [attachedImage, setAttachedImage] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  const [socketError, setSocketError] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] =
+    useState(false);
+  const [attachedImage, setAttachedImage] =
+    useState(null);
+  const [messages, setMessages] =
+    useState([]);
+  const [
+    isLoadingMessages,
+    setIsLoadingMessages,
+  ] = useState(true);
+  const [socketError, setSocketError] =
+    useState(null);
+  const [isUploading, setIsUploading] =
+    useState(false);
+
+  // AI 답변 대기 중인지 여부
+  const [isAiTyping, setIsAiTyping] =
+    useState(false);
 
   const socketRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -179,40 +260,57 @@ export default function ChatRoom() {
       try {
         setIsLoadingMessages(true);
 
-        const loadedMessages = await fetchChatMessages(chatId);
+        const loadedMessages =
+          await fetchChatMessages(chatId);
 
         if (!isMounted) return;
 
-        // 백엔드는 최신 메시지부터 주므로, 화면용으로 뒤집는다.
-        let nextMessages = [...loadedMessages]
+        let nextMessages = [
+          ...loadedMessages,
+        ]
           .reverse()
           .map(normalizeMessage);
 
-        // 투데이스킨에서 온 경우 기본 인사 대신 분석 안내만 표시
         if (fromTodaySkin) {
-          nextMessages = nextMessages.filter(
-            (message) => message.text !== DEFAULT_GREETING,
-          );
+          nextMessages =
+            nextMessages.filter(
+              (message) =>
+                message.text !==
+                DEFAULT_GREETING,
+            );
 
           nextMessages.unshift({
             id: `today-skin-notice-${chatId}`,
             role: "bot",
             text:
               "오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n" +
-              `→ ${formatDateLabel(todaySkinDate)} 투데이스킨 첨부됨`,
+              `→ ${formatDateLabel(
+                todaySkinDate,
+              )} 투데이스킨 첨부됨`,
             time: formatTime(),
           });
         }
 
         setMessages((current) => {
-          const receivedWhileLoading = current.filter(
-            (message) => !hasSameMessage(nextMessages, message),
-          );
+          const receivedWhileLoading =
+            current.filter(
+              (message) =>
+                !hasSameMessage(
+                  nextMessages,
+                  message,
+                ),
+            );
 
-          return [...nextMessages, ...receivedWhileLoading];
+          return [
+            ...nextMessages,
+            ...receivedWhileLoading,
+          ];
         });
       } catch (error) {
-        console.error("대화 내역 조회 실패:", error);
+        console.error(
+          "대화 내역 조회 실패:",
+          error,
+        );
 
         if (isMounted) {
           setMessages([]);
@@ -241,32 +339,57 @@ export default function ChatRoom() {
 
     setSocketError(null);
 
-    const socket = connectChatSocket(chatId, {
-      onMessage: (payload) => {
-        const nextMessage = normalizeMessage(payload);
+    const socket = connectChatSocket(
+      chatId,
+      {
+        // AI 답변 수신
+        onMessage: (payload) => {
+          const nextMessage =
+            normalizeMessage(payload);
 
-        setMessages((current) => {
-          if (hasSameMessage(current, nextMessage)) {
-            return current;
+          // AI 답변이 도착했으므로
+          // typing 표시 제거
+          if (nextMessage.role === "bot") {
+            setIsAiTyping(false);
           }
 
-          return [...current, nextMessage];
-        });
-      },
+          setMessages((current) => {
+            if (
+              hasSameMessage(
+                current,
+                nextMessage,
+              )
+            ) {
+              return current;
+            }
 
-      onError: (error) => {
-        setSocketError(
-          error?.message ??
-            "AI 답변 중 오류가 발생했어요.",
-        );
-      },
+            return [
+              ...current,
+              nextMessage,
+            ];
+          });
+        },
 
-      onConnectError: () => {
-        setSocketError(
-          "채팅 서버에 연결하지 못했어요.",
-        );
+        // AI 답변 중 오류 발생
+        onError: (error) => {
+          setIsAiTyping(false);
+
+          setSocketError(
+            error?.message ??
+              "AI 답변 중 오류가 발생했어요.",
+          );
+        },
+
+        // 소켓 연결 오류
+        onConnectError: () => {
+          setIsAiTyping(false);
+
+          setSocketError(
+            "채팅 서버에 연결하지 못했어요.",
+          );
+        },
       },
-    });
+    );
 
     socketRef.current = socket;
 
@@ -283,7 +406,11 @@ export default function ChatRoom() {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-  }, [messages, isUploading]);
+  }, [messages, isUploading, isAiTyping]);
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -294,7 +421,6 @@ export default function ChatRoom() {
       if (attachedImage) {
         setIsUploading(true);
 
-        // 업로드 후 USER 메시지와 AI 답변은 소켓으로 수신됨
         await uploadChatFile(
           chatId,
           attachedImage.file,
@@ -304,22 +430,39 @@ export default function ChatRoom() {
         setInput("");
         setAttachedImage(null);
         setIsMenuOpen(false);
+
         return;
       }
 
-      const sent = socketRef.current?.sendMessage(text);
+      const sent =
+        socketRef.current?.sendMessage(
+          text,
+        );
 
       if (!sent) {
         setSocketError(
           "채팅 서버 연결 후 다시 시도해주세요.",
         );
+
         return;
       }
 
       setInput("");
       setIsMenuOpen(false);
+
+      // AI가 답변을 준비하는 동안
+      // typing 표시
+      setIsAiTyping(true);
     } catch (error) {
-      console.error("메시지 전송 실패:", error);
+      console.error(
+        "메시지 전송 실패:",
+        error,
+      );
+
+      // 전송 오류가 발생하면
+      // typing 표시 제거
+      setIsAiTyping(false);
+
       setSocketError(
         "메시지를 전송하지 못했어요. 다시 시도해주세요.",
       );
@@ -329,7 +472,8 @@ export default function ChatRoom() {
   };
 
   const handlePhotoAttach = (event) => {
-    const selectedFile = event.target.files?.[0];
+    const selectedFile =
+      event.target.files?.[0];
 
     if (!selectedFile) return;
 
@@ -345,23 +489,33 @@ export default function ChatRoom() {
     };
 
     reader.readAsDataURL(selectedFile);
+
     event.target.value = "";
   };
 
-  const handleFileAttach = async (event) => {
-    const selectedFile = event.target.files?.[0];
+  const handleFileAttach = async (
+    event,
+  ) => {
+    const selectedFile =
+      event.target.files?.[0];
 
     if (!selectedFile) return;
 
     try {
       setIsUploading(true);
 
-      // 일반 파일도 업로드 API를 통해 메시지로 저장됨
-      await uploadChatFile(chatId, selectedFile);
+      await uploadChatFile(
+        chatId,
+        selectedFile,
+      );
 
       setIsMenuOpen(false);
     } catch (error) {
-      console.error("파일 업로드 실패:", error);
+      console.error(
+        "파일 업로드 실패:",
+        error,
+      );
+
       setSocketError(
         "파일을 업로드하지 못했어요. 다시 시도해주세요.",
       );
@@ -373,29 +527,42 @@ export default function ChatRoom() {
 
   return (
     <Room>
+      {/* 
+        Figma 기준 상단 흰색 컴포넌트
+        border-top / border-bottom 포함
+      */}
       <Header>
         <BackButton
           type="button"
-          onClick={() => navigate("/chat")}
-          aria-label="채팅 목록으로"
+          onClick={handleGoBack}
+          aria-label="뒤로 가기"
         >
-          ‹
+          <BackIcon
+            src={goBackIcon}
+            alt=""
+          />
         </BackButton>
       </Header>
 
       <Conversation>
         <DateText>
           {fromTodaySkin
-            ? formatDateLabel(todaySkinDate)
+            ? formatDateLabel(
+                todaySkinDate,
+              )
             : getTodayLabel()}
         </DateText>
 
         {socketError && (
-          <MessageState>{socketError}</MessageState>
+          <MessageState>
+            {socketError}
+          </MessageState>
         )}
 
         {isLoadingMessages && (
-          <MessageState>대화를 불러오는 중이에요.</MessageState>
+          <MessageState>
+            대화를 불러오는 중이에요.
+          </MessageState>
         )}
 
         {!isLoadingMessages &&
@@ -406,8 +573,18 @@ export default function ChatRoom() {
             />
           ))}
 
+        {/* AI 답변 대기 중 typing bubble */}
+        {isAiTyping && (
+          <ChatBubble
+            role="bot"
+            isTyping
+          />
+        )}
+
         {isUploading && (
-          <MessageState>파일을 전송하는 중이에요.</MessageState>
+          <MessageState>
+            파일을 전송하는 중이에요.
+          </MessageState>
         )}
 
         <div ref={messageEndRef} />
@@ -416,8 +593,12 @@ export default function ChatRoom() {
       <InputArea>
         {isMenuOpen && (
           <ChatPlusMenu
-            onPhotoClick={() => photoInputRef.current?.click()}
-            onFileClick={() => fileInputRef.current?.click()}
+            onPhotoClick={() =>
+              photoInputRef.current?.click()
+            }
+            onFileClick={() =>
+              fileInputRef.current?.click()
+            }
           />
         )}
 
@@ -427,11 +608,15 @@ export default function ChatRoom() {
             onChange={setInput}
             onSubmit={sendMessage}
             onToggleMenu={() =>
-              setIsMenuOpen((current) => !current)
+              setIsMenuOpen(
+                (current) => !current,
+              )
             }
             isMenuOpen={isMenuOpen}
             image={attachedImage?.url}
-            onRemoveImage={() => setAttachedImage(null)}
+            onRemoveImage={() =>
+              setAttachedImage(null)
+            }
           />
         </InputBarWrapper>
 

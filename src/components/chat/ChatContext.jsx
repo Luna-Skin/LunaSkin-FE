@@ -26,23 +26,28 @@ function unwrapData(response) {
 function normalizeChatRoom(room) {
   return {
     ...room,
+
     chatRoomId:
       room?.chatRoomId ??
       room?.roomId ??
       room?.id,
+
     title:
       room?.title ??
       room?.name ??
       "새로운 대화",
+
     createdAt:
       room?.createdAt ??
       room?.createdDate ??
       Date.now(),
+
     updatedAt:
       room?.updatedAt ??
       room?.modifiedAt ??
       room?.createdAt ??
       Date.now(),
+
     analysisId:
       room?.analysisId ??
       room?.analysis?.analysisId ??
@@ -80,28 +85,35 @@ function normalizeMessage(message) {
 
   return {
     ...message,
+
     id:
       message?.chatMessageId ??
       message?.messageId ??
       message?.id ??
       `${Date.now()}-${Math.random()}`,
+
     chatMessageId:
       message?.chatMessageId ??
       message?.messageId ??
       message?.id,
+
     role,
+
     text:
       message?.content ??
       message?.text ??
       "",
+
     image:
       message?.fileUrl ??
       message?.image ??
       null,
+
     time:
       message?.createdAt ??
       message?.time ??
       null,
+
     messageType:
       message?.messageType ?? "TEXT",
   };
@@ -127,7 +139,8 @@ function normalizeMessages(response) {
 
 export function ChatProvider({ children }) {
   const [chats, setChats] = useState([]);
-  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingChats, setIsLoadingChats] =
+    useState(true);
 
   const fetchChatRooms = useCallback(async () => {
     try {
@@ -136,7 +149,6 @@ export function ChatProvider({ children }) {
       const response = await getChatRooms();
       const rooms = normalizeRooms(response);
 
-      // 서버가 준 순서를 그대로 유지
       setChats(rooms);
 
       return rooms;
@@ -147,7 +159,10 @@ export function ChatProvider({ children }) {
 
   useEffect(() => {
     fetchChatRooms().catch((error) => {
-      console.error("채팅방 목록을 불러오지 못했습니다.", error);
+      console.error(
+        "채팅방 목록을 불러오지 못했습니다.",
+        error,
+      );
     });
   }, [fetchChatRooms]);
 
@@ -155,14 +170,16 @@ export function ChatProvider({ children }) {
     (chatId) =>
       chats.find(
         (chat) =>
-          String(chat.chatRoomId) === String(chatId),
+          String(chat.chatRoomId) ===
+          String(chatId),
       ) ?? null,
     [chats],
   );
 
   const createChat = useCallback(
     async (title = "새로운 대화") => {
-      const response = await createChatRoomApi(title);
+      const response =
+        await createChatRoomApi(title);
 
       const newChat = normalizeChatRoom(
         unwrapData(response),
@@ -170,6 +187,7 @@ export function ChatProvider({ children }) {
 
       setChats((current) => [
         newChat,
+
         ...current.filter(
           (chat) =>
             String(chat.chatRoomId) !==
@@ -182,38 +200,48 @@ export function ChatProvider({ children }) {
     [],
   );
 
-  const createChatFromAnalysis = useCallback(
-    async (analysisId) => {
-      if (!analysisId) {
-        throw new Error("analysisId가 없습니다.");
-      }
+  const createChatFromAnalysis =
+    useCallback(
+      async (analysisId) => {
+        if (!analysisId) {
+          throw new Error(
+            "analysisId가 없습니다.",
+          );
+        }
 
+        const response =
+          await createChatRoomFromAnalysisApi(
+            analysisId,
+          );
+
+        const chat = normalizeChatRoom(
+          unwrapData(response),
+        );
+
+        setChats((current) => [
+          chat,
+
+          ...current.filter(
+            (item) =>
+              String(item.chatRoomId) !==
+              String(chat.chatRoomId),
+          ),
+        ]);
+
+        return chat;
+      },
+      [],
+    );
+
+  const fetchChatMessages = useCallback(
+    async (chatId) => {
       const response =
-        await createChatRoomFromAnalysisApi(analysisId);
+        await getChatRoomMessages(chatId);
 
-      const chat = normalizeChatRoom(
-        unwrapData(response),
-      );
-
-      setChats((current) => [
-        chat,
-        ...current.filter(
-          (item) =>
-            String(item.chatRoomId) !==
-            String(chat.chatRoomId),
-        ),
-      ]);
-
-      return chat;
+      return normalizeMessages(response);
     },
     [],
   );
-
-  const fetchChatMessages = useCallback(async (chatId) => {
-    const response = await getChatRoomMessages(chatId);
-
-    return normalizeMessages(response);
-  }, []);
 
   const renameChat = useCallback(
     async (chatId, newTitle) => {
@@ -221,11 +249,15 @@ export function ChatProvider({ children }) {
 
       if (!trimmed) return;
 
-      await renameChatRoomApi(chatId, trimmed);
+      await renameChatRoomApi(
+        chatId,
+        trimmed,
+      );
 
       setChats((current) =>
         current.map((chat) =>
-          String(chat.chatRoomId) === String(chatId)
+          String(chat.chatRoomId) ===
+          String(chatId)
             ? {
                 ...chat,
                 title: trimmed,
@@ -237,25 +269,33 @@ export function ChatProvider({ children }) {
     [],
   );
 
-  const deleteChat = useCallback(async (chatId) => {
-    await deleteChatRoomApi(chatId);
+  const deleteChat = useCallback(
+    async (chatId) => {
+      await deleteChatRoomApi(chatId);
 
-    setChats((current) =>
-      current.filter(
-        (chat) =>
-          String(chat.chatRoomId) !== String(chatId),
-      ),
-    );
-  }, []);
+      setChats((current) =>
+        current.filter(
+          (chat) =>
+            String(chat.chatRoomId) !==
+            String(chatId),
+        ),
+      );
+    },
+    [],
+  );
 
   const value = {
     chats,
     isLoadingChats,
+
     getChat,
+
     createChat,
     createChatFromAnalysis,
+
     fetchChatRooms,
     fetchChatMessages,
+
     renameChat,
     deleteChat,
   };

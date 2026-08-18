@@ -17,14 +17,20 @@ const Page = styled.div`
   margin: 0 auto;
   padding: 24px 20px 84px;
   background: #fff;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
 const Title = styled.h1`
   margin: 0 0 24px;
+
   color: #a876fc;
   text-align: center;
-  font-size: 24px;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 28px;
   font-weight: 700;
+  line-height: normal;
 `;
 
 const Section = styled.section`
@@ -36,40 +42,59 @@ const Section = styled.section`
 `;
 
 const SectionTitle = styled.h2`
-  margin-bottom: 8px;
-  color: #292929;
-  font-size: 15px;
+  margin: 0 0 8px;
+
+  color: #2d2d2d;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 16px;
   font-weight: 700;
+  line-height: normal;
 `;
 
 const Description = styled.div`
   margin-top: 8px;
   padding: 10px 12px;
+
   border-radius: 14px;
   background: #f6f0ff;
-  color: #9b7af8;
-  font-size: 11px;
-  line-height: 1.45;
+
+  color: rgba(152, 132, 220, 0.8);
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
 
   strong {
     display: block;
     margin-bottom: 3px;
-    color: #5f5a67;
-    font-size: 12px;
+
+    color: #616161;
+
+    font-family: "Pretendard Variable", Pretendard, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: normal;
   }
 `;
 
 const HabitList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 `;
 
 const HabitListMessage = styled.p`
   padding: 12px 16px;
+
   color: #999;
   text-align: center;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
   font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
 `;
 
 function normalizePhaseData(phases) {
@@ -212,7 +237,9 @@ export default function Insight() {
       <Title>Skin Insight</Title>
 
       <Section>
-        <SectionTitle>생리 시작일 기준 트러블 지수</SectionTitle>
+        <SectionTitle>
+          생리 시작일 기준 트러블 지수
+        </SectionTitle>
 
         <TroubleTrendChart
           troubleTimeline={troubleTimeline}
@@ -228,7 +255,9 @@ export default function Insight() {
       </Section>
 
       <Section>
-        <SectionTitle>주기 단계별 피부 비교</SectionTitle>
+        <SectionTitle>
+          주기 단계별 피부 비교
+        </SectionTitle>
 
         <PhaseRadarChart
           data={isLoadingPhase ? {} : phaseComparisonData}
@@ -236,11 +265,15 @@ export default function Insight() {
       </Section>
 
       <Section>
-        <SectionTitle>생활 습관 영향 분석</SectionTitle>
+        <SectionTitle>
+          생활 습관 영향 분석
+        </SectionTitle>
 
         <HabitList>
           {isLoadingHabits && (
-            <HabitListMessage>분석 중...</HabitListMessage>
+            <HabitListMessage>
+              분석 중...
+            </HabitListMessage>
           )}
 
           {!isLoadingHabits && habitError && (
@@ -260,7 +293,10 @@ export default function Insight() {
           {!isLoadingHabits &&
             !habitError &&
             habitAnalysis.map((habit) => (
-              <HabitImpactCard key={habit.type} {...habit} />
+              <HabitImpactCard
+                key={habit.type}
+                {...habit}
+              />
             ))}
         </HabitList>
       </Section>

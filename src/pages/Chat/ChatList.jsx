@@ -1,13 +1,12 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 import { useChatContext } from "../../components/chat/ChatContext";
 import { getChatDateLabel } from "../../utils/chatDateLabel";
+
+import trashIcon from "../../assets/icons/Trash.svg";
+import editIcon from "../../assets/icons/Edit.svg";
 
 const LONG_PRESS_DURATION = 1500;
 
@@ -15,170 +14,308 @@ const Page = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
+
   width: 100%;
   max-width: 402px;
   min-height: 100%;
   margin: 0 auto;
+
   background: #fff;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
 const Header = styled.header`
-  padding: 24px 0 12px;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  height: 83px;
+  box-sizing: border-box;
+
+  padding: 24px 20px;
+
+  border-bottom: 1px solid #d9d9d9;
+  background: #fff;
 `;
 
 const Title = styled.h1`
-  color: #9b6dff;
-  font-size: 22px;
+  margin: 0;
+
+  color: #a985e7;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 28px;
   font-weight: 700;
+  line-height: 1;
 `;
 
 const List = styled.ul`
   flex: 1;
+
   overflow-y: auto;
-  padding: 4px 20px;
+
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
 `;
 
 const ListItem = styled.li`
   position: relative;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 4px;
-  border-bottom: 1px solid #f1eef8;
+
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+
+  padding: 0 20px;
+
+  border-bottom: 0;
+
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
 `;
 
 const ChatTitle = styled.span`
+  min-width: 0;
+
   overflow: hidden;
-  color: #333;
-  font-size: 14px;
-  font-weight: 600;
+
+  color: #2c2c2c;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+
   text-overflow: ellipsis;
   white-space: nowrap;
+  word-wrap: break-word;
 `;
 
 const ChatTitleInput = styled.input`
   width: auto;
   max-width: 70%;
-  padding: 2px 4px;
+  height: 36px;
+
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
   border: 1px solid #0d99ff;
-  border-radius: 4px;
-  background: #badefe;
-  color: #333;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 0;
+
   outline: none;
+
+  background: #badefe;
+
+  color: #2c2c2c;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+
+  word-wrap: break-word;
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 const ChatDate = styled.span`
   flex-shrink: 0;
-  margin-left: 8px;
-  color: #aaa;
-  font-size: 11px;
+
+  margin-left: 12px;
+
+  color: #7e7979;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+
+  word-wrap: break-word;
 `;
 
 const EmptyState = styled.p`
+  margin: 0;
   padding: 60px 20px;
-  color: #999;
+
+  color: #7e7979;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+
   text-align: center;
-  font-size: 13px;
 `;
 
 const AddButton = styled.button`
   position: absolute;
   right: 20px;
   bottom: 24px;
+
   display: grid;
+  place-items: center;
+
   width: 52px;
   height: 52px;
-  place-items: center;
+
+  padding: 0;
+
   border: 0;
   border-radius: 50%;
+
   background: #cfb4fd;
   color: #fff;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
   font-size: 24px;
+  font-weight: 500;
+
   cursor: pointer;
 `;
 
 const ContextMenu = styled.div`
   position: absolute;
   top: 100%;
-  left: 4px;
+  left: 20px;
   z-index: 30;
+
   overflow: hidden;
-  width: 120px;
+
+  width: 105px;
+
   border: 1px solid #d9d9d9;
   border-radius: 19px;
+
   background: #fff;
 `;
 
 const ContextMenuItem = styled.button`
   display: flex;
   align-items: center;
+  gap: 6px;
+
   width: 100%;
-  padding: 7px 14px;
+
+  padding: 5px 14px;
+
   border: 0;
+
   background: #f7f2ff;
   color: #2c2c2c;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+
   text-align: left;
-  font-size: 11px;
   white-space: nowrap;
+
   cursor: pointer;
 
   &:hover {
-    background: #f0e8ff;
+    background: #f5efff;
   }
 `;
 
-const MenuIcon = styled.span`
+const MenuIcon = styled.img`
   width: 16px;
-  margin-right: 6px;
+  height: 16px;
+
+  flex-shrink: 0;
+
+  display: block;
+
+  object-fit: contain;
 `;
 
 const ModalOverlay = styled.div`
   position: absolute;
   inset: 0;
   z-index: 40;
+
   display: grid;
   place-items: center;
-  background: rgba(142, 142, 142, 0.4);
+
+  background: rgba(0, 0, 0, 0.4);
 `;
 
 const ModalBox = styled.div`
-  width: 360px;
-  padding: 16px 23px 12px;
+  position: relative;
+
+  width: 330px;
+  height: 160px;
   box-sizing: border-box;
-  border-radius: 20px;
-  background: #fff;
+
+  padding: 24px;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  outline: 1.5px rgba(0, 0, 0, 0.1) solid;
+  outline-offset: -1.5px;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
 const ModalText = styled.p`
   margin: 0;
-  color: #333;
+
+  color: #2c2c2c;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
   font-size: 18px;
+  font-weight: 500;
+  line-height: 20px;
+
+  word-wrap: break-word;
 `;
 
 const ModalActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 14px;
-  margin-top: 45px;
+  position: absolute;
+
+  right: 24px;
+  bottom: 24px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 12px;
 `;
 
 const ModalButton = styled.button`
-  width: 65px;
-  height: 38px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 8px 16px;
+
   border: 0;
-  border-radius: 24px;
-  background: ${({ $variant }) =>
-    $variant === "danger" ? "#a985e7" : "#f0e8ff"};
-  color: ${({ $variant }) =>
-    $variant === "danger" ? "#fff" : "#a985e7"};
-  font-size: 16px;
+  border-radius: 18px;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 20px;
+
   cursor: pointer;
+
+  background: ${({ $variant }) =>
+    $variant === "danger"
+      ? "#A985E7"
+      : "#F0E8FF"};
+
+  color: ${({ $variant }) =>
+    $variant === "danger"
+      ? "#FFFFFF"
+      : "#A985E7"};
 `;
 
 export default function ChatList() {
@@ -192,10 +329,17 @@ export default function ChatList() {
     deleteChat,
   } = useChatContext();
 
-  const [contextMenu, setContextMenu] = useState(null);
-  const [renamingChatId, setRenamingChatId] = useState(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [contextMenu, setContextMenu] =
+    useState(null);
+
+  const [renamingChatId, setRenamingChatId] =
+    useState(null);
+
+  const [renameValue, setRenameValue] =
+    useState("");
+
+  const [deleteTargetId, setDeleteTargetId] =
+    useState(null);
 
   const renameInputRef = useRef(null);
   const longPressTimer = useRef(null);
@@ -244,9 +388,16 @@ export default function ChatList() {
     if (renamingChatId === null) return;
 
     try {
-      await renameChat(renamingChatId, renameValue);
+      await renameChat(
+        renamingChatId,
+        renameValue,
+      );
     } catch (error) {
-      console.error("이름 변경에 실패했습니다.", error);
+      console.error(
+        "이름 변경에 실패했습니다.",
+        error,
+      );
+
       alert("이름을 변경하지 못했어요.");
     } finally {
       setRenamingChatId(null);
@@ -259,7 +410,11 @@ export default function ChatList() {
     try {
       await deleteChat(deleteTargetId);
     } catch (error) {
-      console.error("채팅방 삭제 실패:", error);
+      console.error(
+        "채팅방 삭제 실패:",
+        error,
+      );
+
       alert("채팅방을 삭제하지 못했어요.");
     } finally {
       setDeleteTargetId(null);
@@ -268,11 +423,18 @@ export default function ChatList() {
 
   const handleAddChat = async () => {
     try {
-      const newChat = await createChat("새로운 대화");
+      const newChat =
+        await createChat("새로운 대화");
 
-      navigate(`/chat/${newChat.chatRoomId}`);
+      navigate(
+        `/chat/${newChat.chatRoomId}`,
+      );
     } catch (error) {
-      console.error("채팅방 생성 실패:", error);
+      console.error(
+        "채팅방 생성 실패:",
+        error,
+      );
+
       alert("채팅방을 만들지 못했어요.");
     }
   };
@@ -315,7 +477,8 @@ export default function ChatList() {
         <EmptyState>
           아직 대화 기록이 없어요.
           <br />
-          오른쪽 아래 + 버튼을 눌러 대화를 시작해보세요.
+          오른쪽 아래 + 버튼을 눌러
+          대화를 시작해보세요.
         </EmptyState>
       ) : (
         <List>
@@ -323,25 +486,37 @@ export default function ChatList() {
             <ListItem
               key={chat.chatRoomId}
               onPointerDown={() =>
-                handlePointerDown(chat.chatRoomId)
+                handlePointerDown(
+                  chat.chatRoomId,
+                )
               }
               onPointerUp={handlePointerRelease}
               onPointerLeave={handlePointerRelease}
-              onPointerCancel={handlePointerRelease}
+              onPointerCancel={
+                handlePointerRelease
+              }
               onClick={() =>
-                handleItemClick(chat.chatRoomId)
+                handleItemClick(
+                  chat.chatRoomId,
+                )
               }
             >
-              {renamingChatId === chat.chatRoomId ? (
+              {renamingChatId ===
+              chat.chatRoomId ? (
                 <ChatTitleInput
                   ref={renameInputRef}
                   value={renameValue}
-                  size={Math.max(renameValue.length, 1)}
+                  size={Math.max(
+                    renameValue.length,
+                    1,
+                  )}
                   onClick={(event) =>
                     event.stopPropagation()
                   }
                   onChange={(event) =>
-                    setRenameValue(event.target.value)
+                    setRenameValue(
+                      event.target.value,
+                    )
                   }
                   onBlur={commitRename}
                   onKeyDown={(event) => {
@@ -355,34 +530,51 @@ export default function ChatList() {
                   }}
                 />
               ) : (
-                <ChatTitle>{chat.title}</ChatTitle>
+                <ChatTitle>
+                  {chat.title}
+                </ChatTitle>
               )}
 
               <ChatDate>
-                {getChatDateLabel(chat.createdAt)}
+                {getChatDateLabel(
+                  chat.createdAt,
+                )}
               </ChatDate>
 
-              {contextMenu === chat.chatRoomId && (
+              {contextMenu ===
+                chat.chatRoomId && (
                 <ContextMenu
                   ref={menuRef}
-                  onClick={(event) => event.stopPropagation()}
+                  onClick={(event) =>
+                    event.stopPropagation()
+                  }
                 >
                   <ContextMenuItem
                     type="button"
-                    onClick={() => startRename(chat)}
+                    onClick={() =>
+                      startRename(chat)
+                    }
                   >
-                    <MenuIcon>✎</MenuIcon>
+                    <MenuIcon
+                      src={editIcon}
+                      alt=""
+                    />
                     이름 바꾸기
                   </ContextMenuItem>
 
                   <ContextMenuItem
                     type="button"
                     onClick={() => {
-                      setDeleteTargetId(chat.chatRoomId);
+                      setDeleteTargetId(
+                        chat.chatRoomId,
+                      );
                       setContextMenu(null);
                     }}
                   >
-                    <MenuIcon>🗑</MenuIcon>
+                    <MenuIcon
+                      src={trashIcon}
+                      alt=""
+                    />
                     삭제하기
                   </ContextMenuItem>
                 </ContextMenu>
@@ -402,17 +594,25 @@ export default function ChatList() {
 
       {deleteTargetId !== null && (
         <ModalOverlay
-          onClick={() => setDeleteTargetId(null)}
+          onClick={() =>
+            setDeleteTargetId(null)
+          }
         >
           <ModalBox
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
-            <ModalText>채팅을 삭제할까요?</ModalText>
+            <ModalText>
+              채팅을 삭제할까요?
+            </ModalText>
 
             <ModalActions>
               <ModalButton
                 type="button"
-                onClick={() => setDeleteTargetId(null)}
+                onClick={() =>
+                  setDeleteTargetId(null)
+                }
               >
                 취소
               </ModalButton>
