@@ -55,6 +55,9 @@ export default function TodaySkinResult() {
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    setAnalysis(null);
+  setLoadError(false);
+
     getDailyAnalysis(date)
       .then(setAnalysis)
       .catch((error) => {
@@ -66,6 +69,8 @@ export default function TodaySkinResult() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
+    setProducts([]);
+
     getRecommendedProducts(date)
       .then((list) => {
         setProducts(
@@ -101,7 +106,6 @@ export default function TodaySkinResult() {
     setPointsClaimed(true);
   };
 
-  // TODO: 기록 삭제 API가 확인되면 여기서 실제 삭제 호출 필요 (지금은 그냥 카메라로 이동만 함)
   const handleConfirmRecapture = () => {
     navigate("/today-skin/camera");
   };

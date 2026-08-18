@@ -41,10 +41,7 @@ const CloseButton = styled.button`
   padding: 0;
   cursor: pointer;
 
-  img {
-    width: 12px;
-    height: 12px;
-  }
+
 `;
 
 const Header = styled.div`
