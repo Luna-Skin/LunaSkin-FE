@@ -96,6 +96,7 @@ export const MOCK_SKIN_RECORDS = {
   },
 
   "2026-08-06": {
+    analysisId: 1,
     photoUrl: null, // 촬영한 피부 사진 경로 (아직 사진 없으면 null)
     score: 70, // 피부 종합 점수 (0~100), 도넛 차트에 표시됨
     statusText: "피부 상태 보통", // 점수 옆에 붙는 한 줄 라벨 (나쁨/보통/좋음)

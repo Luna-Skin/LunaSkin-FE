@@ -1,11 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import styled from "styled-components";
 
-import ChatBubble, { formatTime } from "../../components/chat/ChatBubble";
+import ChatBubble, {
+  formatTime,
+} from "../../components/chat/ChatBubble";
 import ChatInputBar from "../../components/chat/ChatInputBar";
 import ChatPlusMenu from "../../components/chat/ChatPlusMenu";
 import { useChatContext } from "../../components/chat/ChatContext";
+import { connectChatSocket } from "../../api/chatSocket";
+import { uploadChatFile } from "../../api/chatApi";
 
 const Room = styled.section`
   position: relative;
@@ -75,17 +86,67 @@ function getTodayLabel() {
   }월 ${now.getDate()}일`;
 }
 
+function normalizeSocketMessage(payload) {
+  return {
+    id:
+      payload.chatMessageId ??
+      payload.messageId ??
+      `${Date.now()}-${Math.random()}`,
+
+    chatMessageId:
+      payload.chatMessageId ??
+      payload.messageId,
+
+    role:
+      payload.role === "AI"
+        ? "bot"
+        : payload.role === "USER"
+          ? "user"
+          : payload.role,
+
+    text: payload.content ?? "",
+
+    image:
+      payload.fileUrl ?? null,
+
+    time:
+      payload.createdAt ?? formatTime(),
+
+    messageType:
+      payload.messageType ?? "TEXT",
+  };
+}
+
 export default function ChatRoom() {
   const navigate = useNavigate();
   const { chatId } = useParams();
 
-  const { getChat, fetchChatMessages } = useChatContext();
+  const {
+    getChat,
+    fetchChatMessages,
+  } = useChatContext();
 
   const [input, setInput] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [attachedImage, setAttachedImage] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] =
+    useState(false);
+
+  const [attachedImage, setAttachedImage] =
+    useState(null);
+
+  const [messages, setMessages] =
+    useState([]);
+
+  const [
+    isLoadingMessages,
+    setIsLoadingMessages,
+  ] = useState(true);
+
+  const [
+    socketError,
+    setSocketError,
+  ] = useState(null);
+
+  const socketRef = useRef(null);
 
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -93,22 +154,33 @@ export default function ChatRoom() {
 
   const chat = getChat(chatId);
 
-  // 방 진입 시 서버에서 대화 내역 불러오기
-  // (분석 기반으로 만든 방이면 서버가 이미 "오늘의 분석 결과..." 안내 메시지를
-  //  첫 메시지로 넣어서 내려줄 것으로 기대)
+  // 방 진입 시 기존 메시지 조회
   useEffect(() => {
     let isMounted = true;
 
     (async () => {
       try {
         setIsLoadingMessages(true);
-        const data = await fetchChatMessages(chatId);
-        if (isMounted) setMessages(data ?? []);
+
+        const data =
+          await fetchChatMessages(chatId);
+
+        if (isMounted) {
+          setMessages(data ?? []);
+        }
       } catch (error) {
-        console.error("대화 내역을 불러오지 못했습니다.", error);
-        if (isMounted) setMessages([]);
+        console.error(
+          "대화 내역을 불러오지 못했습니다.",
+          error,
+        );
+
+        if (isMounted) {
+          setMessages([]);
+        }
       } finally {
-        if (isMounted) setIsLoadingMessages(false);
+        if (isMounted) {
+          setIsLoadingMessages(false);
+        }
       }
     })();
 
@@ -116,6 +188,78 @@ export default function ChatRoom() {
       isMounted = false;
     };
   }, [chatId, fetchChatMessages]);
+
+  // 방 진입 시 WebSocket 연결
+  useEffect(() => {
+    if (!chatId) return undefined;
+
+    setSocketError(null);
+
+    const socket =
+      connectChatSocket(chatId, {
+        onConnect: () => {
+          console.log(
+            `[ChatRoom] 소켓 연결 완료: ${chatId}`,
+          );
+        },
+
+        onMessage: (payload) => {
+          const message =
+            normalizeSocketMessage(
+              payload,
+            );
+
+          setMessages((current) => {
+            // 같은 메시지가 중복으로 들어오는 경우 방지
+            const alreadyExists =
+              current.some(
+                (item) =>
+                  String(item.id) ===
+                  String(message.id),
+              );
+
+            if (alreadyExists) {
+              return current;
+            }
+
+            return [...current, message];
+          });
+        },
+
+        onError: (error) => {
+          console.error(
+            "AI 응답 오류",
+            error,
+          );
+
+          setSocketError(
+            error?.message ??
+              "AI 응답 중 오류가 발생했습니다.",
+          );
+        },
+
+        onConnectError: (error) => {
+          console.error(
+            "채팅 소켓 연결 실패",
+            error,
+          );
+
+          setSocketError(
+            "채팅 서버와 연결하지 못했습니다.",
+          );
+        },
+      });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+    };
+  }, [chatId]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
@@ -126,66 +270,91 @@ export default function ChatRoom() {
   const sendMessage = () => {
     const text = input.trim();
 
-    // 글도 없고 사진도 없으면 전송하지 않음
-    if (!text && !attachedImage) return;
+    if (!text && !attachedImage) {
+      return;
+    }
 
-    // TODO: WebSocket(/pub/chat/send) 연결되면 여기서 실제 전송
-    // 지금은 화면 확인용으로만 로컬에 추가
-    const userMessage = {
-      id: `${Date.now()}-user`,
-      role: "user",
-      text,
-      image: attachedImage?.url ?? null,
-      time: formatTime(),
-    };
+    if (!text) {
+      return;
+    }
 
-    setMessages((current) => [...current, userMessage]);
+    const socket = socketRef.current;
+
+    if (!socket) {
+      console.warn(
+        "채팅 소켓이 연결되지 않았습니다.",
+      );
+      return;
+    }
+
+    const sent =
+      socket.sendMessage(text);
+
+    if (!sent) {
+      return;
+    }
 
     setInput("");
     setAttachedImage(null);
     setIsMenuOpen(false);
   };
 
-  // 사진 선택
-  const handlePhotoAttach = (event) => {
-    const selectedFile = event.target.files?.[0];
+  const handlePhotoAttach = async (
+    event,
+  ) => {
+    const selectedFile =
+      event.target.files?.[0];
 
     if (!selectedFile) return;
 
-    const reader = new FileReader();
+    try {
+      const reader = new FileReader();
 
-    reader.onload = () => {
-      setAttachedImage({
-        file: selectedFile,
-        url: reader.result,
-      });
+      reader.onload = () => {
+        setAttachedImage({
+          file: selectedFile,
+          url: reader.result,
+        });
 
-      setIsMenuOpen(false);
-    };
+        setIsMenuOpen(false);
+      };
 
-    reader.readAsDataURL(selectedFile);
+      reader.readAsDataURL(
+        selectedFile,
+      );
+    } catch (error) {
+      console.error(
+        "이미지 선택에 실패했습니다.",
+        error,
+      );
+    }
 
     event.target.value = "";
   };
 
-  // 파일 선택
-  const handleFileAttach = (event) => {
-    const selectedFile = event.target.files?.[0];
+  const handleFileAttach = async (
+    event,
+  ) => {
+    const selectedFile =
+      event.target.files?.[0];
 
     if (!selectedFile) return;
 
-    // TODO: uploadChatFile(chatId, selectedFile) 연결
-    const fileMessage = `파일을 첨부했어요: ${selectedFile.name}`;
+    try {
+      await uploadChatFile(
+        chatId,
+        selectedFile,
+      );
 
-    setMessages((current) => [
-      ...current,
-      {
-        id: `${Date.now()}-user-file`,
-        role: "user",
-        text: fileMessage,
-        time: formatTime(),
-      },
-    ]);
+      console.log(
+        "파일 업로드 완료",
+      );
+    } catch (error) {
+      console.error(
+        "파일 업로드에 실패했습니다.",
+        error,
+      );
+    }
 
     setIsMenuOpen(false);
     event.target.value = "";
@@ -196,7 +365,9 @@ export default function ChatRoom() {
       <Room>
         <Header>
           <BackButton
-            onClick={() => navigate("/chat")}
+            onClick={() =>
+              navigate("/chat")
+            }
             aria-label="목록으로"
           >
             ‹
@@ -216,7 +387,9 @@ export default function ChatRoom() {
     <Room>
       <Header>
         <BackButton
-          onClick={() => navigate("/chat")}
+          onClick={() =>
+            navigate("/chat")
+          }
           aria-label="목록으로"
         >
           ‹
@@ -228,10 +401,26 @@ export default function ChatRoom() {
           {getTodayLabel()}
         </DateText>
 
+        {socketError && (
+          <div
+            style={{
+              marginBottom: 12,
+              color: "#999",
+              fontSize: 11,
+              textAlign: "center",
+            }}
+          >
+            {socketError}
+          </div>
+        )}
+
         {!isLoadingMessages &&
           messages.map((message) => (
             <ChatBubble
-              key={message.id ?? message.messageId}
+              key={
+                message.id ??
+                message.chatMessageId
+              }
               {...message}
             />
           ))}
@@ -263,7 +452,9 @@ export default function ChatRoom() {
             }
             isMenuOpen={isMenuOpen}
             image={attachedImage?.url}
-            onRemoveImage={() => setAttachedImage(null)}
+            onRemoveImage={() =>
+              setAttachedImage(null)
+            }
           />
         </InputBarWrapper>
 
