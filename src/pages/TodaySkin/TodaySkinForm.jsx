@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
@@ -15,7 +15,11 @@ import {
   saveCapturedPhotos,
   clearCapturedPhotos,
 } from "../../utils/photoSessionStorage";
-import { uploadAnalysisImages, postDailyAnalysis } from "../../api/analysisApi";
+import {
+  uploadAnalysisImages,
+  postDailyAnalysis,
+  getDailyAnalysis,
+} from "../../api/analysisApi";
 
 // 식사/피부상태 한글 표시값 → API가 원하는 영문 코드 매핑
 const MEAL_CODE_BY_LABEL = {
@@ -35,6 +39,43 @@ const SKIN_STATUS_CODE_BY_LABEL = {
   트러블: "TROUBLE",
   칙칙함: "DULL",
 };
+
+// 생활 습관 임시저장 상수, 하뮤수
+const TODAY_SKIN_DRAFT_KEY = "todaySkin:lifestyleDraft";
+
+function loadLifestyleDraft() {
+  try {
+    const saved = sessionStorage.getItem(TODAY_SKIN_DRAFT_KEY);
+
+    if (!saved) {
+      return {
+        stepperValues: {
+          sleep: null,
+          water: null,
+          exercise: null,
+        },
+        meals: [],
+        skinStatus: null,
+      };
+    }
+
+    return JSON.parse(saved);
+  } catch {
+    return {
+      stepperValues: {
+        sleep: null,
+        water: null,
+        exercise: null,
+      },
+      meals: [],
+      skinStatus: null,
+    };
+  }
+}
+
+function clearLifestyleDraft() {
+  sessionStorage.removeItem(TODAY_SKIN_DRAFT_KEY);
+}
 
 const Content = styled.div`
   display: flex;
@@ -60,6 +101,13 @@ const SubmitButtonWrapper = styled.div`
 
 export default function TodaySkinForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const todayDate = dayjs().format("YYYY-MM-DD");
+  const skipTodayCheck = Boolean(location.state?.skipTodayCheck);
+
+  const [isCheckingTodayRecord, setIsCheckingTodayRecord] =
+    useState(!skipTodayCheck);
 
   // sessionStorage를 진짜 기준으로 삼음
   // location.state에 의존하면 브라우저 뒤로가기 시 삭제 전 목록이 되살아나는 문제가 있어서 아예 그쪽에 안 기대는 방식으로 변경
@@ -71,17 +119,56 @@ export default function TodaySkinForm() {
     saveCapturedPhotos(capturedPhotos);
   }, [capturedPhotos]);
 
+  useEffect(() => {
+    if (skipTodayCheck) {
+      setIsCheckingTodayRecord(false);
+      return;
+    }
+
+    getDailyAnalysis(todayDate)
+      .then(() => {
+        navigate(`/today-skin/result/${todayDate}`, {
+          replace: true,
+        });
+      })
+      .catch((error) => {
+        const errorCode = error.response?.data?.code;
+
+        if (errorCode === "ANALYSIS_404" || error.response?.status === 404) {
+          setIsCheckingTodayRecord(false);
+          return;
+        }
+
+        console.error("오늘 피부 기록 확인 실패:", error);
+        setIsCheckingTodayRecord(false);
+      });
+  }, [navigate, skipTodayCheck, todayDate]);
+
   const hasFrontPhoto = capturedPhotos.some((photo) => photo.angle === "front");
 
   // RecordForm이 관리하던 생활습관 값들 여기로 끌어올림
   // "분석하기"에서 값들을 API로 보내야 해서 부모가 갖고 있어야 함
-  const [stepperValues, setStepperValues] = useState({
-    sleep: null,
-    water: null,
-    exercise: null,
-  });
-  const [meals, setMeals] = useState([]);
-  const [skinStatus, setSkinStatus] = useState(null);
+  const [lifestyleDraft] = useState(() => loadLifestyleDraft());
+
+  const [stepperValues, setStepperValues] = useState(
+    lifestyleDraft.stepperValues,
+  );
+
+  const [meals, setMeals] = useState(lifestyleDraft.meals);
+
+  const [skinStatus, setSkinStatus] = useState(lifestyleDraft.skinStatus);
+
+  // 상태 변경시 sessionStorage에 자동 저장
+  useEffect(() => {
+    sessionStorage.setItem(
+      TODAY_SKIN_DRAFT_KEY,
+      JSON.stringify({
+        stepperValues,
+        meals,
+        skinStatus,
+      }),
+    );
+  }, [stepperValues, meals, skinStatus]);
 
   const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
   const [step, setStep] = useState("form"); // "form" | "analyzing"
@@ -116,8 +203,8 @@ export default function TodaySkinForm() {
       const uploaded = await uploadAnalysisImages(capturedPhotos);
       const payload = {
         sleepTime: stepperValues.sleep, // null일 수도 있음
-        waterIntake: stepperValues.water, 
-        exerciseTime: 
+        waterIntake: stepperValues.water,
+        exerciseTime:
           stepperValues.exercise !== null
             ? Math.round(stepperValues.exercise * 60)
             : null,
@@ -128,10 +215,11 @@ export default function TodaySkinForm() {
         rightImageUrl: uploaded.rightImageUrl,
       };
 
-      const todayDate = dayjs().format("YYYY-MM-DD");
       await postDailyAnalysis(todayDate, payload);
 
       clearCapturedPhotos(); // 이번 기록 세션 종료, 다음엔 빈 상태로 새로 시작
+      clearLifestyleDraft();
+
       navigate(`/today-skin/result/${todayDate}`);
     } catch (error) {
       console.error("분석 요청 실패:", error);
@@ -142,6 +230,14 @@ export default function TodaySkinForm() {
       setStep("form");
     }
   };
+
+  if (isCheckingTodayRecord) {
+    return (
+      <div>
+        <Header />
+      </div>
+    );
+  }
 
   if (step === "analyzing") {
     return (

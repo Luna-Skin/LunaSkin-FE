@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useLocation, useNavigate, useParams, } from "react-router-dom";
 import styled from "styled-components";
 
 import Header from "../../components/todaySkin/Header";
@@ -17,19 +13,10 @@ import ProductRecommendSection from "../../components/todaySkin/ProductRecommend
 import ConfirmModal from "../../components/common/ConfirmModal";
 import PointsRewardModal from "../../components/todaySkin/PointsRewardModal";
 
-import {
-  getDailyAnalysis,
-  getRecommendedProducts,
-} from "../../api/analysisApi";
-
+import { getDailyAnalysis, getRecommendedProducts, } from "../../api/analysisApi";
 import { useChatContext } from "../../components/chat/ChatContext";
-
 import { PHASE_LABEL } from "../../utils/cyclePhase";
-
-import {
-  hasClaimedToday,
-  claimDailyPoints,
-} from "../../utils/pointsStorage";
+import { hasClaimedToday, claimDailyPoints, } from "../../utils/pointsStorage";
 
 const Content = styled.div`
   display: flex;
@@ -83,29 +70,16 @@ export default function TodaySkinResult() {
     createChat,
   } = useChatContext();
 
-  const [analysis, setAnalysis] =
-    useState(null);
-
-  const [loadError, setLoadError] =
-    useState(false);
-
-  const [products, setProducts] =
-    useState([]);
-
-  const [photoModalOpen, setPhotoModalOpen] =
-    useState(false);
-
-  const [reanalyzeStep, setReanalyzeStep] =
-    useState(null);
-
-  const [pointsRewardOpen, setPointsRewardOpen] =
-    useState(false);
-
-  const [pointsClaimed, setPointsClaimed] =
-    useState(() => hasClaimedToday());
-
-  const [isCreatingChat, setIsCreatingChat] =
-    useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [reanalyzeStep, setReanalyzeStep] = useState(null);
+  const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
+  const [pointsClaimed, setPointsClaimed] = useState(() =>
+    hasClaimedToday(),
+  );
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   useEffect(() => {
     setAnalysis(null);
@@ -145,9 +119,7 @@ export default function TodaySkinResult() {
       });
   }, [date]);
 
-  const showBackHeader = Boolean(
-    location.state?.showBackHeader,
-  );
+  const showBackHeader = Boolean(location.state?.showBackHeader);
 
   const headerProps = showBackHeader
     ? {
@@ -337,9 +309,7 @@ export default function TodaySkinResult() {
           }}
           onAskClick={handleAskKiki}
           onCompareClick={() =>
-            navigate(
-              `/today-skin/compare/${date}`,
-            )
+            navigate(`/today-skin/compare/${date}`)
           }
         />
 
@@ -358,17 +328,10 @@ export default function TodaySkinResult() {
         <BottomButtonRow>
           <PointsRewardButton
             claimed={pointsClaimed}
-            onClick={() =>
-              setPointsRewardOpen(true)
-            }
+            onClick={() => setPointsRewardOpen(true)}
           />
-
           <ReanalyzeButton
-            onClick={() =>
-              setReanalyzeStep(
-                "confirm1",
-              )
-            }
+            onClick={() => setReanalyzeStep("confirm1")}
           />
         </BottomButtonRow>
       </Content>
@@ -385,9 +348,7 @@ export default function TodaySkinResult() {
       {pointsRewardOpen && (
         <PointsRewardModal
           points={50}
-          onClose={
-            handleCloseRewardModal
-          }
+          onClose={handleCloseRewardModal}
         />
       )}
 

@@ -1,20 +1,12 @@
 import axios from "axios";
 
-// BE 서버 주소
-const baseURL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://api.mynokim.cloud";
+// BE 서버 주소는 .env에 VITE_API_BASE_URL로 설정
+const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export const apiClient = axios.create({
   baseURL,
   headers: {
     "Content-Type": "application/json",
+    "X-USER-ID": 1, // 테스트용 고정 값
   },
-});
-
-// 로그인 기능 없이 테스트용 사용자 ID 사용
-apiClient.interceptors.request.use((config) => {
-  config.headers["X-USER-ID"] = "1";
-
-  return config;
 });

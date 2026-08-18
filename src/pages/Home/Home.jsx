@@ -12,7 +12,12 @@ import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
-import { getCycleCalendar, getCyclePhaseComment, postCycleStart, postCycleEnd } from "../../api/cycleApi";
+import {
+  getCycleCalendar,
+  getCyclePhaseComment,
+  postCycleStart,
+  postCycleEnd,
+} from "../../api/cycleApi";
 import { getTodayRoutine } from "../../api/routineApi";
 import { getTodayAnalysisSummary } from "../../api/analysisApi";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
@@ -25,7 +30,6 @@ import serumIcon from "../../assets/icons/routine_serum.svg";
 import waterGlassIcon from "../../assets/icons/routine_water_glass.svg";
 import sneakerIcon from "../../assets/icons/routine_sneaker.svg";
 import { getPoints } from "../../utils/pointsStorage";
-
 
 // PhaseGuideBanner 제목 전용 문구. PHASE_LABEL(생리기/난포기/...)은 RoutineSection 등
 // 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
@@ -103,6 +107,10 @@ export default function Home() {
   const navigate = useNavigate();
   const today = dayjs().format("YYYY-MM-DD");
 
+  useEffect(() => {
+    sessionStorage.removeItem("todaySkin:lifestyleDraft");
+  }, []);
+
   // 오늘의 주기 단계 + 코멘트. API 응답 오기 전엔 null
   const [phaseComment, setPhaseComment] = useState(null);
 
@@ -128,7 +136,8 @@ export default function Home() {
   }, []);
 
   const routines = (routineData?.routines ?? []).map((routine, index) => {
-    const meta = ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
+    const meta =
+      ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
     return {
       id: index,
       icon: meta.icon,
@@ -156,11 +165,17 @@ export default function Home() {
   });
 
   useEffect(() => {
-    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
+    sessionStorage.setItem(
+      "calendarDisplayedMonth",
+      displayedMonth.format("YYYY-MM-DD"),
+    );
   }, [displayedMonth]);
 
   // 캘린더 단계 구간 + 분석 완료 날짜. API 응답 오기 전엔 빈 값
-  const [calendarData, setCalendarData] = useState({ cycleResponses: [], analyses: [] });
+  const [calendarData, setCalendarData] = useState({
+    cycleResponses: [],
+    analyses: [],
+  });
 
   useEffect(() => {
     getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1)
@@ -184,7 +199,6 @@ export default function Home() {
 
   const [toastMessage, setToastMessage] = useState(null);
 
-
   const [todaySummary, setTodaySummary] = useState(null);
 
   useEffect(() => {
@@ -202,7 +216,9 @@ export default function Home() {
 
   const todayStatusContent = todaySummary
     ? {
-        icon: TODAY_STATUS_ICON[todaySummary.skinStatus] ?? TODAY_STATUS_UNKNOWN.icon,
+        icon:
+          TODAY_STATUS_ICON[todaySummary.skinStatus] ??
+          TODAY_STATUS_UNKNOWN.icon,
         label: todaySummary.skinStatus,
         description: todaySummary.aiComment,
       }
@@ -225,7 +241,7 @@ export default function Home() {
 
   const handleSelectSkinInfo = () => {
     navigate(`/today-skin/result/${selectedDate}`, {
-      state: { showBackHeader: true },
+      state: { showBackHeader: true, hideBottomActions: true },
     });
   };
 
@@ -278,11 +294,12 @@ export default function Home() {
 
     // 캘린더/코멘트/루틴은 각각 따로 반영 — 하나(특히 루틴)가 실패해도
     // 나머지는 정상적으로 최신 상태로 갱신되도록 allSettled 사용
-    const [calendarResult, commentResult, routineResult] = await Promise.allSettled([
-      getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1),
-      getCyclePhaseComment(),
-      getTodayRoutine(),
-    ]);
+    const [calendarResult, commentResult, routineResult] =
+      await Promise.allSettled([
+        getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1),
+        getCyclePhaseComment(),
+        getTodayRoutine(),
+      ]);
 
     if (calendarResult.status === "fulfilled") {
       setCalendarData(calendarResult.value);
