@@ -26,12 +26,7 @@ export const updateMySkinInfo = async (skinTypeId, skinConcernIds) => {
     skinTypeId,
     skinConcernIds,
   });
-  return res.data;
-};
 
-// 홈 헤더용 프로필 조회
-export const getHomeProfile = async () => {
-  const res = await apiClient.get("/api/users/me/skin-profile");
   return res.data;
 };
 
@@ -47,5 +42,6 @@ export const updateCycleInfo = async (cycleLength, periodDuration) => {
     cycleLength,
     periodDuration,
   });
+
   return res.data;
 };

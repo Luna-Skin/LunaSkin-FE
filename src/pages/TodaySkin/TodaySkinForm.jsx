@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import styled from "styled-components";
 import Header from "../../components/todaySkin/Header";
@@ -15,7 +15,11 @@ import {
   saveCapturedPhotos,
   clearCapturedPhotos,
 } from "../../utils/photoSessionStorage";
-import { uploadAnalysisImages, postDailyAnalysis } from "../../api/analysisApi";
+import {
+  uploadAnalysisImages,
+  postDailyAnalysis,
+  getDailyAnalysis,
+} from "../../api/analysisApi";
 
 // 식사/피부상태 한글 표시값 → API가 원하는 영문 코드 매핑
 const MEAL_CODE_BY_LABEL = {
@@ -60,6 +64,13 @@ const SubmitButtonWrapper = styled.div`
 
 export default function TodaySkinForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const todayDate = dayjs().format("YYYY-MM-DD");
+  const skipTodayCheck = Boolean(location.state?.skipTodayCheck);
+
+  const [isCheckingTodayRecord, setIsCheckingTodayRecord] =
+    useState(!skipTodayCheck);
 
   // sessionStorage를 진짜 기준으로 삼음
   // location.state에 의존하면 브라우저 뒤로가기 시 삭제 전 목록이 되살아나는 문제가 있어서 아예 그쪽에 안 기대는 방식으로 변경
@@ -70,6 +81,31 @@ export default function TodaySkinForm() {
   useEffect(() => {
     saveCapturedPhotos(capturedPhotos);
   }, [capturedPhotos]);
+
+  useEffect(() => {
+    if (skipTodayCheck) {
+      setIsCheckingTodayRecord(false);
+      return;
+    }
+
+    getDailyAnalysis(todayDate)
+      .then(() => {
+        navigate(`/today-skin/result/${todayDate}`, {
+          replace: true,
+        });
+      })
+      .catch((error) => {
+        const errorCode = error.response?.data?.code;
+
+        if (errorCode === "ANALYSIS_404" || error.response?.status === 404) {
+          setIsCheckingTodayRecord(false);
+          return;
+        }
+
+        console.error("오늘 피부 기록 확인 실패:", error);
+        setIsCheckingTodayRecord(false);
+      });
+  }, [navigate, skipTodayCheck, todayDate]);
 
   const hasFrontPhoto = capturedPhotos.some((photo) => photo.angle === "front");
 
@@ -116,8 +152,8 @@ export default function TodaySkinForm() {
       const uploaded = await uploadAnalysisImages(capturedPhotos);
       const payload = {
         sleepTime: stepperValues.sleep, // null일 수도 있음
-        waterIntake: stepperValues.water, 
-        exerciseTime: 
+        waterIntake: stepperValues.water,
+        exerciseTime:
           stepperValues.exercise !== null
             ? Math.round(stepperValues.exercise * 60)
             : null,
@@ -142,6 +178,14 @@ export default function TodaySkinForm() {
       setStep("form");
     }
   };
+
+  if (isCheckingTodayRecord) {
+    return (
+      <div>
+        <Header />
+      </div>
+    );
+  }
 
   if (step === "analyzing") {
     return (
