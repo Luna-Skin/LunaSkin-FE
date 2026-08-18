@@ -18,13 +18,7 @@ import SockJS from "sockjs-client";
 import { apiClient } from "./axiosInstance";
 
 function getUserId() {
-  const headers = apiClient.defaults.headers;
-
-  return (
-    headers?.["X-USER-ID"] ??
-    headers?.common?.["X-USER-ID"] ??
-    ""
-  );
+  return "1";
 }
 
 export function connectChatSocket(

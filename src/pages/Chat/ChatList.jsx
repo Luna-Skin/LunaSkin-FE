@@ -109,7 +109,7 @@ const ContextMenu = styled.div`
   left: 4px;
   z-index: 30;
   overflow: hidden;
-  width: 98px;
+  width: 120px;
   border: 1px solid #d9d9d9;
   border-radius: 19px;
   background: #fff;
@@ -119,8 +119,7 @@ const ContextMenuItem = styled.button`
   display: flex;
   align-items: center;
   width: 100%;
-  min-width: 120px;
-  padding: 4px 14px;
+  padding: 7px 14px;
   border: 0;
   background: #f7f2ff;
   color: #2c2c2c;
@@ -130,24 +129,13 @@ const ContextMenuItem = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: #f5efff;
+    background: #f0e8ff;
   }
 `;
 
 const MenuIcon = styled.span`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 9px;
-  flex-shrink: 0;
+  width: 16px;
   margin-right: 6px;
-  font-size: 12px;
-`;
-
-const MenuText = styled.span`
-  text-align: left;
-  font-weight: 500;
-  padding: 1px;
 `;
 
 const ModalOverlay = styled.div`
@@ -165,20 +153,17 @@ const ModalBox = styled.div`
   box-sizing: border-box;
   border-radius: 20px;
   background: #fff;
-  text-align: left;
 `;
 
 const ModalText = styled.p`
   margin: 0;
   color: #333;
   font-size: 18px;
-  font-weight: 400;
 `;
 
 const ModalActions = styled.div`
   display: flex;
   justify-content: flex-end;
-  align-items: center;
   gap: 14px;
   margin-top: 45px;
 `;
@@ -186,23 +171,14 @@ const ModalActions = styled.div`
 const ModalButton = styled.button`
   width: 65px;
   height: 38px;
-  padding: 0;
-  flex: none;
   border: 0;
   border-radius: 24px;
-  font-size: 16px;
-  font-weight: 400;
-  cursor: pointer;
-
   background: ${({ $variant }) =>
-    $variant === "danger"
-      ? "#A985E7"
-      : "#F0E8FF"};
-
+    $variant === "danger" ? "#a985e7" : "#f0e8ff"};
   color: ${({ $variant }) =>
-    $variant === "danger"
-      ? "#FFFFFF"
-      : "#A985E7"};
+    $variant === "danger" ? "#fff" : "#a985e7"};
+  font-size: 16px;
+  cursor: pointer;
 `;
 
 export default function ChatList() {
@@ -216,35 +192,20 @@ export default function ChatList() {
     deleteChat,
   } = useChatContext();
 
-  const [contextMenu, setContextMenu] =
-    useState(null);
-
-  const [renamingChatId, setRenamingChatId] =
-    useState(null);
-
-  const [renameValue, setRenameValue] =
-    useState("");
-
-  const [deleteTargetId, setDeleteTargetId] =
-    useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [renamingChatId, setRenamingChatId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const renameInputRef = useRef(null);
   const longPressTimer = useRef(null);
   const isLongPressRef = useRef(false);
   const menuRef = useRef(null);
 
-  const sortedChats = [...chats].sort(
-    (a, b) =>
-      new Date(b.updatedAt ?? b.createdAt) -
-      new Date(a.updatedAt ?? a.createdAt),
-  );
-
   useEffect(() => {
     if (!contextMenu) return undefined;
 
-    const handleOutsidePointerDown = (
-      event,
-    ) => {
+    const handleOutsidePointerDown = (event) => {
       if (
         menuRef.current &&
         menuRef.current.contains(event.target)
@@ -280,57 +241,39 @@ export default function ChatList() {
   };
 
   const commitRename = async () => {
-    if (renamingChatId) {
-      try {
-        await renameChat(
-          renamingChatId,
-          renameValue,
-        );
-      } catch (error) {
-        console.error(
-          "이름 변경에 실패했습니다.",
-          error,
-        );
-      }
+    if (renamingChatId === null) return;
+
+    try {
+      await renameChat(renamingChatId, renameValue);
+    } catch (error) {
+      console.error("이름 변경에 실패했습니다.", error);
+      alert("이름을 변경하지 못했어요.");
+    } finally {
+      setRenamingChatId(null);
     }
-
-    setRenamingChatId(null);
-  };
-
-  const requestDelete = (chatRoomId) => {
-    setDeleteTargetId(chatRoomId);
-    setContextMenu(null);
   };
 
   const confirmDelete = async () => {
-    if (deleteTargetId) {
-      try {
-        await deleteChat(deleteTargetId);
-      } catch (error) {
-        console.error(
-          "삭제에 실패했습니다.",
-          error,
-        );
-      }
-    }
+    if (deleteTargetId === null) return;
 
-    setDeleteTargetId(null);
+    try {
+      await deleteChat(deleteTargetId);
+    } catch (error) {
+      console.error("채팅방 삭제 실패:", error);
+      alert("채팅방을 삭제하지 못했어요.");
+    } finally {
+      setDeleteTargetId(null);
+    }
   };
 
   const handleAddChat = async () => {
     try {
-      const newChat = await createChat(
-        "새로운 대화",
-      );
+      const newChat = await createChat("새로운 대화");
 
-      navigate(
-        `/chat/${newChat.chatRoomId}`,
-      );
+      navigate(`/chat/${newChat.chatRoomId}`);
     } catch (error) {
-      console.error(
-        "채팅방 생성에 실패했습니다.",
-        error,
-      );
+      console.error("채팅방 생성 실패:", error);
+      alert("채팅방을 만들지 못했어요.");
     }
   };
 
@@ -368,7 +311,7 @@ export default function ChatList() {
         <EmptyState>
           채팅방을 불러오는 중이에요.
         </EmptyState>
-      ) : sortedChats.length === 0 ? (
+      ) : chats.length === 0 ? (
         <EmptyState>
           아직 대화 기록이 없어요.
           <br />
@@ -376,39 +319,29 @@ export default function ChatList() {
         </EmptyState>
       ) : (
         <List>
-          {sortedChats.map((chat) => (
+          {chats.map((chat) => (
             <ListItem
               key={chat.chatRoomId}
               onPointerDown={() =>
-                handlePointerDown(
-                  chat.chatRoomId,
-                )
+                handlePointerDown(chat.chatRoomId)
               }
               onPointerUp={handlePointerRelease}
               onPointerLeave={handlePointerRelease}
               onPointerCancel={handlePointerRelease}
               onClick={() =>
-                handleItemClick(
-                  chat.chatRoomId,
-                )
+                handleItemClick(chat.chatRoomId)
               }
             >
-              {renamingChatId ===
-              chat.chatRoomId ? (
+              {renamingChatId === chat.chatRoomId ? (
                 <ChatTitleInput
                   ref={renameInputRef}
                   value={renameValue}
-                  size={Math.max(
-                    renameValue.length,
-                    1,
-                  )}
+                  size={Math.max(renameValue.length, 1)}
                   onClick={(event) =>
                     event.stopPropagation()
                   }
                   onChange={(event) =>
-                    setRenameValue(
-                      event.target.value,
-                    )
+                    setRenameValue(event.target.value)
                   }
                   onBlur={commitRename}
                   onKeyDown={(event) => {
@@ -422,53 +355,35 @@ export default function ChatList() {
                   }}
                 />
               ) : (
-                <ChatTitle>
-                  {chat.title}
-                </ChatTitle>
+                <ChatTitle>{chat.title}</ChatTitle>
               )}
 
               <ChatDate>
-                {getChatDateLabel(
-                  chat.createdAt,
-                )}
+                {getChatDateLabel(chat.createdAt)}
               </ChatDate>
 
-              {contextMenu ===
-                chat.chatRoomId && (
+              {contextMenu === chat.chatRoomId && (
                 <ContextMenu
                   ref={menuRef}
-                  onClick={(event) =>
-                    event.stopPropagation()
-                  }
+                  onClick={(event) => event.stopPropagation()}
                 >
                   <ContextMenuItem
                     type="button"
-                    onClick={() =>
-                      startRename(chat)
-                    }
+                    onClick={() => startRename(chat)}
                   >
-                    <MenuIcon>
-                      🖉
-                    </MenuIcon>
-                    <MenuText>
-                      이름 바꾸기
-                    </MenuText>
+                    <MenuIcon>✎</MenuIcon>
+                    이름 바꾸기
                   </ContextMenuItem>
 
                   <ContextMenuItem
                     type="button"
-                    onClick={() =>
-                      requestDelete(
-                        chat.chatRoomId,
-                      )
-                    }
+                    onClick={() => {
+                      setDeleteTargetId(chat.chatRoomId);
+                      setContextMenu(null);
+                    }}
                   >
-                    <MenuIcon>
-                      🗑
-                    </MenuIcon>
-                    <MenuText>
-                      삭제하기
-                    </MenuText>
+                    <MenuIcon>🗑</MenuIcon>
+                    삭제하기
                   </ContextMenuItem>
                 </ContextMenu>
               )}
@@ -485,27 +400,19 @@ export default function ChatList() {
         +
       </AddButton>
 
-      {deleteTargetId && (
+      {deleteTargetId !== null && (
         <ModalOverlay
-          onClick={() =>
-            setDeleteTargetId(null)
-          }
+          onClick={() => setDeleteTargetId(null)}
         >
           <ModalBox
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
           >
-            <ModalText>
-              채팅을 삭제할까요?
-            </ModalText>
+            <ModalText>채팅을 삭제할까요?</ModalText>
 
             <ModalActions>
               <ModalButton
                 type="button"
-                onClick={() =>
-                  setDeleteTargetId(null)
-                }
+                onClick={() => setDeleteTargetId(null)}
               >
                 취소
               </ModalButton>

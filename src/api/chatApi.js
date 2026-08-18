@@ -3,20 +3,29 @@ import { apiClient } from "./axiosInstance";
 // 채팅방 목록 조회
 export const getChatRooms = async () => {
   const res = await apiClient.get("/api/chat/rooms");
+
   return res.data;
 };
 
 // 일반 채팅방 생성
-export const createChatRoom = async (title = "새로운 대화") => {
-  const res = await apiClient.post("/api/chat/rooms", {
-    title,
-  });
+export const createChatRoom = async (
+  title = "새로운 대화",
+) => {
+  const res = await apiClient.post(
+    "/api/chat/rooms",
+    {
+      title,
+      aiAnalysis: 0,
+    },
+  );
 
   return res.data;
 };
 
 // 분석 결과 기반 채팅방 조회/생성
-export const createChatRoomFromAnalysis = async (analysisId) => {
+export const createChatRoomFromAnalysis = async (
+  analysisId,
+) => {
   const res = await apiClient.post(
     `/api/chat/rooms/analyses/${analysisId}`,
   );
@@ -25,11 +34,16 @@ export const createChatRoomFromAnalysis = async (analysisId) => {
 };
 
 // 채팅방 이름 변경
-export const renameChatRoom = async (roomId, title) => {
-  const res = await apiClient.patch("/api/chat/rooms", {
-    roomId,
-    title,
-  });
+export const renameChatRoom = async (
+  roomId,
+  title,
+) => {
+  const res = await apiClient.patch(
+    `/api/chat/rooms/${roomId}`,
+    {
+      title,
+    },
+  );
 
   return res.data;
 };
@@ -44,7 +58,9 @@ export const deleteChatRoom = async (roomId) => {
 };
 
 // 대화 내역 조회
-export const getChatRoomMessages = async (roomId) => {
+export const getChatRoomMessages = async (
+  roomId,
+) => {
   const res = await apiClient.get(
     `/api/chat/rooms/${roomId}/messages`,
   );
@@ -53,16 +69,23 @@ export const getChatRoomMessages = async (roomId) => {
 };
 
 // 파일 / 이미지 업로드
-export const uploadChatFile = async (roomId, file) => {
+export const uploadChatFile = async (
+  roomId,
+  file,
+  content = "",
+) => {
   const formData = new FormData();
 
-  formData.append("roomId", roomId);
   formData.append("file", file);
 
   const res = await apiClient.post(
     "/api/chat/files",
     formData,
     {
+      params: {
+        roomId,
+        content,
+      },
       headers: {
         "Content-Type": "multipart/form-data",
       },

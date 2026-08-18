@@ -18,38 +18,31 @@ import {
 const ChatContext = createContext(null);
 
 function unwrapData(response) {
-  if (response?.data !== undefined) {
-    return response.data;
-  }
-
-  return response;
+  return response?.data !== undefined
+    ? response.data
+    : response;
 }
 
 function normalizeChatRoom(room) {
   return {
     ...room,
-
     chatRoomId:
       room?.chatRoomId ??
       room?.roomId ??
       room?.id,
-
     title:
       room?.title ??
       room?.name ??
       "새로운 대화",
-
     createdAt:
       room?.createdAt ??
       room?.createdDate ??
       Date.now(),
-
     updatedAt:
       room?.updatedAt ??
       room?.modifiedAt ??
       room?.createdAt ??
       Date.now(),
-
     analysisId:
       room?.analysisId ??
       room?.analysis?.analysisId ??
@@ -87,35 +80,28 @@ function normalizeMessage(message) {
 
   return {
     ...message,
-
     id:
       message?.chatMessageId ??
       message?.messageId ??
       message?.id ??
       `${Date.now()}-${Math.random()}`,
-
     chatMessageId:
       message?.chatMessageId ??
       message?.messageId ??
       message?.id,
-
     role,
-
     text:
       message?.content ??
       message?.text ??
       "",
-
     image:
       message?.fileUrl ??
       message?.image ??
       null,
-
     time:
       message?.createdAt ??
       message?.time ??
       null,
-
     messageType:
       message?.messageType ?? "TEXT",
   };
@@ -150,6 +136,7 @@ export function ChatProvider({ children }) {
       const response = await getChatRooms();
       const rooms = normalizeRooms(response);
 
+      // 서버가 준 순서를 그대로 유지
       setChats(rooms);
 
       return rooms;
@@ -160,36 +147,26 @@ export function ChatProvider({ children }) {
 
   useEffect(() => {
     fetchChatRooms().catch((error) => {
-      console.error(
-        "채팅방 목록을 불러오지 못했습니다.",
-        error,
-      );
+      console.error("채팅방 목록을 불러오지 못했습니다.", error);
     });
   }, [fetchChatRooms]);
 
   const getChat = useCallback(
-    (chatId) => {
-      return (
-        chats.find(
-          (chat) =>
-            String(chat.chatRoomId) ===
-            String(chatId),
-        ) ?? null
-      );
-    },
+    (chatId) =>
+      chats.find(
+        (chat) =>
+          String(chat.chatRoomId) === String(chatId),
+      ) ?? null,
     [chats],
   );
 
-  // 일반 새 채팅방 생성
   const createChat = useCallback(
     async (title = "새로운 대화") => {
-      const response =
-        await createChatRoomApi(title);
+      const response = await createChatRoomApi(title);
 
-      const newChat =
-        normalizeChatRoom(
-          unwrapData(response),
-        );
+      const newChat = normalizeChatRoom(
+        unwrapData(response),
+      );
 
       setChats((current) => [
         newChat,
@@ -205,24 +182,18 @@ export function ChatProvider({ children }) {
     [],
   );
 
-  // 투데이스킨 분석 결과 기반 채팅방 생성/조회
   const createChatFromAnalysis = useCallback(
     async (analysisId) => {
       if (!analysisId) {
-        throw new Error(
-          "analysisId가 없습니다.",
-        );
+        throw new Error("analysisId가 없습니다.");
       }
 
       const response =
-        await createChatRoomFromAnalysisApi(
-          analysisId,
-        );
+        await createChatRoomFromAnalysisApi(analysisId);
 
-      const chat =
-        normalizeChatRoom(
-          unwrapData(response),
-        );
+      const chat = normalizeChatRoom(
+        unwrapData(response),
+      );
 
       setChats((current) => [
         chat,
@@ -238,15 +209,11 @@ export function ChatProvider({ children }) {
     [],
   );
 
-  const fetchChatMessages = useCallback(
-    async (chatId) => {
-      const response =
-        await getChatRoomMessages(chatId);
+  const fetchChatMessages = useCallback(async (chatId) => {
+    const response = await getChatRoomMessages(chatId);
 
-      return normalizeMessages(response);
-    },
-    [],
-  );
+    return normalizeMessages(response);
+  }, []);
 
   const renameChat = useCallback(
     async (chatId, newTitle) => {
@@ -254,19 +221,14 @@ export function ChatProvider({ children }) {
 
       if (!trimmed) return;
 
-      await renameChatRoomApi(
-        chatId,
-        trimmed,
-      );
+      await renameChatRoomApi(chatId, trimmed);
 
       setChats((current) =>
         current.map((chat) =>
-          String(chat.chatRoomId) ===
-          String(chatId)
+          String(chat.chatRoomId) === String(chatId)
             ? {
                 ...chat,
                 title: trimmed,
-                updatedAt: Date.now(),
               }
             : chat,
         ),
@@ -275,33 +237,25 @@ export function ChatProvider({ children }) {
     [],
   );
 
-  const deleteChat = useCallback(
-    async (chatId) => {
-      await deleteChatRoomApi(chatId);
+  const deleteChat = useCallback(async (chatId) => {
+    await deleteChatRoomApi(chatId);
 
-      setChats((current) =>
-        current.filter(
-          (chat) =>
-            String(chat.chatRoomId) !==
-            String(chatId),
-        ),
-      );
-    },
-    [],
-  );
+    setChats((current) =>
+      current.filter(
+        (chat) =>
+          String(chat.chatRoomId) !== String(chatId),
+      ),
+    );
+  }, []);
 
   const value = {
     chats,
     isLoadingChats,
-
     getChat,
-
     createChat,
     createChatFromAnalysis,
-
     fetchChatRooms,
     fetchChatMessages,
-
     renameChat,
     deleteChat,
   };

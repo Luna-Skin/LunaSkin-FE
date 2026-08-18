@@ -4,6 +4,7 @@ import {
   useState,
 } from "react";
 import {
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
@@ -17,6 +18,9 @@ import ChatPlusMenu from "../../components/chat/ChatPlusMenu";
 import { useChatContext } from "../../components/chat/ChatContext";
 import { connectChatSocket } from "../../api/chatSocket";
 import { uploadChatFile } from "../../api/chatApi";
+
+const DEFAULT_GREETING =
+  "안녕하세요! 끼끼의 피부상담소입니다.\n무엇이 궁금하신가요?";
 
 const Room = styled.section`
   position: relative;
@@ -33,15 +37,15 @@ const Header = styled.header`
   display: flex;
   align-items: center;
   padding: 14px 20px;
-  background: #fff;
   border-bottom: 1px solid #e5e5e5;
+  background: #fff;
 `;
 
 const BackButton = styled.button`
   display: grid;
-  place-items: center;
   width: 28px;
   height: 28px;
+  place-items: center;
   border: 0;
   background: transparent;
   color: #333;
@@ -63,6 +67,13 @@ const DateText = styled.p`
   font-size: 12px;
 `;
 
+const MessageState = styled.p`
+  margin-bottom: 12px;
+  color: #999;
+  text-align: center;
+  font-size: 11px;
+`;
+
 const InputArea = styled.div`
   position: absolute;
   right: 0;
@@ -70,7 +81,6 @@ const InputArea = styled.div`
   left: 0;
   z-index: 10;
   padding: 10px 28px 14px;
-  background: transparent;
 `;
 
 const InputBarWrapper = styled.div`
@@ -81,98 +91,128 @@ const InputBarWrapper = styled.div`
 function getTodayLabel() {
   const now = new Date();
 
-  return `${now.getFullYear()}년 ${
-    now.getMonth() + 1
-  }월 ${now.getDate()}일`;
+  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
 }
 
-function normalizeSocketMessage(payload) {
+function formatDateLabel(dateString) {
+  if (!dateString) return getTodayLabel();
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateString;
+  }
+
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+function formatMessageTime(value) {
+  if (!value) return formatTime();
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return formatTime();
+  }
+
+  return formatTime(date);
+}
+
+function normalizeMessage(message) {
   return {
+    ...message,
     id:
-      payload.chatMessageId ??
-      payload.messageId ??
+      message.id ??
+      message.chatMessageId ??
+      message.messageId ??
       `${Date.now()}-${Math.random()}`,
-
-    chatMessageId:
-      payload.chatMessageId ??
-      payload.messageId,
-
     role:
-      payload.role === "AI"
+      message.role === "AI"
         ? "bot"
-        : payload.role === "USER"
+        : message.role === "USER"
           ? "user"
-          : payload.role,
-
-    text: payload.content ?? "",
-
-    image:
-      payload.fileUrl ?? null,
-
-    time:
-      payload.createdAt ?? formatTime(),
-
-    messageType:
-      payload.messageType ?? "TEXT",
+          : message.role,
+    text: message.text ?? message.content ?? "",
+    image: message.image ?? message.fileUrl ?? null,
+    time: formatMessageTime(
+      message.time ?? message.createdAt,
+    ),
   };
+}
+
+function hasSameMessage(messages, nextMessage) {
+  return messages.some(
+    (message) => String(message.id) === String(nextMessage.id),
+  );
 }
 
 export default function ChatRoom() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { chatId } = useParams();
 
-  const {
-    getChat,
-    fetchChatMessages,
-  } = useChatContext();
+  const { fetchChatMessages } = useChatContext();
+
+  const fromTodaySkin = Boolean(
+    location.state?.fromTodaySkin,
+  );
+
+  const todaySkinDate = location.state?.todaySkinDate;
 
   const [input, setInput] = useState("");
-  const [isMenuOpen, setIsMenuOpen] =
-    useState(false);
-
-  const [attachedImage, setAttachedImage] =
-    useState(null);
-
-  const [messages, setMessages] =
-    useState([]);
-
-  const [
-    isLoadingMessages,
-    setIsLoadingMessages,
-  ] = useState(true);
-
-  const [
-    socketError,
-    setSocketError,
-  ] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [attachedImage, setAttachedImage] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [socketError, setSocketError] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const socketRef = useRef(null);
-
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const messageEndRef = useRef(null);
 
-  const chat = getChat(chatId);
-
-  // 방 진입 시 기존 메시지 조회
   useEffect(() => {
     let isMounted = true;
 
-    (async () => {
+    async function loadMessages() {
       try {
         setIsLoadingMessages(true);
 
-        const data =
-          await fetchChatMessages(chatId);
+        const loadedMessages = await fetchChatMessages(chatId);
 
-        if (isMounted) {
-          setMessages(data ?? []);
+        if (!isMounted) return;
+
+        // 백엔드는 최신 메시지부터 주므로, 화면용으로 뒤집는다.
+        let nextMessages = [...loadedMessages]
+          .reverse()
+          .map(normalizeMessage);
+
+        // 투데이스킨에서 온 경우 기본 인사 대신 분석 안내만 표시
+        if (fromTodaySkin) {
+          nextMessages = nextMessages.filter(
+            (message) => message.text !== DEFAULT_GREETING,
+          );
+
+          nextMessages.unshift({
+            id: `today-skin-notice-${chatId}`,
+            role: "bot",
+            text:
+              "오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n" +
+              `→ ${formatDateLabel(todaySkinDate)} 투데이스킨 첨부됨`,
+            time: formatTime(),
+          });
         }
+
+        setMessages((current) => {
+          const receivedWhileLoading = current.filter(
+            (message) => !hasSameMessage(nextMessages, message),
+          );
+
+          return [...nextMessages, ...receivedWhileLoading];
+        });
       } catch (error) {
-        console.error(
-          "대화 내역을 불러오지 못했습니다.",
-          error,
-        );
+        console.error("대화 내역 조회 실패:", error);
 
         if (isMounted) {
           setMessages([]);
@@ -182,73 +222,51 @@ export default function ChatRoom() {
           setIsLoadingMessages(false);
         }
       }
-    })();
+    }
+
+    loadMessages();
 
     return () => {
       isMounted = false;
     };
-  }, [chatId, fetchChatMessages]);
+  }, [
+    chatId,
+    fetchChatMessages,
+    fromTodaySkin,
+    todaySkinDate,
+  ]);
 
-  // 방 진입 시 WebSocket 연결
   useEffect(() => {
     if (!chatId) return undefined;
 
     setSocketError(null);
 
-    const socket =
-      connectChatSocket(chatId, {
-        onConnect: () => {
-          console.log(
-            `[ChatRoom] 소켓 연결 완료: ${chatId}`,
-          );
-        },
+    const socket = connectChatSocket(chatId, {
+      onMessage: (payload) => {
+        const nextMessage = normalizeMessage(payload);
 
-        onMessage: (payload) => {
-          const message =
-            normalizeSocketMessage(
-              payload,
-            );
+        setMessages((current) => {
+          if (hasSameMessage(current, nextMessage)) {
+            return current;
+          }
 
-          setMessages((current) => {
-            // 같은 메시지가 중복으로 들어오는 경우 방지
-            const alreadyExists =
-              current.some(
-                (item) =>
-                  String(item.id) ===
-                  String(message.id),
-              );
+          return [...current, nextMessage];
+        });
+      },
 
-            if (alreadyExists) {
-              return current;
-            }
+      onError: (error) => {
+        setSocketError(
+          error?.message ??
+            "AI 답변 중 오류가 발생했어요.",
+        );
+      },
 
-            return [...current, message];
-          });
-        },
-
-        onError: (error) => {
-          console.error(
-            "AI 응답 오류",
-            error,
-          );
-
-          setSocketError(
-            error?.message ??
-              "AI 응답 중 오류가 발생했습니다.",
-          );
-        },
-
-        onConnectError: (error) => {
-          console.error(
-            "채팅 소켓 연결 실패",
-            error,
-          );
-
-          setSocketError(
-            "채팅 서버와 연결하지 못했습니다.",
-          );
-        },
-      });
+      onConnectError: () => {
+        setSocketError(
+          "채팅 서버에 연결하지 못했어요.",
+        );
+      },
+    });
 
     socketRef.current = socket;
 
@@ -265,132 +283,101 @@ export default function ChatRoom() {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-  }, [messages]);
+  }, [messages, isUploading]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim();
 
-    if (!text && !attachedImage) {
-      return;
-    }
-
-    if (!text) {
-      return;
-    }
-
-    const socket = socketRef.current;
-
-    if (!socket) {
-      console.warn(
-        "채팅 소켓이 연결되지 않았습니다.",
-      );
-      return;
-    }
-
-    const sent =
-      socket.sendMessage(text);
-
-    if (!sent) {
-      return;
-    }
-
-    setInput("");
-    setAttachedImage(null);
-    setIsMenuOpen(false);
-  };
-
-  const handlePhotoAttach = async (
-    event,
-  ) => {
-    const selectedFile =
-      event.target.files?.[0];
-
-    if (!selectedFile) return;
+    if (!text && !attachedImage) return;
 
     try {
-      const reader = new FileReader();
+      if (attachedImage) {
+        setIsUploading(true);
 
-      reader.onload = () => {
-        setAttachedImage({
-          file: selectedFile,
-          url: reader.result,
-        });
+        // 업로드 후 USER 메시지와 AI 답변은 소켓으로 수신됨
+        await uploadChatFile(
+          chatId,
+          attachedImage.file,
+          text,
+        );
 
+        setInput("");
+        setAttachedImage(null);
         setIsMenuOpen(false);
-      };
+        return;
+      }
 
-      reader.readAsDataURL(
-        selectedFile,
-      );
+      const sent = socketRef.current?.sendMessage(text);
+
+      if (!sent) {
+        setSocketError(
+          "채팅 서버 연결 후 다시 시도해주세요.",
+        );
+        return;
+      }
+
+      setInput("");
+      setIsMenuOpen(false);
     } catch (error) {
-      console.error(
-        "이미지 선택에 실패했습니다.",
-        error,
+      console.error("메시지 전송 실패:", error);
+      setSocketError(
+        "메시지를 전송하지 못했어요. 다시 시도해주세요.",
       );
+    } finally {
+      setIsUploading(false);
     }
+  };
 
+  const handlePhotoAttach = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setAttachedImage({
+        file: selectedFile,
+        url: reader.result,
+      });
+
+      setIsMenuOpen(false);
+    };
+
+    reader.readAsDataURL(selectedFile);
     event.target.value = "";
   };
 
-  const handleFileAttach = async (
-    event,
-  ) => {
-    const selectedFile =
-      event.target.files?.[0];
+  const handleFileAttach = async (event) => {
+    const selectedFile = event.target.files?.[0];
 
     if (!selectedFile) return;
 
     try {
-      await uploadChatFile(
-        chatId,
-        selectedFile,
-      );
+      setIsUploading(true);
 
-      console.log(
-        "파일 업로드 완료",
-      );
+      // 일반 파일도 업로드 API를 통해 메시지로 저장됨
+      await uploadChatFile(chatId, selectedFile);
+
+      setIsMenuOpen(false);
     } catch (error) {
-      console.error(
-        "파일 업로드에 실패했습니다.",
-        error,
+      console.error("파일 업로드 실패:", error);
+      setSocketError(
+        "파일을 업로드하지 못했어요. 다시 시도해주세요.",
       );
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
     }
-
-    setIsMenuOpen(false);
-    event.target.value = "";
   };
-
-  if (!chat) {
-    return (
-      <Room>
-        <Header>
-          <BackButton
-            onClick={() =>
-              navigate("/chat")
-            }
-            aria-label="목록으로"
-          >
-            ‹
-          </BackButton>
-        </Header>
-
-        <Conversation>
-          <DateText>
-            대화를 찾을 수 없어요.
-          </DateText>
-        </Conversation>
-      </Room>
-    );
-  }
 
   return (
     <Room>
       <Header>
         <BackButton
-          onClick={() =>
-            navigate("/chat")
-          }
-          aria-label="목록으로"
+          type="button"
+          onClick={() => navigate("/chat")}
+          aria-label="채팅 목록으로"
         >
           ‹
         </BackButton>
@@ -398,32 +385,30 @@ export default function ChatRoom() {
 
       <Conversation>
         <DateText>
-          {getTodayLabel()}
+          {fromTodaySkin
+            ? formatDateLabel(todaySkinDate)
+            : getTodayLabel()}
         </DateText>
 
         {socketError && (
-          <div
-            style={{
-              marginBottom: 12,
-              color: "#999",
-              fontSize: 11,
-              textAlign: "center",
-            }}
-          >
-            {socketError}
-          </div>
+          <MessageState>{socketError}</MessageState>
+        )}
+
+        {isLoadingMessages && (
+          <MessageState>대화를 불러오는 중이에요.</MessageState>
         )}
 
         {!isLoadingMessages &&
           messages.map((message) => (
             <ChatBubble
-              key={
-                message.id ??
-                message.chatMessageId
-              }
+              key={message.id}
               {...message}
             />
           ))}
+
+        {isUploading && (
+          <MessageState>파일을 전송하는 중이에요.</MessageState>
+        )}
 
         <div ref={messageEndRef} />
       </Conversation>
@@ -431,12 +416,8 @@ export default function ChatRoom() {
       <InputArea>
         {isMenuOpen && (
           <ChatPlusMenu
-            onPhotoClick={() => {
-              photoInputRef.current?.click();
-            }}
-            onFileClick={() => {
-              fileInputRef.current?.click();
-            }}
+            onPhotoClick={() => photoInputRef.current?.click()}
+            onFileClick={() => fileInputRef.current?.click()}
           />
         )}
 
@@ -446,15 +427,11 @@ export default function ChatRoom() {
             onChange={setInput}
             onSubmit={sendMessage}
             onToggleMenu={() =>
-              setIsMenuOpen(
-                (current) => !current,
-              )
+              setIsMenuOpen((current) => !current)
             }
             isMenuOpen={isMenuOpen}
             image={attachedImage?.url}
-            onRemoveImage={() =>
-              setAttachedImage(null)
-            }
+            onRemoveImage={() => setAttachedImage(null)}
           />
         </InputBarWrapper>
 
