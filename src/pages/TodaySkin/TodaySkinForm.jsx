@@ -40,6 +40,43 @@ const SKIN_STATUS_CODE_BY_LABEL = {
   칙칙함: "DULL",
 };
 
+// 생활 습관 임시저장 상수, 하뮤수
+const TODAY_SKIN_DRAFT_KEY = "todaySkin:lifestyleDraft";
+
+function loadLifestyleDraft() {
+  try {
+    const saved = sessionStorage.getItem(TODAY_SKIN_DRAFT_KEY);
+
+    if (!saved) {
+      return {
+        stepperValues: {
+          sleep: null,
+          water: null,
+          exercise: null,
+        },
+        meals: [],
+        skinStatus: null,
+      };
+    }
+
+    return JSON.parse(saved);
+  } catch {
+    return {
+      stepperValues: {
+        sleep: null,
+        water: null,
+        exercise: null,
+      },
+      meals: [],
+      skinStatus: null,
+    };
+  }
+}
+
+function clearLifestyleDraft() {
+  sessionStorage.removeItem(TODAY_SKIN_DRAFT_KEY);
+}
+
 const Content = styled.div`
   display: flex;
   flex-direction: column;
@@ -111,13 +148,27 @@ export default function TodaySkinForm() {
 
   // RecordForm이 관리하던 생활습관 값들 여기로 끌어올림
   // "분석하기"에서 값들을 API로 보내야 해서 부모가 갖고 있어야 함
-  const [stepperValues, setStepperValues] = useState({
-    sleep: null,
-    water: null,
-    exercise: null,
-  });
-  const [meals, setMeals] = useState([]);
-  const [skinStatus, setSkinStatus] = useState(null);
+  const [lifestyleDraft] = useState(() => loadLifestyleDraft());
+
+  const [stepperValues, setStepperValues] = useState(
+    lifestyleDraft.stepperValues,
+  );
+
+  const [meals, setMeals] = useState(lifestyleDraft.meals);
+
+  const [skinStatus, setSkinStatus] = useState(lifestyleDraft.skinStatus);
+
+  // 상태 변경시 sessionStorage에 자동 저장
+  useEffect(() => {
+    sessionStorage.setItem(
+      TODAY_SKIN_DRAFT_KEY,
+      JSON.stringify({
+        stepperValues,
+        meals,
+        skinStatus,
+      }),
+    );
+  }, [stepperValues, meals, skinStatus]);
 
   const [modalStep, setModalStep] = useState(null); // null | "check" | "retry"
   const [step, setStep] = useState("form"); // "form" | "analyzing"
@@ -167,6 +218,8 @@ export default function TodaySkinForm() {
       await postDailyAnalysis(todayDate, payload);
 
       clearCapturedPhotos(); // 이번 기록 세션 종료, 다음엔 빈 상태로 새로 시작
+      clearLifestyleDraft();
+
       navigate(`/today-skin/result/${todayDate}`);
     } catch (error) {
       console.error("분석 요청 실패:", error);
