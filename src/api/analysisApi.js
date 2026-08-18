@@ -31,3 +31,37 @@ export async function postDailyAnalysis(date, payload) {
   const { data } = await apiClient.post(`/api/analysis/${date}`, payload);
   return data.data;
 }
+
+// 일별 피부 분석 기록 조회
+// GET /api/analysis/{date}
+export async function getDailyAnalysis(date) {
+  const { data } = await apiClient.get(`/api/analysis/${date}`);
+  return data.data;
+}
+
+// 제품 추천 조회
+// GET /api/products/recommend?date=YYYY-MM-DD
+export async function getRecommendedProducts(date) {
+  const { data } = await apiClient.get("/api/products/recommend", {
+    params: { date },
+  });
+  return data.data;
+}
+
+// 홈 화면 오늘의 피부 상태 summary 조회
+// GET /api/analysis/today
+// 응답 data: { skinStatus, aiComment } — 숫자 점수가 아니라 문자열을 줌
+export async function getTodayAnalysisSummary() {
+  const { data } = await apiClient.get("/api/analysis/today");
+  return data.data;
+}
+
+// 피부 기록 비교
+// GET /api/analysis/compare?dateA=YYYY-MM-DD&dateB=YYYY-MM-DD
+export async function getAnalysisCompare(dateA, dateB) {
+  const { data } = await apiClient.get("/api/analysis/compare", {
+    params: { dateA, dateB },
+  });
+
+  return data.data;
+}

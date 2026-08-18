@@ -14,13 +14,8 @@ import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
 import { getCycleCalendar, getCyclePhaseComment, postCycleStart, postCycleEnd } from "../../api/cycleApi";
 import { getTodayRoutine } from "../../api/routineApi";
+import { getTodayAnalysisSummary } from "../../api/analysisApi";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
-import {
-  getSkinScoreBucket,
-  SKIN_SCORE_BUCKET,
-  SKIN_SCORE_BUCKET_CONTENT,
-} from "../../utils/skinScoreBucket";
-import { MOCK_SKIN_RECORDS } from "../../mocks/homeMock";
 
 import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
 import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
@@ -52,11 +47,24 @@ const ROUTINE_CATEGORY_META = {
 // icon/title이 undefined로 남아서 깨진 이미지·빈 텍스트가 뜨는 걸 방지
 const DEFAULT_ROUTINE_META = { title: "오늘의 루틴", icon: serumIcon };
 
-const SKIN_SCORE_BUCKET_ICON = {
-  [SKIN_SCORE_BUCKET.UNKNOWN]: skinStatusUnknownIcon,
-  [SKIN_SCORE_BUCKET.BAD]: skinStatusBadIcon,
-  [SKIN_SCORE_BUCKET.NORMAL]: skinStatusNormalIcon,
-  [SKIN_SCORE_BUCKET.GOOD]: skinStatusGoodIcon,
+// API가 주는 skinStatus 문자열로 아이콘 매핑
+// 오늘 기록이 아직 없으면 TODAY_STATUS_UNKNOWN을 그대로 사용
+const TODAY_STATUS_ICON = {
+  나쁨: skinStatusBadIcon,
+  보통: skinStatusNormalIcon,
+  좋음: skinStatusGoodIcon,
+};
+
+const TODAY_STATUS_UNKNOWN = {
+  icon: skinStatusUnknownIcon,
+  label: "모름",
+  description: (
+    <>
+      아직 오늘의 피부 기록이 없어요.
+      <br />
+      피부를 촬영하고 상태를 확인해보세요!
+    </>
+  ),
 };
 
 const SectionLabel = styled.h2`
@@ -176,9 +184,29 @@ export default function Home() {
 
   const [toastMessage, setToastMessage] = useState(null);
 
-  const todayScore = MOCK_SKIN_RECORDS[today]?.score ?? null;
-  const scoreBucket = getSkinScoreBucket(todayScore);
-  const bucketContent = SKIN_SCORE_BUCKET_CONTENT[scoreBucket];
+
+  const [todaySummary, setTodaySummary] = useState(null);
+
+  useEffect(() => {
+    getTodayAnalysisSummary()
+      .then((data) => {
+        if (data?.skinStatus && data.skinStatus !== "모름") {
+          setTodaySummary(data);
+        }
+      })
+      .catch(() => {
+        // 혹시 모를 다른 실패 상황도 안전하게 "모름"으로 취급..
+        setTodaySummary(null);
+      });
+  }, []);
+
+  const todayStatusContent = todaySummary
+    ? {
+        icon: TODAY_STATUS_ICON[todaySummary.skinStatus] ?? TODAY_STATUS_UNKNOWN.icon,
+        label: todaySummary.skinStatus,
+        description: todaySummary.aiComment,
+      }
+    : TODAY_STATUS_UNKNOWN;
 
   const handleDateClick = (dateStr) => {
     if (periodSelectMode) {
@@ -278,7 +306,7 @@ export default function Home() {
   };
 
   const handleViewTodayStatus = () => {
-    if (scoreBucket === SKIN_SCORE_BUCKET.UNKNOWN) {
+    if (!todaySummary) {
       navigate("/today-skin");
     } else {
       navigate(`/today-skin/result/${today}`, {
@@ -333,9 +361,9 @@ export default function Home() {
         <SectionLabel>오늘의 피부 상태</SectionLabel>
 
         <TodaySkinStatusCard
-          icon={SKIN_SCORE_BUCKET_ICON[scoreBucket]}
-          label={bucketContent.label}
-          description={bucketContent.description}
+          icon={todayStatusContent.icon}
+          label={todayStatusContent.label}
+          description={todayStatusContent.description}
           onClick={handleViewTodayStatus}
         />
 

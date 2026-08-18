@@ -3,55 +3,10 @@ import styled from "styled-components";
 import RecordListRow from "./RecordListRow";
 import StepperBottomSheet from "./StepperBottomSheet";
 import ChipBottomSheet from "./ChipBottomSheet";
-
-function formatExerciseHours(hours) {
-  const wholeHours = Math.floor(hours);
-  const minutes = Math.round((hours - wholeHours) * 60);
-  return minutes === 0 ? `${wholeHours}시간` : `${wholeHours}시간 ${minutes}분`;
-}
-
-const STEPPER_FIELDS = {
-  sleep: {
-    label: "수면",
-    min: 0,
-    max: 16,
-    step: 0.5,
-    default: 7,
-    formatValue: (v) => `${v}시간`,
-  },
-  water: {
-    label: "수분 섭취",
-    min: 0,
-    max: 4,
-    step: 0.5,
-    default: 0.5,
-    formatValue: (v) => `${v}L`,
-  },
-  exercise: {
-    label: "운동",
-    min: 0,
-    max: 4,
-    step: 0.5,
-    default: 1,
-    formatValue: formatExerciseHours,
-  },
-};
-
-const MEAL_OPTIONS = [
-  "유제품",
-  "과일",
-  "매운 음식",
-  "카페인",
-  "고지방",
-  "당분",
-  "탄산음료",
-  "음주",
-];
-const SKIN_STATUS_OPTIONS = ["건조", "번들거림", "트러블", "칙칙함"];
+import { STEPPER_FIELDS, MEAL_OPTIONS, SKIN_STATUS_OPTIONS } from "../../utils/recordFormOptions";
 
 // 선택된 식사 항목을 화면에 보여줄 문자열로 변환.
-// 4개 넘으면 4개까지 보여주고 그다음부터는 다음 줄로 넘김 (\n은 RecordListRow의
-// white-space: pre-line 덕분에 실제 줄바꿈으로 보여짐)
+// 4개 넘으면 4개까지 보여주고 그다음부터는 다음 줄로 넘김 
 function formatMeals(meals) {
   if (meals.length === 0) return null;
   if (meals.length <= 4) return meals.join(", ");
@@ -67,45 +22,44 @@ const Container = styled.div`
   border-radius: 18px;
   border: 2px solid rgba(0, 0, 0, 0.1);
   background: #fff;
-  // box-sizing: border-box;
   overflow: hidden;
 `;
 
-export default function RecordForm() {
-  const [stepperValues, setStepperValues] = useState({
-    sleep: null,
-    water: null,
-    exercise: null,
-  });
-  const [meals, setMeals] = useState([]);
-  const [skinStatus, setSkinStatus] = useState(null);
+// 값 자체는 이제 이 컴포넌트가 안 들고 있고, 전부 부모(TodaySkinForm)로부터 props로 받는 controlled 컴포넌트로 바꿈 
+// 어떤 바텀시트가 열려있는지는 그대로 내부에서 관리
+export default function RecordForm({
+  stepperValues,
+  onStepperValuesChange,
+  meals,
+  onMealsChange,
+  skinStatus,
+  onSkinStatusChange,
+}) {
   const [activeSheet, setActiveSheet] = useState(null); // null | "sleep" | "water" | "exercise" | "meals" | "skinStatus"
 
   const openStepperSheet = (key) => {
-    setStepperValues((prev) =>
-      prev[key] === null
-        ? { ...prev, [key]: STEPPER_FIELDS[key].default }
-        : prev,
-    );
+    if (stepperValues[key] === null) {
+      onStepperValuesChange({ ...stepperValues, [key]: STEPPER_FIELDS[key].default });
+    }
     setActiveSheet(key);
   };
 
   const updateStepperValue = (key, value) => {
-    setStepperValues((prev) => ({ ...prev, [key]: value }));
+    onStepperValuesChange({ ...stepperValues, [key]: value });
   };
 
   const closeSheet = () => setActiveSheet(null);
 
   const toggleMeal = (option) => {
-    setMeals((prev) =>
-      prev.includes(option)
-        ? prev.filter((meal) => meal !== option)
-        : [...prev, option],
+    onMealsChange(
+      meals.includes(option)
+        ? meals.filter((meal) => meal !== option)
+        : [...meals, option],
     );
   };
 
   const toggleSkinStatus = (option) => {
-    setSkinStatus((prev) => (prev === option ? null : option));
+    onSkinStatusChange(skinStatus === option ? null : option);
   };
 
   const activeStepperField = activeSheet ? STEPPER_FIELDS[activeSheet] : null;
