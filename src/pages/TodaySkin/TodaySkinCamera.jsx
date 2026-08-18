@@ -17,13 +17,6 @@ const WASM_BASE =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
-// 확인 화면 UI 테스트용 임시 데이터
-const DEMO_PHOTO_FEATURES = [
-  "안경 미착용",
-  "조명 좋음",
-  "메이크업 없음",
-  "피부 가림 없음",
-];
 
 // 사진 배열(각 항목 { url, angle })을 보고, 지금 요청해야 할 각도를 정함.
 // 우선순위: front가 없으면 front, front는 있는데 left가 없으면 left, 나머지는 right
@@ -334,7 +327,6 @@ export default function TodaySkinCamera() {
 
   const [step, setStep] = useState("shoot");
   const [capturedPhoto, setCapturedPhoto] = useState(null);
-  const [photoFeatures, setPhotoFeatures] = useState([]);
 
   useEffect(() => {
     if (step !== "shoot") return undefined;
@@ -478,15 +470,11 @@ export default function TodaySkinCamera() {
 
     setCapturedPhoto(photoDataUrl);
 
-    // TODO: 이미지 분석 API 연결 후 실제 분석 결과로 교체
-    setPhotoFeatures(DEMO_PHOTO_FEATURES);
-
     setStep("confirm");
   };
 
   const handleRetake = () => {
     setCapturedPhoto(null);
-    setPhotoFeatures([]);
     setStep("shoot");
   };
 
@@ -566,7 +554,6 @@ export default function TodaySkinCamera() {
           <PreviewImage src={capturedPhoto} alt="촬영한 피부 사진" />
 
           <PhotoConfirmSheet
-            features={photoFeatures}
             onContinue={handleContinue}
             onRetake={handleRetake}
           />
