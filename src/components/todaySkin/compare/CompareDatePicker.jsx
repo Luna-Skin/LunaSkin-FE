@@ -141,12 +141,19 @@ const SelectedBadge = styled.div`
   line-height: normal;
 `;
 
-// selectedDate: 지금 이 쪽(과거/현재)에 골라져 있는 날짜 ("YYYY-MM-DD" | null)
-// availableDates: 선택 가능한 날짜 문자열 배열 (기록 있음 + 반대쪽 날짜와의 전후 제약까지
-//   부모가 미리 다 걸러서 넘겨줌 — 이 컴포넌트는 그 목록에 있는지만 봄)
-export default function CompareDatePicker({ selectedDate, availableDates, onSelect, onClose }) {
+// selectedDate : 지금 이 쪽(과거/현재)에 골라져 있는 날짜
+// availableDates : 선택 가능한 분석 기록 날짜 목록
+export default function CompareDatePicker({
+  selectedDate,
+  availableDates,
+  onSelect,
+  onClose,
+  onMonthChange,
+}) {
   const [displayedMonth, setDisplayedMonth] = useState(() =>
-    selectedDate ? dayjs(selectedDate).startOf("month") : dayjs().startOf("month"),
+    selectedDate
+      ? dayjs(selectedDate).startOf("month")
+      : dayjs().startOf("month"),
   );
 
   const days = useMemo(() => {
@@ -155,12 +162,21 @@ export default function CompareDatePicker({ selectedDate, availableDates, onSele
 
     const list = [];
     let cursor = gridStart;
+
     while (cursor.isBefore(gridEnd) || cursor.isSame(gridEnd, "day")) {
       list.push(cursor);
       cursor = cursor.add(1, "day");
     }
+
     return list;
   }, [displayedMonth]);
+
+  const handleMonthChange = (amount) => {
+    const nextMonth = displayedMonth.add(amount, "month");
+
+    setDisplayedMonth(nextMonth);
+    onMonthChange?.(nextMonth);
+  };
 
   return (
     <Overlay onClick={onClose}>
@@ -170,11 +186,21 @@ export default function CompareDatePicker({ selectedDate, availableDates, onSele
         </CloseButton>
 
         <Header>
-          <NavButton type="button" onClick={() => setDisplayedMonth((m) => m.subtract(1, "month"))}>
+          <NavButton
+            type="button"
+            onClick={() => handleMonthChange(-1)}
+          >
             <img src={chevronLeft} alt="이전 달" />
           </NavButton>
-          <MonthLabel>{displayedMonth.format("YYYY년 M월")}</MonthLabel>
-          <NavButton type="button" onClick={() => setDisplayedMonth((m) => m.add(1, "month"))}>
+
+          <MonthLabel>
+            {displayedMonth.format("YYYY년 M월")}
+          </MonthLabel>
+
+          <NavButton
+            type="button"
+            onClick={() => handleMonthChange(1)}
+          >
             <img src={chevronRight} alt="다음 달" />
           </NavButton>
         </Header>
@@ -189,15 +215,23 @@ export default function CompareDatePicker({ selectedDate, availableDates, onSele
           {days.map((date) => {
             const dateStr = date.format("YYYY-MM-DD");
             const isCurrentMonth = date.isSame(displayedMonth, "month");
-            const isAvailable = isCurrentMonth && availableDates.includes(dateStr);
+            const isAvailable =
+              isCurrentMonth && availableDates.includes(dateStr);
             const isSelected = selectedDate === dateStr;
 
             return (
-              <DateCell key={dateStr} type="button" disabled={!isAvailable} onClick={() => onSelect(dateStr)}>
+              <DateCell
+                key={dateStr}
+                type="button"
+                disabled={!isAvailable}
+                onClick={() => onSelect(dateStr)}
+              >
                 {isSelected ? (
                   <SelectedBadge>{date.date()}</SelectedBadge>
                 ) : (
-                  <DateNumber $isDimmed={!isAvailable}>{date.date()}</DateNumber>
+                  <DateNumber $isDimmed={!isAvailable}>
+                    {date.date()}
+                  </DateNumber>
                 )}
               </DateCell>
             );
