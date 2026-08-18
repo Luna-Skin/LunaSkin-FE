@@ -216,7 +216,7 @@ export default function ChatList() {
   const menuRef = useRef(null);
 
   const sortedChats = [...chats].sort(
-    (a, b) => b.updatedAt - a.updatedAt,
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
   );
 
   // 메뉴가 열려 있을 때 바깥을 누르면 메뉴 닫기
@@ -240,7 +240,7 @@ export default function ChatList() {
 
   // 이름 변경 시작
   const startRename = (chat) => {
-    setRenamingChatId(chat.id);
+    setRenamingChatId(chat.chatRoomId);
     setRenameValue(chat.title);
     setContextMenu(null);
 
@@ -251,42 +251,54 @@ export default function ChatList() {
   };
 
   // 이름 변경 확정
-  const commitRename = () => {
+  const commitRename = async () => {
     if (renamingChatId) {
-      renameChat(renamingChatId, renameValue);
+      try {
+        await renameChat(renamingChatId, renameValue);
+      } catch (error) {
+        console.error("이름 변경에 실패했습니다.", error);
+      }
     }
 
     setRenamingChatId(null);
   };
 
   // 삭제 요청
-  const requestDelete = (chatId) => {
-    setDeleteTargetId(chatId);
+  const requestDelete = (chatRoomId) => {
+    setDeleteTargetId(chatRoomId);
     setContextMenu(null);
   };
 
   // 삭제 확정
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteTargetId) {
-      deleteChat(deleteTargetId);
+      try {
+        await deleteChat(deleteTargetId);
+      } catch (error) {
+        console.error("삭제에 실패했습니다.", error);
+      }
     }
 
     setDeleteTargetId(null);
   };
 
   // 새 채팅 생성
-  const handleAddChat = () => {
-    const newChat = createChat();
-    navigate(`/chat/${newChat.id}`);
+  const handleAddChat = async () => {
+    try {
+      const newChat = await createChat();
+      navigate(`/chat/${newChat.chatRoomId}`);
+    } catch (error) {
+      console.error("채팅방 생성에 실패했습니다.", error);
+    }
   };
 
   // 롱프레스 시작
-  const handlePointerDown = (chatId) => {
+  const handlePointerDown = (chatRoomId) => {
     isLongPressRef.current = false;
 
     longPressTimer.current = setTimeout(() => {
       isLongPressRef.current = true;
-      setContextMenu(chatId);
+      setContextMenu(chatRoomId);
     }, LONG_PRESS_DURATION);
   };
 
@@ -296,15 +308,15 @@ export default function ChatList() {
   };
 
   // 채팅방 클릭
-  const handleItemClick = (chatId) => {
+  const handleItemClick = (chatRoomId) => {
     // 롱프레스 직후에는 채팅방으로 이동하지 않음
     if (isLongPressRef.current) {
       isLongPressRef.current = false;
       return;
     }
 
-    if (renamingChatId !== chatId) {
-      navigate(`/chat/${chatId}`);
+    if (renamingChatId !== chatRoomId) {
+      navigate(`/chat/${chatRoomId}`);
     }
   };
 
@@ -324,14 +336,14 @@ export default function ChatList() {
         <List>
           {sortedChats.map((chat) => (
             <ListItem
-              key={chat.id}
-              onPointerDown={() => handlePointerDown(chat.id)}
+              key={chat.chatRoomId}
+              onPointerDown={() => handlePointerDown(chat.chatRoomId)}
               onPointerUp={handlePointerRelease}
               onPointerLeave={handlePointerRelease}
               onPointerCancel={handlePointerRelease}
-              onClick={() => handleItemClick(chat.id)}
+              onClick={() => handleItemClick(chat.chatRoomId)}
             >
-              {renamingChatId === chat.id ? (
+              {renamingChatId === chat.chatRoomId ? (
                 <ChatTitleInput
                   ref={renameInputRef}
                   value={renameValue}
@@ -354,10 +366,10 @@ export default function ChatList() {
               )}
 
               <ChatDate>
-                {getChatDateLabel(chat.updatedAt)}
+                {getChatDateLabel(chat.createdAt)}
               </ChatDate>
 
-              {contextMenu === chat.id && (
+              {contextMenu === chat.chatRoomId && (
               <ContextMenu
                 ref={menuRef}
                 onClick={(event) => event.stopPropagation()}
@@ -372,7 +384,7 @@ export default function ChatList() {
 
                 <ContextMenuItem
                   type="button"
-                  onClick={() => requestDelete(chat.id)}
+                  onClick={() => requestDelete(chat.chatRoomId)}
                 >
                   <MenuIcon>🗑</MenuIcon>
                   <MenuText>삭제하기</MenuText>

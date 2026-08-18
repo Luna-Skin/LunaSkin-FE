@@ -6,7 +6,6 @@ import ChatBubble, { formatTime } from "../../components/chat/ChatBubble";
 import ChatInputBar from "../../components/chat/ChatInputBar";
 import ChatPlusMenu from "../../components/chat/ChatPlusMenu";
 import { useChatContext } from "../../components/chat/ChatContext";
-import { requestAIReply } from "../../api/chatApi";
 
 const Room = styled.section`
   position: relative;
@@ -76,62 +75,17 @@ function getTodayLabel() {
   }월 ${now.getDate()}일`;
 }
 
-function formatTimeWithUnits(date = new Date()) {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-
-  const period = hours < 12 ? "오전" : "오후";
-
-  const displayHour =
-    hours % 12 === 0 ? 12 : hours % 12;
-
-  return `${period} ${displayHour}시 ${String(minutes).padStart(
-    2,
-    "0",
-  )}분`;
-}
-
-function buildInitialMessages(
-  fromTodaySkin,
-  attachedDate = getTodayLabel(),
-) {
-  const now = new Date();
-
-  if (fromTodaySkin) {
-    return [
-      {
-        id: "today-skin-notice",
-        role: "bot",
-        text: `오늘의 분석 결과에서 어떤 부분이 궁금하신가요?\n→ ${attachedDate} 투데이스킨 첨부됨`,
-        time: formatTimeWithUnits(now),
-      },
-    ];
-  }
-
-  return [
-    {
-      id: "greeting",
-      role: "bot",
-      text: "안녕하세요! 끼끼의 피부상담소입니다.\n무엇이 궁금하신가요?",
-    },
-  ];
-}
-
 export default function ChatRoom() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { chatId } = useParams();
 
-  const {
-    getChat,
-    setChatMessages,
-    updateChatTitleFromAI,
-  } = useChatContext();
+  const { getChat, fetchChatMessages } = useChatContext();
 
   const [input, setInput] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isReplying, setIsReplying] = useState(false);
   const [attachedImage, setAttachedImage] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -139,34 +93,103 @@ export default function ChatRoom() {
 
   const chat = getChat(chatId);
 
-  const fromTodaySkin =
-    Boolean(location.state?.fromTodaySkin) ||
-    Boolean(chat?.fromTodaySkin);
-
-  const attachedTodaySkinDate =
-    location.state?.todaySkinDate ||
-    chat?.todaySkinDate ||
-    getTodayLabel();
-
+  // 방 진입 시 서버에서 대화 내역 불러오기
+  // (분석 기반으로 만든 방이면 서버가 이미 "오늘의 분석 결과..." 안내 메시지를
+  //  첫 메시지로 넣어서 내려줄 것으로 기대)
   useEffect(() => {
-    if (chat && chat.messages.length === 0) {
-      setChatMessages(
-        chatId,
-        buildInitialMessages(
-          fromTodaySkin,
-          attachedTodaySkinDate,
-        ),
-      );
-    }
+    let isMounted = true;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatId, chat?.messages.length]);
+    (async () => {
+      try {
+        setIsLoadingMessages(true);
+        const data = await fetchChatMessages(chatId);
+        if (isMounted) setMessages(data ?? []);
+      } catch (error) {
+        console.error("대화 내역을 불러오지 못했습니다.", error);
+        if (isMounted) setMessages([]);
+      } finally {
+        if (isMounted) setIsLoadingMessages(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [chatId, fetchChatMessages]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-  }, [chat?.messages, isReplying]);
+  }, [messages]);
+
+  const sendMessage = () => {
+    const text = input.trim();
+
+    // 글도 없고 사진도 없으면 전송하지 않음
+    if (!text && !attachedImage) return;
+
+    // TODO: WebSocket(/pub/chat/send) 연결되면 여기서 실제 전송
+    // 지금은 화면 확인용으로만 로컬에 추가
+    const userMessage = {
+      id: `${Date.now()}-user`,
+      role: "user",
+      text,
+      image: attachedImage?.url ?? null,
+      time: formatTime(),
+    };
+
+    setMessages((current) => [...current, userMessage]);
+
+    setInput("");
+    setAttachedImage(null);
+    setIsMenuOpen(false);
+  };
+
+  // 사진 선택
+  const handlePhotoAttach = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setAttachedImage({
+        file: selectedFile,
+        url: reader.result,
+      });
+
+      setIsMenuOpen(false);
+    };
+
+    reader.readAsDataURL(selectedFile);
+
+    event.target.value = "";
+  };
+
+  // 파일 선택
+  const handleFileAttach = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) return;
+
+    // TODO: uploadChatFile(chatId, selectedFile) 연결
+    const fileMessage = `파일을 첨부했어요: ${selectedFile.name}`;
+
+    setMessages((current) => [
+      ...current,
+      {
+        id: `${Date.now()}-user-file`,
+        role: "user",
+        text: fileMessage,
+        time: formatTime(),
+      },
+    ]);
+
+    setIsMenuOpen(false);
+    event.target.value = "";
+  };
 
   if (!chat) {
     return (
@@ -189,132 +212,6 @@ export default function ChatRoom() {
     );
   }
 
-  const messages = chat.messages;
-
-  const addBotReply = async (userMessage) => {
-    setIsReplying(true);
-
-    try {
-      const { reply, suggestedTitle } =
-        await requestAIReply({
-          chatId,
-          messages: [
-            ...chat.messages,
-            {
-              role: "user",
-              text: userMessage,
-            },
-          ],
-        });
-
-      setChatMessages(chatId, (current) => [
-        ...current,
-        {
-          id: `${Date.now()}-bot`,
-          role: "bot",
-          text: reply,
-          time: formatTime(),
-        },
-      ]);
-
-      if (suggestedTitle) {
-        updateChatTitleFromAI(
-          chatId,
-          suggestedTitle,
-        );
-      }
-    } catch (error) {
-      setChatMessages(chatId, (current) => [
-        ...current,
-        {
-          id: `${Date.now()}-bot-error`,
-          role: "bot",
-          text: "죄송해요, 잠시 오류가 발생했어요. 다시 시도해주세요.",
-          time: formatTime(),
-        },
-      ]);
-    } finally {
-      setIsReplying(false);
-    }
-  };
-
-    const sendMessage = () => {
-      const text = input.trim();
-
-      // 글도 없고 사진도 없으면 전송하지 않음
-      if (!text && !attachedImage) return;
-
-      const userMessage = {
-        id: `${Date.now()}-user`,
-        role: "user",
-        text,
-        image: attachedImage?.url ?? null,
-        time: formatTime(),
-      };
-
-      setChatMessages(chatId, (current) => [
-        ...current,
-        userMessage,
-      ]);
-
-      // AI에게 보낼 텍스트
-      const aiMessageText =
-        text || "사진을 첨부했어요.";
-
-      setInput("");
-      setAttachedImage(null);
-      setIsMenuOpen(false);
-
-      addBotReply(aiMessageText);
-    };
-
-  // 사진 선택
-    const handlePhotoAttach = (event) => {
-      const selectedFile = event.target.files?.[0];
-
-      if (!selectedFile) return;
-
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        setAttachedImage({
-          file: selectedFile,
-          url: reader.result,
-        });
-
-        setIsMenuOpen(false);
-      };
-
-      reader.readAsDataURL(selectedFile);
-
-      event.target.value = "";
-    };
-  // 파일 선택
-  const handleFileAttach = (event) => {
-    const selectedFile = event.target.files?.[0];
-
-    if (!selectedFile) return;
-
-    const fileMessage =
-      `파일을 첨부했어요: ${selectedFile.name}`;
-
-    setChatMessages(chatId, (current) => [
-      ...current,
-      {
-        id: `${Date.now()}-user-file`,
-        role: "user",
-        text: fileMessage,
-        time: formatTime(),
-      },
-    ]);
-
-    setIsMenuOpen(false);
-
-    addBotReply(fileMessage);
-
-    event.target.value = "";
-  };
-
   return (
     <Room>
       <Header>
@@ -331,19 +228,13 @@ export default function ChatRoom() {
           {getTodayLabel()}
         </DateText>
 
-        {messages.map((message) => (
-          <ChatBubble
-            key={message.id}
-            {...message}
-          />
-        ))}
-
-        {isReplying && (
-          <ChatBubble
-            role="bot"
-            isTyping
-          />
-        )}
+        {!isLoadingMessages &&
+          messages.map((message) => (
+            <ChatBubble
+              key={message.id ?? message.messageId}
+              {...message}
+            />
+          ))}
 
         <div ref={messageEndRef} />
       </Conversation>
@@ -372,7 +263,7 @@ export default function ChatRoom() {
             }
             isMenuOpen={isMenuOpen}
             image={attachedImage?.url}
-  onRemoveImage={() => setAttachedImage(null)}
+            onRemoveImage={() => setAttachedImage(null)}
           />
         </InputBarWrapper>
 

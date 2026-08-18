@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
 import styled from "styled-components";
 
-import TroubleTrendChart, {
-  buildTroubleDataFromRecords,
-} from "../../components/insight/TroubleTrendChart";
+import TroubleTrendChart from "../../components/insight/TroubleTrendChart";
 import PhaseRadarChart from "../../components/insight/PhaseRadarChart";
 import HabitImpactCard from "../../components/insight/HabitImpactCard";
-import { findCurrentCycle } from "../../utils/cyclePhase";
+import {
+  getTroubleTimeline,
+  getCycleDetail,
+  getLifestyleInsight,
+} from "../../api/insightApi";
 
 
 const Page = styled.div`
@@ -78,109 +79,40 @@ const HabitListMessage = styled.p`
 
 
 /* =========================
-   API
+   응답 데이터 변환
 ========================= */
 
-// 1. 생리 주기 + 피부 기록
-async function fetchCycleAndSkinData() {
-  const response = await fetch(
-    "/api/insight/cycle-skin-records",
-  );
+// cycle-detail의 phases 배열을
+// PhaseRadarChart가 원하는 { MENSTRUATION: [...], OVULATION: [...], LUTEAL: [...] } 형태로 변환
+function normalizePhaseData(phases) {
+  if (!Array.isArray(phases)) return {};
 
-  if (!response.ok) {
-    throw new Error("주기/피부 데이터를 불러오지 못했습니다.");
-  }
-
-  return response.json();
+  const result = {};
+  phases.forEach(({ phase, metrics }) => {
+    if (!metrics) return;
+    result[phase] = [
+      metrics.trouble,
+      metrics.sebum,
+      metrics.dullness,
+      metrics.moisture,
+      metrics.elasticity,
+    ];
+  });
+  return result;
 }
 
+// lifestyle의 factors 배열을
+// HabitImpactCard가 원하는 { type, emoji, title, result, color } 형태로 변환
+function normalizeHabitFactors(factors) {
+  if (!Array.isArray(factors)) return [];
 
-// 2. 주기 단계별 피부 비교
-async function fetchPhaseComparisonData() {
-  const response = await fetch(
-    "/api/insight/phase-comparison",
-  );
-
-  if (!response.ok) {
-    throw new Error("주기 단계별 비교 데이터를 불러오지 못했습니다.");
-  }
-
-  return response.json();
-}
-
-
-// 3. 생활 습관 원본 데이터
-async function fetchHabitData() {
-  const response = await fetch(
-    "/api/insight/habits",
-  );
-
-  if (!response.ok) {
-    throw new Error("생활 습관 데이터를 불러오지 못했습니다.");
-  }
-
-  return response.json();
-}
-
-
-// 4. AI Agent 생활습관 분석
-async function fetchHabitAnalysis(habitData) {
-  const response = await fetch(
-    "/api/insight/habit-analysis",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(habitData),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error("AI 생활 습관 분석에 실패했습니다.");
-  }
-
-  return response.json();
-}
-
-
-/* =========================
-   트러블 분석
-========================= */
-
-// TODO:
-// 추후 AI Agent API가 연결되면 이 함수 대신
-// AI가 생성한 분석 문구를 사용하면 됨.
-function buildTroubleAnalysisText(troubleData) {
-  if (!troubleData || troubleData.length < 2) {
-    return null;
-  }
-
-  let maxIncreaseDay = null;
-  let maxIncrease = -Infinity;
-
-  for (let i = 1; i < troubleData.length; i += 1) {
-    const diff =
-      troubleData[i].score - troubleData[i - 1].score;
-
-    if (diff > maxIncrease) {
-      maxIncrease = diff;
-      maxIncreaseDay = troubleData[i - 1].day;
-    }
-  }
-
-  if (maxIncreaseDay == null) {
-    return null;
-  }
-
-  const dayLabel =
-    maxIncreaseDay === 0
-      ? "생리 시작일부터"
-      : maxIncreaseDay < 0
-        ? `생리 D${maxIncreaseDay}부터`
-        : `생리 D+${maxIncreaseDay}부터`;
-
-  return `끼끼님은 ${dayLabel} 트러블이 시작돼요.`;
+  return factors.map((factor, index) => ({
+    type: `${factor.condition}-${index}`,
+    emoji: factor.impactType === "negative" ? "⚠️" : "✅",
+    title: factor.condition,
+    result: factor.impactLabel,
+    color: factor.impactType === "negative" ? "#FC7476" : "#6FC6C2",
+  }));
 }
 
 
@@ -189,23 +121,20 @@ function buildTroubleAnalysisText(troubleData) {
 ========================= */
 
 export default function Insight() {
-  const [periodCycles, setPeriodCycles] = useState([]);
-  const [skinRecords, setSkinRecords] = useState({});
+  const [troubleTimeline, setTroubleTimeline] = useState([]);
+  const [troubleAnalysisText, setTroubleAnalysisText] = useState(null);
   const [isLoadingCycleData, setIsLoadingCycleData] = useState(true);
 
-  const [phaseComparisonData, setPhaseComparisonData] =
-    useState({});
-  const [isLoadingPhaseData, setIsLoadingPhaseData] =
-    useState(true);
+  const [phaseComparisonData, setPhaseComparisonData] = useState({});
+  const [isLoadingPhaseData, setIsLoadingPhaseData] = useState(true);
 
-  const [habitData, setHabitData] = useState(null);
   const [habitAnalysis, setHabitAnalysis] = useState([]);
   const [isLoadingHabits, setIsLoadingHabits] = useState(true);
   const [habitError, setHabitError] = useState(null);
 
 
   /* =========================
-     주기 + 피부 데이터
+     트러블 지수
   ========================= */
 
   useEffect(() => {
@@ -215,16 +144,16 @@ export default function Insight() {
       try {
         setIsLoadingCycleData(true);
 
-        const data = await fetchCycleAndSkinData();
+        const res = await getTroubleTimeline();
 
         if (isMounted) {
-          setPeriodCycles(data.periodCycles ?? []);
-          setSkinRecords(data.skinRecords ?? {});
+          setTroubleTimeline(res.data?.troubleTimeline ?? []);
+          setTroubleAnalysisText(res.data?.patternComment ?? null);
         }
       } catch {
         if (isMounted) {
-          setPeriodCycles([]);
-          setSkinRecords({});
+          setTroubleTimeline([]);
+          setTroubleAnalysisText(null);
         }
       } finally {
         if (isMounted) {
@@ -250,10 +179,10 @@ export default function Insight() {
       try {
         setIsLoadingPhaseData(true);
 
-        const data = await fetchPhaseComparisonData();
+        const res = await getCycleDetail();
 
         if (isMounted) {
-          setPhaseComparisonData(data ?? {});
+          setPhaseComparisonData(normalizePhaseData(res.data?.phases));
         }
       } catch {
         if (isMounted) {
@@ -273,7 +202,7 @@ export default function Insight() {
 
 
   /* =========================
-     생활 습관 + AI 분석
+     생활 습관 영향 분석
   ========================= */
 
   useEffect(() => {
@@ -284,20 +213,10 @@ export default function Insight() {
         setIsLoadingHabits(true);
         setHabitError(null);
 
-        // 먼저 원본 생활습관 데이터를 가져옴
-        const data = await fetchHabitData();
-
-        if (!isMounted) return;
-
-        setHabitData(data);
-
-        // 가져온 데이터를 AI Agent에게 전달
-        const analysis = await fetchHabitAnalysis(data);
+        const res = await getLifestyleInsight();
 
         if (isMounted) {
-          setHabitAnalysis(
-            analysis.habits ?? [],
-          );
+          setHabitAnalysis(normalizeHabitFactors(res.data?.factors));
         }
       } catch (error) {
         if (isMounted) {
@@ -315,28 +234,6 @@ export default function Insight() {
       isMounted = false;
     };
   }, []);
-
-
-  /* =========================
-     트러블 지수 계산
-  ========================= */
-
-  const today = dayjs().format("YYYY-MM-DD");
-
-  const currentCycle = findCurrentCycle(
-    periodCycles,
-    today,
-  );
-
-  const troubleData = currentCycle
-    ? buildTroubleDataFromRecords(
-        currentCycle.cycleStartDate,
-        skinRecords,
-      )
-    : [];
-
-  const troubleAnalysisText =
-    buildTroubleAnalysisText(troubleData);
 
 
   /* =========================
@@ -362,8 +259,7 @@ export default function Insight() {
         </SectionTitle>
 
         <TroubleTrendChart
-          periodCycles={periodCycles}
-          skinRecords={skinRecords}
+          troubleTimeline={troubleTimeline}
         />
 
         {!isLoadingCycleData &&
@@ -446,7 +342,7 @@ export default function Insight() {
                 emoji={habit.emoji}
                 title={habit.title}
                 result={habit.result}
-                color="#9B6DFF"
+                color={habit.color}
               />
             ))}
 
