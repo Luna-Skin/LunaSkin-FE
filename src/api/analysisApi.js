@@ -55,3 +55,13 @@ export async function getTodayAnalysisSummary() {
   const { data } = await apiClient.get("/api/analysis/today");
   return data.data;
 }
+
+// 피부 기록 비교
+// GET /api/analysis/compare?dateA=YYYY-MM-DD&dateB=YYYY-MM-DD
+export async function getAnalysisCompare(dateA, dateB) {
+  const { data } = await apiClient.get("/api/analysis/compare", {
+    params: { dateA, dateB },
+  });
+
+  return data.data;
+}
