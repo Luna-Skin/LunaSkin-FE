@@ -8,6 +8,7 @@ import ScoreCompareBlock from "../../components/todaySkin/compare/ScoreCompareBl
 import MetricCompareCard from "../../components/todaySkin/compare/MetricCompareCard";
 import CompareDatePicker from "../../components/todaySkin/compare/CompareDatePicker";
 import AiInsightBox from "../../components/todaySkin/AiInsightBox";
+import Toast from "../../components/common/Toast";
 import { getAnalysisCompare } from "../../api/analysisApi";
 import { getCycleCalendar } from "../../api/cycleApi";
 import { METRIC_ITEMS } from "../../utils/skinMetrics";
@@ -67,6 +68,7 @@ export default function TodaySkinCompare() {
   const [currentDate, setCurrentDate] = useState(date);
   const [pastDate, setPastDate] = useState(null);
   const [activePicker, setActivePicker] = useState(null); // null | "past" | "current"
+  const [toastMessage, setToastMessage] = useState(null);
 
   // 분석 기록이 있는 날짜 목록
   const [recordedDates, setRecordedDates] = useState([date]);
@@ -105,10 +107,7 @@ export default function TodaySkinCompare() {
             (analysis) => analysis.date,
           );
 
-          collectedDates = mergeDates(
-            collectedDates,
-            monthAnalysisDates,
-          );
+          collectedDates = mergeDates(collectedDates, monthAnalysisDates);
 
           setRecordedDates(collectedDates);
 
@@ -179,18 +178,12 @@ export default function TodaySkinCompare() {
           (analysis) => analysis.date,
         );
 
-        setRecordedDates((prev) =>
-          mergeDates(prev, monthAnalysisDates),
-        );
+        setRecordedDates((prev) => mergeDates(prev, monthAnalysisDates));
       })
       .catch((error) => {
         console.error("비교 가능 날짜 조회 실패:", error);
       });
   };
-
-  const pastAvailableDates = recordedDates.filter(
-    (recordDate) => recordDate < currentDate,
-  );
 
   const currentAvailableDates = recordedDates.filter(
     (recordDate) => recordDate > (pastDate ?? ""),
@@ -198,11 +191,15 @@ export default function TodaySkinCompare() {
 
   const handleSelectDate = (selectedDate) => {
     if (activePicker === "past") {
+      const isPastDate = dayjs(selectedDate).isBefore(currentDate, "day");
+      if (!isPastDate) {
+        setToastMessage("과거 날짜를 선택해주세요.");
+        return;
+      }
       setPastDate(selectedDate);
     } else {
       setCurrentDate(selectedDate);
     }
-
     setActivePicker(null);
   };
 
@@ -274,8 +271,7 @@ export default function TodaySkinCompare() {
         past: pastMetrics[key],
         current: currentMetrics[key],
         comparison:
-          API_CHANGE_TO_COMPARISON[changes[key]] ??
-          METRIC_COMPARISON.SAME,
+          API_CHANGE_TO_COMPARISON[changes[key]] ?? METRIC_COMPARISON.SAME,
       },
     ]),
   );
@@ -308,16 +304,13 @@ export default function TodaySkinCompare() {
 
         <MetricCompareCard metrics={metrics} />
 
-        <AiInsightBox
-          title="AI 분석"
-          insight={compareData.aiComment}
-        />
+        <AiInsightBox title="AI 분석" insight={compareData.aiComment} />
       </Content>
 
       {activePicker === "past" && (
         <CompareDatePicker
           selectedDate={pastDate}
-          availableDates={pastAvailableDates}
+          availableDates={recordedDates}
           onSelect={handleSelectDate}
           onClose={() => setActivePicker(null)}
           onMonthChange={handlePickerMonthChange}
@@ -332,6 +325,9 @@ export default function TodaySkinCompare() {
           onClose={() => setActivePicker(null)}
           onMonthChange={handlePickerMonthChange}
         />
+      )}
+      {toastMessage && (
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
     </div>
   );

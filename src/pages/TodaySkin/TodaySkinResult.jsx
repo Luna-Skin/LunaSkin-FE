@@ -19,10 +19,7 @@ import {
 } from "../../api/analysisApi";
 import { useChatContext } from "../../components/chat/ChatContext";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
-import {
-  hasClaimedToday,
-  claimDailyPoints,
-} from "../../utils/pointsStorage";
+import { hasClaimedToday, claimDailyPoints } from "../../utils/pointsStorage";
 
 const Content = styled.div`
   display: flex;
@@ -67,9 +64,7 @@ export default function TodaySkinResult() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [reanalyzeStep, setReanalyzeStep] = useState(null);
   const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
-  const [pointsClaimed, setPointsClaimed] = useState(() =>
-    hasClaimedToday(),
-  );
+  const [pointsClaimed, setPointsClaimed] = useState(() => hasClaimedToday());
   const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   useEffect(() => {
@@ -104,6 +99,7 @@ export default function TodaySkinResult() {
   }, [date]);
 
   const showBackHeader = Boolean(location.state?.showBackHeader);
+  const hideBottomActions = Boolean(location.state?.hideBottomActions);
 
   const headerProps = showBackHeader
     ? {
@@ -203,24 +199,22 @@ export default function TodaySkinResult() {
             }
           }}
           onAskClick={handleAskKiki}
-          onCompareClick={() =>
-            navigate(`/today-skin/compare/${date}`)
-          }
+          onCompareClick={() => navigate(`/today-skin/compare/${date}`)}
         />
 
         <SkinMetricsCard metrics={metrics} />
         <AiInsightBox insight={analysis.aiComment} />
         <ProductRecommendSection products={products} />
 
-        <BottomButtonRow>
-          <PointsRewardButton
-            claimed={pointsClaimed}
-            onClick={() => setPointsRewardOpen(true)}
-          />
-          <ReanalyzeButton
-            onClick={() => setReanalyzeStep("confirm1")}
-          />
-        </BottomButtonRow>
+        {!hideBottomActions && (
+          <BottomButtonRow>
+            <PointsRewardButton
+              claimed={pointsClaimed}
+              onClick={() => setPointsRewardOpen(true)}
+            />
+            <ReanalyzeButton onClick={() => setReanalyzeStep("confirm1")} />
+          </BottomButtonRow>
+        )}
       </Content>
 
       {photoModalOpen && (
@@ -231,10 +225,7 @@ export default function TodaySkinResult() {
       )}
 
       {pointsRewardOpen && (
-        <PointsRewardModal
-          points={50}
-          onClose={handleCloseRewardModal}
-        />
+        <PointsRewardModal points={50} onClose={handleCloseRewardModal} />
       )}
 
       {reanalyzeStep === "confirm1" && (

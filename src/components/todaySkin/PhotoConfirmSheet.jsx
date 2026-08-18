@@ -1,14 +1,15 @@
 import styled from "styled-components";
 import checkIcon from "../../assets/icons/photo_checklist_check.svg";
 
-const MIN_SHEET_HEIGHT = 218;
+const SHEET_HEIGHT = 218;
+const PHOTO_CHECKLIST = [ "조명 좋음", "안경 미착용", "피부 가림 없음" ];
 
 const Sheet = styled.div`
   position: absolute;
   left: 0;
   bottom: 0;
   width: 402px;
-  min-height: ${MIN_SHEET_HEIGHT}px;
+  height: ${SHEET_HEIGHT}px;
   padding: 7px 24px 24px;
   box-sizing: border-box;
   border-radius: 18px 18px 0 0;
@@ -16,6 +17,7 @@ const Sheet = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  
 `;
 
 const HandleArea = styled.div`
@@ -35,7 +37,6 @@ const DragHandle = styled.div`
 `;
 
 const SheetTitle = styled.p`
-  width: 354px;
   margin: 0 0 16px;
   color: #000;
   font-family: "Pretendard Variable";
@@ -121,17 +122,17 @@ const RetakeButton = styled.button`
 `;
 
 // 항상 전체가 펼쳐진 채로 보이게 수정 (min-height만 바닥값으로 두고, 넘치면 그냥 시트 자체가 늘어나두록 함 )
-export default function PhotoConfirmSheet({ features, onContinue, onRetake }) {
+export default function PhotoConfirmSheet({ onContinue, onRetake }) {
   return (
     <Sheet>
       <HandleArea>
         <DragHandle />
       </HandleArea>
 
-      <SheetTitle>사진을 제출하기 전에,</SheetTitle>
+      <SheetTitle>사진을 제출하기 전에 확인해주세요</SheetTitle>
 
       <ChipGroup>
-        {features.map((feature) => (
+        {PHOTO_CHECKLIST.map((feature) => (
           <Chip key={feature}>
             <img src={checkIcon} alt="" />
             <ChipLabel>{feature}</ChipLabel>
