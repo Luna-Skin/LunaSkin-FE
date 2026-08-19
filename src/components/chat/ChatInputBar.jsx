@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import styled from "styled-components";
 import plusIcon from "../../assets/icons/plus.svg";
 import sendIcon from "../../assets/icons/send.svg";
@@ -180,10 +181,20 @@ export default function ChatInputBar({
    */
   const isActive = value.trim().length > 0;
 
+  /*
+   * 한글 등 조합형 입력(IME) 도중에 Enter를 누르면
+   * 마지막 글자가 아직 조합 중인 상태(value에 반영되기 전)로
+   * 메시지가 전송되어 끝이 잘려 보이는 문제가 있었다.
+   * isComposing 상태일 때는 Enter를 전송으로 처리하지 않는다.
+   */
+  const isComposingRef = useRef(false);
+
   const handleKeyDown = (event) => {
     if (
       event.key === "Enter" &&
-      !event.shiftKey
+      !event.shiftKey &&
+      !isComposingRef.current &&
+      !event.nativeEvent.isComposing
     ) {
       event.preventDefault();
 
@@ -250,6 +261,12 @@ export default function ChatInputBar({
             )
           }
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => {
+            isComposingRef.current = true;
+          }}
+          onCompositionEnd={() => {
+            isComposingRef.current = false;
+          }}
           placeholder="메시지를 입력하세요"
           rows="1"
         />
