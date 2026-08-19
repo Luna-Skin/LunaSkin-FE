@@ -12,15 +12,15 @@ import PeriodSelectBanner from "../../components/home/PeriodSelectBanner";
 import TodaySkinStatusCard from "../../components/home/TodaySkinStatusCard";
 import Toast from "../../components/common/Toast";
 import { getHomeProfile } from "../../api/userApi";
-import { getCycleCalendar, getCyclePhaseComment, postCycleStart, postCycleEnd } from "../../api/cycleApi";
-import { getTodayRoutine } from "../../api/routineApi";
-import { PHASE_LABEL } from "../../utils/cyclePhase";
 import {
-  getSkinScoreBucket,
-  SKIN_SCORE_BUCKET,
-  SKIN_SCORE_BUCKET_CONTENT,
-} from "../../utils/skinScoreBucket";
-import { MOCK_SKIN_RECORDS } from "../../mocks/homeMock";
+  getCycleCalendar,
+  getCyclePhaseComment,
+  postCycleStart,
+  postCycleEnd,
+} from "../../api/cycleApi";
+import { getTodayRoutine } from "../../api/routineApi";
+import { getTodayAnalysisSummary } from "../../api/analysisApi";
+import { PHASE_LABEL } from "../../utils/cyclePhase";
 
 import skinStatusUnknownIcon from "../../assets/icons/skin_status_unknown.svg";
 import skinStatusBadIcon from "../../assets/icons/skin_status_bad.png";
@@ -30,7 +30,6 @@ import serumIcon from "../../assets/icons/routine_serum.svg";
 import waterGlassIcon from "../../assets/icons/routine_water_glass.svg";
 import sneakerIcon from "../../assets/icons/routine_sneaker.svg";
 import { getPoints } from "../../utils/pointsStorage";
-
 
 // PhaseGuideBanner 제목 전용 문구. PHASE_LABEL(생리기/난포기/...)은 RoutineSection 등
 // 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
@@ -52,11 +51,24 @@ const ROUTINE_CATEGORY_META = {
 // icon/title이 undefined로 남아서 깨진 이미지·빈 텍스트가 뜨는 걸 방지
 const DEFAULT_ROUTINE_META = { title: "오늘의 루틴", icon: serumIcon };
 
-const SKIN_SCORE_BUCKET_ICON = {
-  [SKIN_SCORE_BUCKET.UNKNOWN]: skinStatusUnknownIcon,
-  [SKIN_SCORE_BUCKET.BAD]: skinStatusBadIcon,
-  [SKIN_SCORE_BUCKET.NORMAL]: skinStatusNormalIcon,
-  [SKIN_SCORE_BUCKET.GOOD]: skinStatusGoodIcon,
+// API가 주는 skinStatus 문자열로 아이콘 매핑
+// 오늘 기록이 아직 없으면 TODAY_STATUS_UNKNOWN을 그대로 사용
+const TODAY_STATUS_ICON = {
+  나쁨: skinStatusBadIcon,
+  보통: skinStatusNormalIcon,
+  좋음: skinStatusGoodIcon,
+};
+
+const TODAY_STATUS_UNKNOWN = {
+  icon: skinStatusUnknownIcon,
+  label: "모름",
+  description: (
+    <>
+      아직 오늘의 피부 기록이 없어요.
+      <br />
+      피부를 촬영하고 상태를 확인해보세요!
+    </>
+  ),
 };
 
 const SectionLabel = styled.h2`
@@ -95,6 +107,10 @@ export default function Home() {
   const navigate = useNavigate();
   const today = dayjs().format("YYYY-MM-DD");
 
+  useEffect(() => {
+    sessionStorage.removeItem("todaySkin:lifestyleDraft");
+  }, []);
+
   // 오늘의 주기 단계 + 코멘트. API 응답 오기 전엔 null
   const [phaseComment, setPhaseComment] = useState(null);
 
@@ -120,7 +136,8 @@ export default function Home() {
   }, []);
 
   const routines = (routineData?.routines ?? []).map((routine, index) => {
-    const meta = ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
+    const meta =
+      ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
     return {
       id: index,
       icon: meta.icon,
@@ -148,11 +165,17 @@ export default function Home() {
   });
 
   useEffect(() => {
-    sessionStorage.setItem("calendarDisplayedMonth", displayedMonth.format("YYYY-MM-DD"));
+    sessionStorage.setItem(
+      "calendarDisplayedMonth",
+      displayedMonth.format("YYYY-MM-DD"),
+    );
   }, [displayedMonth]);
 
   // 캘린더 단계 구간 + 분석 완료 날짜. API 응답 오기 전엔 빈 값
-  const [calendarData, setCalendarData] = useState({ cycleResponses: [], analyses: [] });
+  const [calendarData, setCalendarData] = useState({
+    cycleResponses: [],
+    analyses: [],
+  });
 
   useEffect(() => {
     getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1)
@@ -176,9 +199,30 @@ export default function Home() {
 
   const [toastMessage, setToastMessage] = useState(null);
 
-  const todayScore = MOCK_SKIN_RECORDS[today]?.score ?? null;
-  const scoreBucket = getSkinScoreBucket(todayScore);
-  const bucketContent = SKIN_SCORE_BUCKET_CONTENT[scoreBucket];
+  const [todaySummary, setTodaySummary] = useState(null);
+
+  useEffect(() => {
+    getTodayAnalysisSummary()
+      .then((data) => {
+        if (data?.skinStatus && data.skinStatus !== "모름") {
+          setTodaySummary(data);
+        }
+      })
+      .catch(() => {
+        // 혹시 모를 다른 실패 상황도 안전하게 "모름"으로 취급..
+        setTodaySummary(null);
+      });
+  }, []);
+
+  const todayStatusContent = todaySummary
+    ? {
+        icon:
+          TODAY_STATUS_ICON[todaySummary.skinStatus] ??
+          TODAY_STATUS_UNKNOWN.icon,
+        label: todaySummary.skinStatus,
+        description: todaySummary.aiComment,
+      }
+    : TODAY_STATUS_UNKNOWN;
 
   const handleDateClick = (dateStr) => {
     if (periodSelectMode) {
@@ -197,7 +241,7 @@ export default function Home() {
 
   const handleSelectSkinInfo = () => {
     navigate(`/today-skin/result/${selectedDate}`, {
-      state: { showBackHeader: true },
+      state: { showBackHeader: true, hideBottomActions: true },
     });
   };
 
@@ -250,11 +294,12 @@ export default function Home() {
 
     // 캘린더/코멘트/루틴은 각각 따로 반영 — 하나(특히 루틴)가 실패해도
     // 나머지는 정상적으로 최신 상태로 갱신되도록 allSettled 사용
-    const [calendarResult, commentResult, routineResult] = await Promise.allSettled([
-      getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1),
-      getCyclePhaseComment(),
-      getTodayRoutine(),
-    ]);
+    const [calendarResult, commentResult, routineResult] =
+      await Promise.allSettled([
+        getCycleCalendar(displayedMonth.year(), displayedMonth.month() + 1),
+        getCyclePhaseComment(),
+        getTodayRoutine(),
+      ]);
 
     if (calendarResult.status === "fulfilled") {
       setCalendarData(calendarResult.value);
@@ -278,7 +323,7 @@ export default function Home() {
   };
 
   const handleViewTodayStatus = () => {
-    if (scoreBucket === SKIN_SCORE_BUCKET.UNKNOWN) {
+    if (!todaySummary) {
       navigate("/today-skin");
     } else {
       navigate(`/today-skin/result/${today}`, {
@@ -333,9 +378,9 @@ export default function Home() {
         <SectionLabel>오늘의 피부 상태</SectionLabel>
 
         <TodaySkinStatusCard
-          icon={SKIN_SCORE_BUCKET_ICON[scoreBucket]}
-          label={bucketContent.label}
-          description={bucketContent.description}
+          icon={todayStatusContent.icon}
+          label={todayStatusContent.label}
+          description={todayStatusContent.description}
           onClick={handleViewTodayStatus}
         />
 

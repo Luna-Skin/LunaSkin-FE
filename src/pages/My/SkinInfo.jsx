@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-
-const STORAGE_KEY = "lunaSkinProfile";
+import { getMySkinInfo, updateMySkinInfo } from "../../api/userApi";
 
 const Page = styled.main`
   display: flex;
@@ -83,57 +82,87 @@ const SaveButton = styled.button`
   cursor: ${({ $enabled }) => ($enabled ? "pointer" : "default")};
 `;
 
-const DEFAULT_PROFILE = {
-  skinType: "",
-  concerns: [],
-};
-
-const SKIN_TYPES = ["지성", "건성", "복합성", "민감성", "약건성", "트러블성"];
-
-const SKIN_CONCERNS = [
-  "여드름",
-  "홍조",
-  "건조함",
-  "블랙헤드",
-  "착색함",
-  "잡티",
-  "탄력",
-  "주름",
-];
-
 export default function SkinInfo() {
   const navigate = useNavigate();
 
-  const savedProfile = JSON.parse(
-    window.localStorage.getItem(STORAGE_KEY) ||
-      JSON.stringify(DEFAULT_PROFILE),
-  );
+  const [skinTypes, setSkinTypes] = useState([]); // [{ skinTypeId, typeName, isSelected }]
+  const [skinConcerns, setSkinConcerns] = useState([]); // [{ skinConcernId, concernName, isSelected }]
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [profile, setProfile] = useState(savedProfile);
-  const [originalProfile, setOriginalProfile] = useState(savedProfile);
+  const [originalTypeId, setOriginalTypeId] = useState(null);
+  const [originalConcernIds, setOriginalConcernIds] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const res = await getMySkinInfo();
+        const data = res.data ?? {};
+
+        const types = data.skinTypes ?? [];
+        const concerns = data.skinConcerns ?? [];
+
+        if (isMounted) {
+          setSkinTypes(types);
+          setSkinConcerns(concerns);
+          setOriginalTypeId(types.find((t) => t.isSelected)?.skinTypeId ?? null);
+          setOriginalConcernIds(
+            concerns.filter((c) => c.isSelected).map((c) => c.skinConcernId),
+          );
+        }
+      } catch (error) {
+        console.error("피부 정보를 불러오지 못했습니다.", error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const selectedTypeId = skinTypes.find((t) => t.isSelected)?.skinTypeId ?? null;
+  const selectedConcernIds = skinConcerns.filter((c) => c.isSelected).map((c) => c.skinConcernId);
 
   const isChanged =
-    profile.skinType !== originalProfile.skinType ||
-    JSON.stringify(profile.concerns) !== JSON.stringify(originalProfile.concerns);
+    selectedTypeId !== originalTypeId ||
+    JSON.stringify([...selectedConcernIds].sort()) !==
+      JSON.stringify([...originalConcernIds].sort());
 
-  const canSave = isChanged && profile.skinType;
+  const canSave = isChanged && selectedTypeId != null;
 
-  const toggleConcern = (concern) => {
-    setProfile((current) => ({
-      ...current,
-      concerns: current.concerns.includes(concern)
-        ? current.concerns.filter((item) => item !== concern)
-        : [...current.concerns, concern],
-    }));
+  const selectType = (skinTypeId) => {
+    setSkinTypes((current) =>
+      current.map((t) => ({ ...t, isSelected: t.skinTypeId === skinTypeId })),
+    );
   };
 
-  const handleSave = () => {
+  const toggleConcern = (skinConcernId) => {
+    setSkinConcerns((current) =>
+      current.map((c) =>
+        c.skinConcernId === skinConcernId ? { ...c, isSelected: !c.isSelected } : c,
+      ),
+    );
+  };
+
+  const handleSave = async () => {
     if (!canSave) return;
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    setOriginalProfile(profile);
-    navigate("/my");
+    try {
+      await updateMySkinInfo(selectedTypeId, selectedConcernIds);
+
+      setOriginalTypeId(selectedTypeId);
+      setOriginalConcernIds(selectedConcernIds);
+      navigate("/my");
+    } catch (error) {
+      console.error("피부 정보 저장에 실패했습니다.", error);
+      alert("저장에 실패했어요. 다시 시도해주세요.");
+    }
   };
+
+  if (isLoading) return null;
 
   return (
     <Page>
@@ -148,16 +177,14 @@ export default function SkinInfo() {
         <Section>
           <SectionTitle>피부 타입</SectionTitle>
           <ChipList>
-            {SKIN_TYPES.map((type) => (
+            {skinTypes.map((type) => (
               <Chip
-                key={type}
+                key={type.skinTypeId}
                 type="button"
-                $selected={profile.skinType === type}
-                onClick={() =>
-                  setProfile((current) => ({ ...current, skinType: type }))
-                }
+                $selected={type.isSelected}
+                onClick={() => selectType(type.skinTypeId)}
               >
-                {type}
+                {type.typeName}
               </Chip>
             ))}
           </ChipList>
@@ -166,14 +193,14 @@ export default function SkinInfo() {
         <Section>
           <SectionTitle>피부 고민</SectionTitle>
           <ChipList>
-            {SKIN_CONCERNS.map((concern) => (
+            {skinConcerns.map((concern) => (
               <Chip
-                key={concern}
+                key={concern.skinConcernId}
                 type="button"
-                $selected={profile.concerns.includes(concern)}
-                onClick={() => toggleConcern(concern)}
+                $selected={concern.isSelected}
+                onClick={() => toggleConcern(concern.skinConcernId)}
               >
-                {concern}
+                {concern.concernName}
               </Chip>
             ))}
           </ChipList>

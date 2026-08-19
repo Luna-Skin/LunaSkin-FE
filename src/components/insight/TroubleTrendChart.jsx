@@ -1,117 +1,203 @@
-import dayjs from "dayjs";
 import styled from "styled-components";
-import { findCurrentCycle } from "../../utils/cyclePhase";
 
 const Card = styled.section`
+  width: 100%;
+  box-sizing: border-box;
   padding: 14px 12px 10px;
-  border: 1px solid #e9e9e9;
-  border-radius: 14px;
+
+  border-radius: 18px;
+  outline: 1.5px rgba(0, 0, 0, 0.1) solid;
+  outline-offset: -1.5px;
+
   background: #fff;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
 const EmptyState = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+
   height: 150px;
+
   color: #999;
-  font-size: 12px;
   text-align: center;
+
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
 `;
 
 const CHART_WIDTH = 340;
 const CHART_HEIGHT = 150;
+
 const AXIS_Y = 110;
+
 const PLOT_LEFT = 18;
 const PLOT_RIGHT = 322;
-const DAY_RANGE = 14; // D-14 ~ D+14
+
+const DAY_RANGE = 14;
+
+const AXIS_LABELS = [
+  { label: "D - 14", day: -14 },
+  { label: "D - 7", day: -7 },
+  { label: "생리 시작", day: 0 },
+  { label: "D + 7", day: 7 },
+  { label: "D + 14", day: 14 },
+];
 
 function dayToX(day) {
-  const ratio = (day + DAY_RANGE) / (DAY_RANGE * 2);
-  return PLOT_LEFT + ratio * (PLOT_RIGHT - PLOT_LEFT);
+  const ratio =
+    (day + DAY_RANGE) /
+    (DAY_RANGE * 2);
+
+  return (
+    PLOT_LEFT +
+    ratio * (PLOT_RIGHT - PLOT_LEFT)
+  );
 }
 
-// points를 x,y 좌표로 변환
+function normalizeTroubleTimeline(
+  timeline,
+) {
+  if (!Array.isArray(timeline)) return [];
+
+  return timeline
+    .map((item) => ({
+      day: Number(item.dayFromStart),
+      score: Number(item.troubleIndex),
+    }))
+    .filter(
+      (item) =>
+        Number.isFinite(item.day) &&
+        Number.isFinite(item.score) &&
+        item.day >= -DAY_RANGE &&
+        item.day <= DAY_RANGE,
+    )
+    .sort((a, b) => a.day - b.day);
+}
+
 function toCoords(points) {
-  const scores = points.map((p) => p.score);
+  const scores = points.map(
+    (point) => point.score,
+  );
+
   const minScore = Math.min(...scores);
   const maxScore = Math.max(...scores);
-  const scoreRange = maxScore - minScore || 1;
 
-  const TOP_Y = 20;
-  const BOTTOM_Y = AXIS_Y - 5;
+  const scoreRange =
+    maxScore - minScore || 1;
 
-  return points.map((p) => {
-    const x = dayToX(p.day);
-    const normalized = (p.score - minScore) / scoreRange;
-    const y = BOTTOM_Y - normalized * (BOTTOM_Y - TOP_Y);
-    return [x, y];
+  const topY = 20;
+  const bottomY = AXIS_Y - 5;
+
+  return points.map((point) => {
+    const normalized =
+      (point.score - minScore) /
+      scoreRange;
+
+    return [
+      dayToX(point.day),
+      bottomY -
+        normalized *
+          (bottomY - topY),
+    ];
   });
 }
 
-// Catmull-Rom → Cubic Bezier 변환으로 부드러운 곡선 생성
 function buildSmoothPath(points) {
-  if (!points || points.length === 0) return "";
+  if (points.length === 0) return "";
 
   const coords = toCoords(points);
 
   if (coords.length === 1) {
-    const [x, y] = coords[0];
-    return `M${x} ${y}`;
+    return `M${coords[0][0]} ${coords[0][1]}`;
   }
 
-  let d = `M${coords[0][0]} ${coords[0][1]}`;
+  let path = `M${coords[0][0]} ${coords[0][1]}`;
 
-  for (let i = 0; i < coords.length - 1; i += 1) {
-    const p0 = coords[i - 1] ?? coords[i];
-    const p1 = coords[i];
-    const p2 = coords[i + 1];
-    const p3 = coords[i + 2] ?? p2;
+  for (
+    let index = 0;
+    index < coords.length - 1;
+    index += 1
+  ) {
+    const p0 =
+      coords[index - 1] ?? coords[index];
 
-    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    const p1 = coords[index];
 
-    d += ` C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
+    const p2 = coords[index + 1];
+
+    const p3 =
+      coords[index + 2] ?? p2;
+
+    const cp1x =
+      p1[0] +
+      (p2[0] - p0[0]) / 6;
+
+    const cp1y =
+      p1[1] +
+      (p2[1] - p0[1]) / 6;
+
+    const cp2x =
+      p2[0] -
+      (p3[0] - p1[0]) / 6;
+
+    const cp2y =
+      p2[1] -
+      (p3[1] - p1[1]) / 6;
+
+    path +=
+      ` C${cp1x} ${cp1y},` +
+      ` ${cp2x} ${cp2y},` +
+      ` ${p2[0]} ${p2[1]}`;
   }
 
-  return d;
+  return path;
 }
 
-const AXIS_LABELS = [
-  { label: "D -14", day: -14 },
-  { label: "D -7", day: -7 },
-  { label: "생리 시작", day: 0 },
-  { label: "D +7", day: 7 },
-  { label: "D +14", day: 14 },
-];
+function getPeakRange(peakRange) {
+  const startDay = Number(
+    peakRange?.startDay,
+  );
 
-// skinRecords: { "2026-08-01": { troubleScore: 42, ... }, ... } 형태를 가정.
-// TODO: 실제 필드명이 troubleScore가 아니면 아래 한 줄만 고치면 됨.
-export function buildTroubleDataFromRecords(cycleStartDate, skinRecords) {
-  if (!cycleStartDate || !skinRecords) return [];
+  const endDay = Number(
+    peakRange?.endDay,
+  );
 
-  const points = [];
-  for (let day = -DAY_RANGE; day <= DAY_RANGE; day += 1) {
-    const dateStr = dayjs(cycleStartDate).add(day, "day").format("YYYY-MM-DD");
-    const record = skinRecords[dateStr];
-    if (record && typeof record.troubleScore === "number") {
-      points.push({ day, score: record.troubleScore });
-    }
+  if (
+    !Number.isFinite(startDay) ||
+    !Number.isFinite(endDay)
+  ) {
+    return {
+      startDay: 0,
+      endDay: 0,
+    };
   }
-  return points;
+
+  return {
+    startDay: Math.max(
+      -DAY_RANGE,
+      Math.min(DAY_RANGE, startDay),
+    ),
+
+    endDay: Math.max(
+      -DAY_RANGE,
+      Math.min(DAY_RANGE, endDay),
+    ),
+  };
 }
 
-// periodCycles + skinRecords가 실제로 있어야만 그래프를 그림.
-// 기록이 없으면 mock으로 대체하지 않고 빈 상태를 보여줌.
-export default function TroubleTrendChart({ periodCycles = [], skinRecords = {} }) {
-  const today = dayjs().format("YYYY-MM-DD");
-  const currentCycle = findCurrentCycle(periodCycles, today);
-
-  const chartData = currentCycle
-    ? buildTroubleDataFromRecords(currentCycle.cycleStartDate, skinRecords)
-    : [];
+export default function TroubleTrendChart({
+  troubleTimeline = [],
+  peakRange,
+}) {
+  const chartData =
+    normalizeTroubleTimeline(
+      troubleTimeline,
+    );
 
   if (chartData.length === 0) {
     return (
@@ -125,8 +211,108 @@ export default function TroubleTrendChart({ periodCycles = [], skinRecords = {} 
     );
   }
 
-  const highlightHalfWidth = (PLOT_RIGHT - PLOT_LEFT) / (DAY_RANGE * 2);
-  const centerX = dayToX(0);
+  const {
+    startDay,
+    endDay,
+  } = getPeakRange(peakRange);
+
+  /*
+   * 생리 시작일은 항상 day = 0.
+   *
+   * 트러블 기간은 생리 시작일을 기준으로
+   * 왼쪽 또는 오른쪽에 붙는다.
+   *
+   * 예:
+   * -5 ~ 0  → 생리 시작일 왼쪽
+   *  0 ~ 5  → 생리 시작일 오른쪽
+   *
+   * 따라서 바와 점선의 기준점이
+   * 항상 같은 위치에 놓인다.
+   */
+  const periodStart =
+    Math.min(startDay, endDay);
+
+  const periodEnd =
+    Math.max(startDay, endDay);
+
+  const periodStartX =
+    dayToX(periodStart);
+
+  const periodEndX =
+    dayToX(periodEnd);
+
+  /*
+   * 생리 시작일의 x 좌표.
+   * 연보라색 영역이 이 위치에서
+   * 좌우 어느 한쪽으로 붙도록 사용한다.
+   */
+  const menstruationStartX =
+    dayToX(0);
+
+  /*
+   * 트러블 기간이 생리 시작일 기준
+   * 왼쪽인지 오른쪽인지 판단한다.
+   */
+  const isBeforePeriod =
+    periodEnd <= 0;
+
+  const isAfterPeriod =
+    periodStart >= 0;
+
+  let highlightX;
+  let highlightWidth;
+
+  if (isBeforePeriod) {
+    /*
+     * -5 ~ 0
+     *
+     * 점선이 오른쪽 끝에 위치하고
+     * 연보라색 바가 그 왼쪽에 붙는다.
+     */
+    highlightX = periodStartX;
+
+    highlightWidth =
+      menstruationStartX -
+      periodStartX;
+  } else if (isAfterPeriod) {
+    /*
+     * 0 ~ 5
+     *
+     * 점선이 왼쪽 끝에 위치하고
+     * 연보라색 바가 그 오른쪽에 붙는다.
+     */
+    highlightX =
+      menstruationStartX;
+
+    highlightWidth =
+      periodEndX -
+      menstruationStartX;
+  } else {
+    /*
+     * 혹시 API에서
+     * -5 ~ 5처럼 생리 시작일을
+     * 기간 내부에 포함해서 내려주는 경우.
+     *
+     * 이 경우 생리 시작일을 기준으로
+     * 전체 트러블 기간을 표현한다.
+     */
+    highlightX =
+      periodStartX;
+
+    highlightWidth =
+      periodEndX -
+      periodStartX;
+  }
+
+  /*
+   * 너무 작은 값이 들어와도
+   * 점선과 영역이 겹쳐 보이지 않도록
+   * 최소 너비를 아주 작게 보정한다.
+   */
+  highlightWidth = Math.max(
+    highlightWidth,
+    1,
+  );
 
   return (
     <Card>
@@ -135,53 +321,95 @@ export default function TroubleTrendChart({ periodCycles = [], skinRecords = {} 
         width="100%"
         role="img"
         aria-label="트러블 지수 변화 그래프"
+        fontFamily="Pretendard Variable"
       >
-        <rect
-          x={centerX - highlightHalfWidth}
-          y="14"
-          width={highlightHalfWidth * 2}
-          height="96"
-          fill="#f0e9ff"
-        />
+        {/* 
+          트러블 기간 영역
 
+          생리 시작일을 기준으로
+          왼쪽 또는 오른쪽에 붙는다.
+        */}
+        {highlightWidth > 0 && (
+          <rect
+            x={highlightX}
+            y="14"
+            width={highlightWidth}
+            height="96"
+            fill="rgba(168.98, 133.03, 231.07, 0.20)"
+          />
+        )}
+
+        {/* 
+          생리 시작일 기준 점선
+
+          반드시 연보라색 바의 한쪽 끝과
+          같은 x 좌표를 사용한다.
+        */}
         <line
-          x1={centerX}
+          x1={menstruationStartX}
           y1="14"
-          x2={centerX}
+          x2={menstruationStartX}
           y2={AXIS_Y}
-          stroke="#9b7af8"
+          stroke="#9B7AF8"
           strokeWidth="1"
           strokeDasharray="3 3"
         />
 
+        {/* 가로축 */}
         <line
           x1={PLOT_LEFT}
           y1={AXIS_Y}
           x2={PLOT_RIGHT}
           y2={AXIS_Y}
-          stroke="#b8b8b8"
+          stroke="#B8B8B8"
           strokeWidth="1"
         />
 
+        {/* 
+          트러블 지수 곡선
+
+          포인트 원은 제거하고
+          매끈한 곡선만 표시한다.
+        */}
         <path
           d={buildSmoothPath(chartData)}
           fill="none"
-          stroke="#9b7af8"
+          stroke="#9B7AF8"
           strokeWidth="2.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
 
-        {AXIS_LABELS.map(({ label, day }) => {
-          const x = dayToX(day);
-          return (
-            <g key={label}>
-              <circle cx={x} cy={AXIS_Y} r="2.2" fill="#989898" />
-              <text x={x} y="130" fill="#858585" fontSize="10" textAnchor="middle">
-                {label}
-              </text>
-            </g>
-          );
-        })}
+        {/* 날짜 축 */}
+        {AXIS_LABELS.map(
+          ({ label, day }) => {
+            const x = dayToX(day);
+
+            return (
+              <g key={label}>
+                {/* 날짜 포인트 */}
+                <circle
+                  cx={x}
+                  cy={AXIS_Y}
+                  r="2.2"
+                  fill="#828898"
+                />
+
+                {/* 날짜 텍스트 */}
+                <text
+                  x={x}
+                  y="130"
+                  fill="#828898"
+                  fontSize="12"
+                  fontWeight="600"
+                  textAnchor="middle"
+                >
+                  {label}
+                </text>
+              </g>
+            );
+          },
+        )}
       </svg>
     </Card>
   );

@@ -5,7 +5,6 @@ import {
   METRIC_COMPARISON,
   METRIC_COMPARISON_COLOR,
   METRIC_COMPARISON_LABEL,
-  getMetricComparison,
 } from "../../../utils/compareMetrics";
 
 const Wrapper = styled.div`
@@ -74,17 +73,20 @@ const RowList = styled.div`
   box-sizing: border-box;
 `;
 
-// metrics: { [key]: { past, current } } — 5개 지표 각각의 과거/현재 점수
+// metrics: { [key]: { past, current, comparison } }
 export default function MetricCompareCard({ metrics }) {
   return (
     <Wrapper>
       <TitleRow>
         <Title>항목별 비교</Title>
+
         <LegendGroup>
           {Object.values(METRIC_COMPARISON).map((comparison) => (
             <LegendItem key={comparison}>
               <LegendDot $color={METRIC_COMPARISON_COLOR[comparison]} />
-              <LegendText>{METRIC_COMPARISON_LABEL[comparison]}</LegendText>
+              <LegendText>
+                {METRIC_COMPARISON_LABEL[comparison]}
+              </LegendText>
             </LegendItem>
           ))}
         </LegendGroup>
@@ -92,14 +94,15 @@ export default function MetricCompareCard({ metrics }) {
 
       <RowList>
         {METRIC_ITEMS.map(({ key, label }) => {
-          const { past, current } = metrics[key];
+          const { past, current, comparison } = metrics[key];
+
           return (
             <MetricCompareRow
               key={key}
               label={label}
               pastValue={past}
               currentValue={current}
-              comparison={getMetricComparison(past, current)}
+              comparison={comparison ?? METRIC_COMPARISON.SAME}
             />
           );
         })}

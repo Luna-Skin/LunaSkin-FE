@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { getMyInfo } from "../../api/userApi";
 
 import shieldIcon from "../../assets/images/shield.png";
 import bellIcon from "../../assets/images/bell.png";
@@ -38,10 +40,17 @@ const Avatar = styled.div`
   width: 52px;
   height: 52px;
   place-items: center;
+  overflow: hidden;
   border-radius: 50%;
   background: #dcc5ff;
   color: #fff;
   font-size: 22px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
 const ProfileText = styled.div`
@@ -159,17 +168,48 @@ const MENU_GROUPS = [
 export default function MyPage() {
   const navigate = useNavigate();
 
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const res = await getMyInfo();
+        if (isMounted) setProfile(res.data ?? null);
+      } catch (error) {
+        console.error("유저 정보를 불러오지 못했습니다.", error);
+        if (isMounted) setProfile(null);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const nameInitial = profile?.name ? profile.name.charAt(0) : "?";
+
   return (
     <Page>
       <Title>My</Title>
 
       <Profile>
-        <Avatar>김</Avatar>
+        <Avatar>
+          {profile?.profileImageUrl ? (
+            <img src={profile.profileImageUrl} alt="" />
+          ) : (
+            nameInitial
+          )}
+        </Avatar>
         <ProfileText>
-          <strong>김끼끼님</strong>
-          <span>77l77l@naver.com</span>
+          <strong>{isLoading ? "불러오는 중..." : `${profile?.name ?? "이름 없음"}님`}</strong>
+          <span>{isLoading ? "" : profile?.email ?? ""}</span>
         </ProfileText>
-        <Badge>프리미엄 이용 중</Badge>
+        {!isLoading && profile?.isSubscription && <Badge>프리미엄 이용 중</Badge>}
       </Profile>
 
       {MENU_GROUPS.map((group) => (
