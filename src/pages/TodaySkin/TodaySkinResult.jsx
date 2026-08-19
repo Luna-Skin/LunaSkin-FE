@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams, } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
 import Header from "../../components/todaySkin/Header";
@@ -13,10 +13,13 @@ import ProductRecommendSection from "../../components/todaySkin/ProductRecommend
 import ConfirmModal from "../../components/common/ConfirmModal";
 import PointsRewardModal from "../../components/todaySkin/PointsRewardModal";
 
-import { getDailyAnalysis, getRecommendedProducts, } from "../../api/analysisApi";
+import {
+  getDailyAnalysis,
+  getRecommendedProducts,
+} from "../../api/analysisApi";
 import { useChatContext } from "../../components/chat/ChatContext";
 import { PHASE_LABEL } from "../../utils/cyclePhase";
-import { hasClaimedToday, claimDailyPoints, } from "../../utils/pointsStorage";
+import { hasClaimedToday, claimDailyPoints } from "../../utils/pointsStorage";
 
 const Content = styled.div`
   display: flex;
@@ -66,9 +69,7 @@ export default function TodaySkinResult() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const {
-    createChat,
-  } = useChatContext();
+  const { createChat } = useChatContext();
 
   const [analysis, setAnalysis] = useState(null);
   const [loadError, setLoadError] = useState(false);
@@ -76,9 +77,7 @@ export default function TodaySkinResult() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [reanalyzeStep, setReanalyzeStep] = useState(null);
   const [pointsRewardOpen, setPointsRewardOpen] = useState(false);
-  const [pointsClaimed, setPointsClaimed] = useState(() =>
-    hasClaimedToday(),
-  );
+  const [pointsClaimed, setPointsClaimed] = useState(() => hasClaimedToday());
   const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   useEffect(() => {
@@ -88,10 +87,7 @@ export default function TodaySkinResult() {
     getDailyAnalysis(date)
       .then(setAnalysis)
       .catch((error) => {
-        console.error(
-          "일일 분석 기록 조회 실패:",
-          error,
-        );
+        console.error("일일 분석 기록 조회 실패:", error);
 
         setLoadError(true);
       });
@@ -112,22 +108,19 @@ export default function TodaySkinResult() {
         );
       })
       .catch((error) => {
-        console.error(
-          "제품 추천 조회 실패:",
-          error,
-        );
+        console.error("제품 추천 조회 실패:", error);
       });
   }, [date]);
 
   const showBackHeader = Boolean(location.state?.showBackHeader);
+  const hideBottomActions = Boolean(location.state?.hideBottomActions);
 
   const headerProps = showBackHeader
     ? {
         variant: "back",
         title: "투데이스킨 기록",
 
-        onBack: () =>
-          navigate("/"),
+        onBack: () => navigate("/"),
       }
     : {};
 
@@ -165,22 +158,15 @@ export default function TodaySkinResult() {
     if (isCreatingChat) return;
 
     if (!analysis) {
-      alert(
-        "오늘의 분석 결과를 불러오는 중이에요.",
-      );
+      alert("오늘의 분석 결과를 불러오는 중이에요.");
 
       return;
     }
 
-    const analysisId =
-      analysis.analysisId ??
-      analysis.id ??
-      null;
+    const analysisId = analysis.analysisId ?? analysis.id ?? null;
 
     if (!analysisId) {
-      alert(
-        "분석 ID를 찾을 수 없어요. 잠시 후 다시 시도해주세요.",
-      );
+      alert("분석 ID를 찾을 수 없어요. 잠시 후 다시 시도해주세요.");
 
       return;
     }
@@ -188,53 +174,40 @@ export default function TodaySkinResult() {
     try {
       setIsCreatingChat(true);
 
-      const chat = await createChat(
-        "오늘의 투데이스킨 분석",
-        analysisId,
-      );
+      const chat = await createChat("오늘의 투데이스킨 분석", analysisId);
 
       if (!chat?.chatRoomId) {
-        throw new Error(
-          "생성된 채팅방 ID가 없습니다.",
-        );
+        throw new Error("생성된 채팅방 ID가 없습니다.");
       }
 
-      navigate(
-        `/chat/${chat.chatRoomId}`,
-        {
-          state: {
-            fromTodaySkin: true,
+      navigate(`/chat/${chat.chatRoomId}`, {
+        state: {
+          fromTodaySkin: true,
 
-            todaySkinDate: date,
+          todaySkinDate: date,
 
-            analysisId,
+          analysisId,
 
-            /*
-             * ChatRoom에서
-             * 새 분석 채팅이라는 것을
-             * 확실하게 구분하기 위한 값
-             */
-            isNewTodaySkinChat: true,
+          /*
+           * ChatRoom에서
+           * 새 분석 채팅이라는 것을
+           * 확실하게 구분하기 위한 값
+           */
+          isNewTodaySkinChat: true,
 
-            /*
-             * 채팅방 진입 시 기존 메시지를
-             * 불러오는 것과 별개로
-             * TodaySkin 초기 안내 UI를
-             * 표시할 수 있도록 한다.
-             */
-            todaySkinInitialMessage: true,
-          },
+          /*
+           * 채팅방 진입 시 기존 메시지를
+           * 불러오는 것과 별개로
+           * TodaySkin 초기 안내 UI를
+           * 표시할 수 있도록 한다.
+           */
+          todaySkinInitialMessage: true,
         },
-      );
+      });
     } catch (error) {
-      console.error(
-        "분석 기반 새 채팅방 생성 실패:",
-        error,
-      );
+      console.error("분석 기반 새 채팅방 생성 실패:", error);
 
-      alert(
-        "채팅방을 열지 못했어요. 잠시 후 다시 시도해주세요.",
-      );
+      alert("채팅방을 열지 못했어요. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsCreatingChat(false);
     }
@@ -245,9 +218,7 @@ export default function TodaySkinResult() {
       <div>
         <Header {...headerProps} />
 
-        <Content>
-          해당 날짜의 기록을 찾을 수 없어요.
-        </Content>
+        <Content>해당 날짜의 기록을 찾을 수 없어요.</Content>
       </div>
     );
   }
@@ -263,20 +234,15 @@ export default function TodaySkinResult() {
   const photos = buildPhotos(analysis);
 
   const metrics = {
-    trouble:
-      analysis.detailedMetrics.trouble,
+    trouble: analysis.detailedMetrics.trouble,
 
-    oil:
-      analysis.detailedMetrics.sebum,
+    oil: analysis.detailedMetrics.sebum,
 
-    dullness:
-      analysis.detailedMetrics.dullness,
+    dullness: analysis.detailedMetrics.dullness,
 
-    hydration:
-      analysis.detailedMetrics.moisture,
+    hydration: analysis.detailedMetrics.moisture,
 
-    elasticity:
-      analysis.detailedMetrics.elasticity,
+    elasticity: analysis.detailedMetrics.elasticity,
   };
 
   return (
@@ -286,101 +252,70 @@ export default function TodaySkinResult() {
       <Content>
         <SkinScoreSummary
           date={date}
-          phaseLabel={
-            PHASE_LABEL[
-              analysis.cyclePhase
-            ] ?? null
-          }
-          score={
-            analysis.overallScore
-          }
+          phaseLabel={PHASE_LABEL[analysis.cyclePhase] ?? null}
+          score={analysis.overallScore}
           statusText={`피부 상태 ${analysis.skinStatus}`}
-          statusSummary={
-            analysis.phaseComment
-          }
+          statusSummary={analysis.phaseComment}
           onPhotoClick={() => {
             if (photos.length > 0) {
               setPhotoModalOpen(true);
             } else {
-              alert(
-                "저장된 사진이 없어요.",
-              );
+              alert("저장된 사진이 없어요.");
             }
           }}
           onAskClick={handleAskKiki}
-          onCompareClick={() =>
-            navigate(`/today-skin/compare/${date}`)
-          }
+          onCompareClick={() => navigate(`/today-skin/compare/${date}`)}
         />
 
-        <SkinMetricsCard
-          metrics={metrics}
-        />
+        <SkinMetricsCard metrics={metrics} />
 
-        <AiInsightBox
-          insight={analysis.aiComment}
-        />
+        <AiInsightBox insight={analysis.aiComment} />
 
-        <ProductRecommendSection
-          products={products}
-        />
+        <ProductRecommendSection products={products} />
 
-        <BottomButtonRow>
-          <PointsRewardButton
-            claimed={pointsClaimed}
-            onClick={() => setPointsRewardOpen(true)}
-          />
-          <ReanalyzeButton
-            onClick={() => setReanalyzeStep("confirm1")}
-          />
-        </BottomButtonRow>
+        {!hideBottomActions && (
+          <BottomButtonRow>
+            <PointsRewardButton
+              claimed={pointsClaimed}
+              onClick={() => setPointsRewardOpen(true)}
+            />
+            <ReanalyzeButton onClick={() => setReanalyzeStep("confirm1")} />
+          </BottomButtonRow>
+        )}
       </Content>
 
       {photoModalOpen && (
         <TodaySkinPhotoModal
           photos={photos}
-          onClose={() =>
-            setPhotoModalOpen(false)
-          }
+          onClose={() => setPhotoModalOpen(false)}
         />
       )}
 
       {pointsRewardOpen && (
-        <PointsRewardModal
-          points={50}
-          onClose={handleCloseRewardModal}
-        />
+        <PointsRewardModal points={50} onClose={handleCloseRewardModal} />
       )}
 
-      {reanalyzeStep ===
-        "confirm1" && (
+      {reanalyzeStep === "confirm1" && (
         <ConfirmModal
           message="현재 기록을 지우고 다시 분석할까요?"
           options={[
             {
               label: "아니요",
               variant: "light",
-              onClick:
-                closeReanalyzeFlow,
+              onClick: closeReanalyzeFlow,
             },
 
             {
               label: "네",
               variant: "dark",
-              onClick: () =>
-                setReanalyzeStep(
-                  "confirm2",
-                ),
+              onClick: () => setReanalyzeStep("confirm2"),
             },
           ]}
-          onClose={
-            closeReanalyzeFlow
-          }
+          onClose={closeReanalyzeFlow}
         />
       )}
 
-      {reanalyzeStep ===
-        "confirm2" && (
+      {reanalyzeStep === "confirm2" && (
         <ConfirmModal
           message={
             <>
@@ -393,22 +328,16 @@ export default function TodaySkinResult() {
             {
               label: "뒤로가기",
               variant: "light",
-              onClick: () =>
-                setReanalyzeStep(
-                  "confirm1",
-                ),
+              onClick: () => setReanalyzeStep("confirm1"),
             },
 
             {
               label: "촬영하기",
               variant: "dark",
-              onClick:
-                handleConfirmRecapture,
+              onClick: handleConfirmRecapture,
             },
           ]}
-          onClose={
-            closeReanalyzeFlow
-          }
+          onClose={closeReanalyzeFlow}
         />
       )}
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { getMySkinInfo, updateMySkinInfo } from "../../api/userApi";
-import backIcon from "../../assets/icons/back-chevron.svg"
+import backIcon from "../../assets/icons/my/back-chevron.svg";
 
 const Page = styled.div`
   display: flex;
@@ -13,39 +13,61 @@ const Page = styled.div`
 `;
 
 const Header = styled.header`
-  position: relative;
-  padding: 20px 16px 14px;
-  border-bottom: 1px solid #eee;
-  text-align: center;
+  width: 402px;
+  height: 56px;
+  border-bottom: 1px solid #d9d9d9;
+  padding: 15px 8px;
+  display: flex;
+  gap: 130px;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+`;
 
-  h1 {
-    font-size: 16px;
-  }
+const Title = styled.p`
+  color: #2d2d2d;
+  font-family: "Pretendard Variable";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
 `;
 
 const BackButton = styled.button`
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  border: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items:center;
+  width: 26px;
+  height: 26px;
+
+  border : none;
   background: transparent;
-  color: #555;
-  font-size: 28px;
   cursor: pointer;
 `;
 
+const BackIcon = styled.img`
+  width: 26px;
+  height: 26px;
+`;
+
 const Content = styled.section`
-  padding: 20px 22px;
+  margin: 0 auto;
 `;
 
 const Section = styled.section`
-  margin-bottom: 42px;
+  margin-bottom: 83px;
+  width: 354px;
 `;
 
 const SectionTitle = styled.h2`
-  margin-bottom: 12px;
-  color: #333;
-  font-size: 14px;
+  color: #2d2d2d;
+  font-family: "Pretendard Variable";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  margin-bottom: 8px;
 `;
 
 const ChipList = styled.div`
@@ -55,30 +77,45 @@ const ChipList = styled.div`
 `;
 
 const Chip = styled.button`
-  padding: 6px 14px;
-  border: 1px solid ${({ $selected }) => ($selected ? "#D9D9D9" : "#e2e2e2")};
-  border-radius: 20px;
+  width: 82.5px;
+  height: 35px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border: 1px solid #d9d9d9;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: ${({ $selected }) => ($selected ? "#DEC4FA" : "#fff")};
-  color: #444;
-  font-size: 12px;
+  color: #2d2d2d;
+  font-family: "Pretendard Variable";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
   cursor: pointer;
 `;
 
-const SaveArea = styled.div`
-  margin-top: auto;
-  padding: 16px;
-`;
-
 const SaveButton = styled.button`
-  width: 100%;
-  padding: 15px;
+  display: flex;
+  width: 354px;
+  height: 43px;
+  justify-content: center;
+  align-items: center;
   border: 0;
-  border-radius: 12px;
+  border-radius: 18px;
   background: ${({ $enabled }) => ($enabled ? "#A985E7" : "#cfcfcf")};
   color: #fff;
-  font-size: 14px;
+  text-align: center;
+  font-family: "Pretendard Variable";
+  font-size: 18px;
+  font-style: normal;
   font-weight: 700;
+  line-height: normal;
   cursor: ${({ $enabled }) => ($enabled ? "pointer" : "default")};
+  margin: 0 auto;
+
+  margin-top: 249px;
 `;
 
 export default function SkinInfo() {
@@ -105,7 +142,9 @@ export default function SkinInfo() {
         if (isMounted) {
           setSkinTypes(types);
           setSkinConcerns(concerns);
-          setOriginalTypeId(types.find((t) => t.isSelected)?.skinTypeId ?? null);
+          setOriginalTypeId(
+            types.find((t) => t.isSelected)?.skinTypeId ?? null,
+          );
           setOriginalConcernIds(
             concerns.filter((c) => c.isSelected).map((c) => c.skinConcernId),
           );
@@ -122,8 +161,11 @@ export default function SkinInfo() {
     };
   }, []);
 
-  const selectedTypeId = skinTypes.find((t) => t.isSelected)?.skinTypeId ?? null;
-  const selectedConcernIds = skinConcerns.filter((c) => c.isSelected).map((c) => c.skinConcernId);
+  const selectedTypeId =
+    skinTypes.find((t) => t.isSelected)?.skinTypeId ?? null;
+  const selectedConcernIds = skinConcerns
+    .filter((c) => c.isSelected)
+    .map((c) => c.skinConcernId);
 
   const isChanged =
     selectedTypeId !== originalTypeId ||
@@ -141,7 +183,9 @@ export default function SkinInfo() {
   const toggleConcern = (skinConcernId) => {
     setSkinConcerns((current) =>
       current.map((c) =>
-        c.skinConcernId === skinConcernId ? { ...c, isSelected: !c.isSelected } : c,
+        c.skinConcernId === skinConcernId
+          ? { ...c, isSelected: !c.isSelected }
+          : c,
       ),
     );
   };
@@ -167,9 +211,9 @@ export default function SkinInfo() {
     <Page>
       <Header>
         <BackButton type="button" onClick={() => navigate("/my")}>
-          ‹
+          <BackIcon src={backIcon} alt="" />
         </BackButton>
-        <h1>피부 정보</h1>
+        <Title>피부 정보</Title>
       </Header>
 
       <Content>
@@ -206,11 +250,9 @@ export default function SkinInfo() {
         </Section>
       </Content>
 
-      <SaveArea>
-        <SaveButton type="button" $enabled={canSave} onClick={handleSave}>
-          저장
-        </SaveButton>
-      </SaveArea>
+      <SaveButton type="button" $enabled={canSave} onClick={handleSave}>
+        저장
+      </SaveButton>
     </Page>
   );
 }
