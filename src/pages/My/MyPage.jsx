@@ -3,46 +3,64 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { getMyInfo } from "../../api/userApi";
 
-import shieldIcon from "../../assets/images/shield.png";
-import bellIcon from "../../assets/images/bell.png";
-import boxIcon from "../../assets/images/box.png";
-import cardIcon from "../../assets/images/card.png";
-import personIcon from "../../assets/images/person.png";
-import calenderIcon from "../../assets/images/calender.png";
-import lunaIcon from "../../assets/images/luna.png";
-import skinIcon from "../../assets/images/skin.png";
+import shieldIcon from "../../assets/icons/my/my_shield.svg";
+import bellIcon from "../../assets/icons/my/my_bell.svg";
+import boxIcon from "../../assets/icons/my/my_payment.svg";
+import cardIcon from "../../assets/icons/my/my_card.svg";
+import personIcon from "../../assets/icons/my/my_person.svg";
+import calenderIcon from "../../assets/icons/my/my_calendar.svg";
+import lunaIcon from "../../assets/icons/my/my_luna.svg";
+import skinIcon from "../../assets/icons/my/my_skin.svg";
+import chevronRightIcon from "../../assets/icons/my/my_chevron_right.svg";
 
 const Page = styled.main`
   width: 100%;
   max-width: 402px;
   min-height: 100%;
-  margin: 0 auto;
-  padding: 58px 22px 30px;
+  padding : 0 24px;
   background: #fff;
 `;
 
+const Header = styled.div`
+  height: 77px;
+  width: 354px;
+  padding-top: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+`;
+
 const Title = styled.h1`
-  margin-bottom: 18px;
-  color: #A876FC;
-  text-align: center;
+  color: #a876fc;
+  font-family: "Pretendard Variable";
   font-size: 28px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
 `;
 
 const Profile = styled.section`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 26px;
 `;
 
+const ProfileContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
 const Avatar = styled.div`
   display: grid;
-  width: 52px;
-  height: 52px;
+  width: 70px;
+  height: 70px;
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: #dcc5ff;
+  background: #dec4fa;
   color: #fff;
   font-size: 22px;
 
@@ -61,82 +79,102 @@ const ProfileText = styled.div`
     position: relative;
     top: 4px;
     margin-bottom: 4px;
-    color: #333;
-    font-size: 14px;
+    color: #2c2c2c;
+    font-family: "Pretendard Variable";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
   }
 
   span {
-    color: #aaa;
-    font-size: 11px;
+    color: #b3b3b3;
+    font-family: "Pretendard Variable";
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
     position: relative;
-    top: -4px;
   }
 `;
 
 const Badge = styled.span`
-  padding: 5px 8px;
-  border-radius: 10px;
-  background: #DEC4FA;
-  color: #A876FC;
+  display: flex;
+  height: 26px;
+  padding: 6px 8px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 20px;
+  background: #dec4fa;
+  color: #a876fc;
+  font-family: "Pretendard Variable";
   font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
 `;
 
 const Section = styled.section`
-  margin-top: 20px;
+  margin-bottom: 24px;
 `;
 
 const SectionTitle = styled.h2`
   margin-bottom: 8px;
-  color: #999;
-  font-size: 11px;
+  color: #929292;
+  font-family: "Pretendard Variable";
+  font-size: 14px;
+  font-style: normal;
   font-weight: 500;
+  line-height: normal;
 `;
 
 const MenuBox = styled.div`
+  width: 354px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 18px;
   overflow: hidden;
-  border: 1px solid #e8e5eb;
-  border-radius: 13px;
 `;
 
 const MenuItem = styled.button`
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 9px 15px;
+  justify-content: space-between;
+  width: 354px;
+  height: 52px;
+  padding: 16px;
   border: 0;
-  border-bottom: ${({ $last }) => ($last ? "0" : "1px solid #eee")};
+  border-bottom: ${({ $last }) => ($last ? "0" : "1.5px solid rgba(0, 0, 0, 0.10)")};
   background: #fff;
-  color: #444;
-  text-align: left;
-  font-size: 15px;
-  font-weight: 470;
   cursor: ${({ $clickable }) => ($clickable ? "pointer" : "default")};
+`;
+
+const LabelContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
 const Icon = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-right: -7px;
-  border-radius: 9px;
-
-  transform: translateX(-9px);
-
-  img {
-    width: 18px;
-    height: 18px;
-  }
+  width: 20px;
+  height: 20px;
 `;
 
 const MenuLabel = styled.span`
-  flex: 1;
+  color: #2c2c2c;
+  font-family: "Pretendard Variable";
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
 `;
 
-const Arrow = styled.span`
-  color: #c8c3cf;
-  font-size: 20px;
+const Arrow = styled.img`
+  width: 20px;
+  height: 20px;
 `;
 
 const MENU_GROUPS = [
@@ -195,21 +233,31 @@ export default function MyPage() {
 
   return (
     <Page>
-      <Title>My</Title>
-
+      <Header>
+        <Title>My</Title>
+      </Header>
       <Profile>
-        <Avatar>
-          {profile?.profileImageUrl ? (
-            <img src={profile.profileImageUrl} alt="" />
-          ) : (
-            nameInitial
-          )}
-        </Avatar>
-        <ProfileText>
-          <strong>{isLoading ? "불러오는 중..." : `${profile?.name ?? "이름 없음"}님`}</strong>
-          <span>{isLoading ? "" : profile?.email ?? ""}</span>
-        </ProfileText>
-        {!isLoading && profile?.isSubscription && <Badge>프리미엄 이용 중</Badge>}
+        <ProfileContainer>
+          <Avatar>
+            {profile?.profileImageUrl ? (
+              <img src={profile.profileImageUrl} alt="" />
+            ) : (
+              nameInitial
+            )}
+          </Avatar>
+          <ProfileText>
+            <strong>
+              {isLoading
+                ? "불러오는 중..."
+                : `${profile?.name ?? "이름 없음"}님`}
+            </strong>
+            <span>{isLoading ? "" : (profile?.email ?? "")}</span>
+          </ProfileText>
+        </ProfileContainer>
+
+        {!isLoading && profile?.isSubscription && (
+          <Badge>프리미엄 이용 중</Badge>
+        )}
       </Profile>
 
       {MENU_GROUPS.map((group) => (
@@ -225,11 +273,12 @@ export default function MyPage() {
                 $last={index === group.items.length - 1}
                 onClick={() => item.path && navigate(item.path)}
               >
-                <Icon>
-                  {item.icon && <img src={item.icon} alt="" />}
-                </Icon>
-                <MenuLabel>{item.label}</MenuLabel>
-                <Arrow>›</Arrow>
+                <LabelContainer>
+                  <Icon>{item.icon && <img src={item.icon} alt="" />}</Icon>
+                  <MenuLabel>{item.label}</MenuLabel>
+                </LabelContainer>
+
+                <Arrow src={chevronRightIcon} alt="" />
               </MenuItem>
             ))}
           </MenuBox>

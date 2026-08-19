@@ -6,13 +6,11 @@ import PeriodOptionSheet from "../../components/my/PeriodOptionSheet";
 import SelectableChip from "../../components/my/SelectableChip";
 import { getCycleInfo, updateCycleInfo } from "../../api/userApi";
 
-const Page = styled.main`
+const Page = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 402px;
-  min-height: calc(100dvh - 60px);
-  margin: 0 auto;
+  min-height: 100%;
   background: #fff;
 `;
 

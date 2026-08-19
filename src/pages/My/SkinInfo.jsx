@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { getMySkinInfo, updateMySkinInfo } from "../../api/userApi";
+import backIcon from "../../assets/icons/back-chevron.svg"
 
-const Page = styled.main`
+const Page = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 402px;
-  min-height: calc(100dvh - 60px);
-  margin: 0 auto;
+  min-height: 100%;
   background: #fff;
 `;
 
