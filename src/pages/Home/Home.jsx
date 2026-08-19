@@ -30,6 +30,7 @@ import serumIcon from "../../assets/icons/routine_serum.svg";
 import waterGlassIcon from "../../assets/icons/routine_water_glass.svg";
 import sneakerIcon from "../../assets/icons/routine_sneaker.svg";
 import { getPoints } from "../../utils/pointsStorage";
+import { clearCapturedPhotos } from "../../utils/photoSessionStorage";
 
 // PhaseGuideBanner 제목 전용 문구. PHASE_LABEL(생리기/난포기/...)은 RoutineSection 등
 // 다른 곳에서도 쓰이니까 utils에 남겨두고, 이건 이 화면에서만 쓰는 값이라 여기 둠
@@ -109,6 +110,7 @@ export default function Home() {
 
   useEffect(() => {
     sessionStorage.removeItem("todaySkin:lifestyleDraft");
+    clearCapturedPhotos();
   }, []);
 
   // 오늘의 주기 단계 + 코멘트. API 응답 오기 전엔 null
