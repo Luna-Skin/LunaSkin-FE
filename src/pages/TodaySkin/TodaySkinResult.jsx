@@ -69,7 +69,9 @@ export default function TodaySkinResult() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { createChat } = useChatContext();
+  const {
+    createChat,
+  } = useChatContext();
 
   const [analysis, setAnalysis] = useState(null);
   const [loadError, setLoadError] = useState(false);
@@ -145,8 +147,8 @@ export default function TodaySkinResult() {
    *
    * 같은 분석 결과 화면에서 버튼을 여러 번 눌러도
    * 항상 같은 채팅방으로 연결되도록
-   * 채팅방 생성 시 analysisId를 aiAnalysis로 함께 넘긴다.
-   * (서버가 해당 aiAnalysis에 연결된 기존 채팅방이 있으면
+   * analysisId 기반의 createChatFromAnalysis를 사용한다.
+   * (서버가 해당 analysisId에 연결된 기존 채팅방이 있으면
    * 그 방을 그대로 반환하고, 없으면 새로 만들어 반환한다.)
    *
    * 생성/조회된 채팅방에는 현재 투데이스킨 날짜와
@@ -174,7 +176,10 @@ export default function TodaySkinResult() {
     try {
       setIsCreatingChat(true);
 
-      const chat = await createChat("오늘의 투데이스킨 분석", analysisId);
+      const chat = await createChat(
+        "오늘의 투데이스킨 분석",
+        analysisId,
+      );
 
       if (!chat?.chatRoomId) {
         throw new Error("생성된 채팅방 ID가 없습니다.");

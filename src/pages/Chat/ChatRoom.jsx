@@ -274,6 +274,18 @@ export default function ChatRoom() {
   const isSendingRef = useRef(false);
   const hasSentMessageRef = useRef(false);
 
+  /*
+   * 숨겨진 파일 input을 계속 재사용하면서
+   * value만 초기화하는 방식은 브라우저에 따라
+   * 두 번째 선택부터 change 이벤트가 씹히는 경우가 있다.
+   * key를 바꿔 매번 완전히 새 input으로 마운트시켜
+   * 이 문제를 근본적으로 피한다.
+   */
+  const [photoInputKey, setPhotoInputKey] =
+    useState(0);
+  const [fileInputKey, setFileInputKey] =
+    useState(0);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -629,6 +641,8 @@ export default function ChatRoom() {
     reader.readAsDataURL(selectedFile);
 
     event.target.value = "";
+
+    setPhotoInputKey((key) => key + 1);
   };
 
   const handleFileAttach = async (
@@ -662,6 +676,7 @@ export default function ChatRoom() {
     } finally {
       setIsUploading(false);
       event.target.value = "";
+      setFileInputKey((key) => key + 1);
     }
   };
 
@@ -763,6 +778,7 @@ export default function ChatRoom() {
         </InputBarWrapper>
 
         <input
+          key={photoInputKey}
           ref={photoInputRef}
           type="file"
           accept="image/*"
@@ -771,6 +787,7 @@ export default function ChatRoom() {
         />
 
         <input
+          key={fileInputKey}
           ref={fileInputRef}
           type="file"
           hidden

@@ -20,18 +20,21 @@ const PHASE_META = {
   MENSTRUATION: {
     label: "생리기",
     color: "#FA7C7C",
+    legendColor: "#FC7476",
     background: "rgba(250, 124, 124, 0.10)",
   },
 
   OVULATION: {
     label: "배란기",
     color: "#65C9C5",
+    legendColor: "#6FC6C2",
     background: "rgba(101, 201, 197, 0.10)",
   },
 
   LUTEAL: {
     label: "황체기",
     color: "#A985E7",
+    legendColor: "#C09EF0",
     background: "rgba(152, 132, 220, 0.10)",
   },
 };
@@ -102,7 +105,7 @@ export default function PhaseRadarChart({
                   cx="10"
                   cy={12 + index * 16}
                   r="4"
-                  fill={meta.color}
+                  fill={meta.legendColor}
                 />
 
                 <text
@@ -190,30 +193,35 @@ export default function PhaseRadarChart({
           )}
         </g>
 
-        {/* 피부 지표 */}
+        {/*
+          피부 지표
+
+          피그마 서식 기준 라벨별 정렬:
+          트러블(가운데), 유분·칙칙함(왼쪽 정렬, 오각형에서 오른쪽으로 벌어짐),
+          수분·탄력(오른쪽 정렬, 오각형에서 왼쪽으로 벌어짐)
+        */}
         <g
           fontSize="12"
           fontWeight="500"
           fill="#7E7979"
-          textAnchor="middle"
         >
-          <text x="155" y="18">
+          <text x="155" y="15" textAnchor="middle">
             트러블
           </text>
 
-          <text x="249" y="81">
+          <text x="247" y="80" textAnchor="start">
             유분
           </text>
 
-          <text x="208" y="182">
+          <text x="208" y="177" textAnchor="start">
             칙칙함
           </text>
 
-          <text x="112" y="182">
+          <text x="112" y="177" textAnchor="end">
             수분
           </text>
 
-          <text x="71" y="81">
+          <text x="72" y="80" textAnchor="end">
             탄력
           </text>
         </g>

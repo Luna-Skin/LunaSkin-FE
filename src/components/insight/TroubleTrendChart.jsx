@@ -35,10 +35,24 @@ const CHART_HEIGHT = 150;
 
 const AXIS_Y = 110;
 
-const PLOT_LEFT = 18;
-const PLOT_RIGHT = 322;
+/*
+ * 피그마 서식의 점 좌표(D-14: x=41, D+14: x=312, 카드 폭 354 기준)를
+ * 카드 자체 패딩(12px)과 viewBox 스케일을 반영해 환산한 값.
+ */
+const PLOT_LEFT = 30;
+const PLOT_RIGHT = 310;
 
 const DAY_RANGE = 14;
+
+const CURVE_TOP_Y = 20;
+const CURVE_BOTTOM_Y = AXIS_Y - 5;
+
+function clamp(value, min, max) {
+  return Math.max(
+    min,
+    Math.min(max, value),
+  );
+}
 
 const AXIS_LABELS = [
   { label: "D - 14", day: -14 },
@@ -90,9 +104,6 @@ function toCoords(points) {
   const scoreRange =
     maxScore - minScore || 1;
 
-  const topY = 20;
-  const bottomY = AXIS_Y - 5;
-
   return points.map((point) => {
     const normalized =
       (point.score - minScore) /
@@ -100,9 +111,9 @@ function toCoords(points) {
 
     return [
       dayToX(point.day),
-      bottomY -
+      CURVE_BOTTOM_Y -
         normalized *
-          (bottomY - topY),
+          (CURVE_BOTTOM_Y - CURVE_TOP_Y),
     ];
   });
 }
@@ -137,17 +148,23 @@ function buildSmoothPath(points) {
       p1[0] +
       (p2[0] - p0[0]) / 6;
 
-    const cp1y =
+    const cp1y = clamp(
       p1[1] +
-      (p2[1] - p0[1]) / 6;
+        (p2[1] - p0[1]) / 6,
+      CURVE_TOP_Y,
+      CURVE_BOTTOM_Y,
+    );
 
     const cp2x =
       p2[0] -
       (p3[0] - p1[0]) / 6;
 
-    const cp2y =
+    const cp2y = clamp(
       p2[1] -
-      (p3[1] - p1[1]) / 6;
+        (p3[1] - p1[1]) / 6,
+      CURVE_TOP_Y,
+      CURVE_BOTTOM_Y,
+    );
 
     path +=
       ` C${cp1x} ${cp1y},` +
@@ -355,11 +372,18 @@ export default function TroubleTrendChart({
           strokeDasharray="3 3"
         />
 
-        {/* 가로축 */}
+        {/*
+          가로축
+
+          피그마 서식 기준 이 선은 카드 폭 전체로 뻗어야 하며,
+          날짜 점(D-14 ~ D+14)보다 좌우로 더 길게 그려진다.
+          점/라벨/곡선의 위치(PLOT_LEFT, PLOT_RIGHT)는 그대로 두고
+          선의 길이만 늘린다.
+        */}
         <line
-          x1={PLOT_LEFT}
+          x1={0}
           y1={AXIS_Y}
-          x2={PLOT_RIGHT}
+          x2={CHART_WIDTH}
           y2={AXIS_Y}
           stroke="#B8B8B8"
           strokeWidth="1"
@@ -374,8 +398,8 @@ export default function TroubleTrendChart({
         <path
           d={buildSmoothPath(chartData)}
           fill="none"
-          stroke="#9B7AF8"
-          strokeWidth="2.5"
+          stroke="#9884DC"
+          strokeWidth="2.1"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
