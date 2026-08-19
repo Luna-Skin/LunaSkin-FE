@@ -13,6 +13,7 @@ import { getAnalysisCompare } from "../../api/analysisApi";
 import { getCycleCalendar } from "../../api/cycleApi";
 import { METRIC_ITEMS } from "../../utils/skinMetrics";
 import { METRIC_COMPARISON } from "../../utils/compareMetrics";
+import AnalyzingLoader from "../../components/todaySkin/AnalyzingLoader"; // 추가
 
 const MAX_SEARCH_MONTHS = 12;
 
@@ -211,7 +212,7 @@ export default function TodaySkinCompare() {
           title="피부 기록 비교"
           onBack={() => navigate(-1)}
         />
-        <Content>비교할 피부 기록을 불러오는 중이에요.</Content>
+        <AnalyzingLoader text="피부 기록을 비교하고 있어요" />
       </div>
     );
   }
@@ -252,7 +253,7 @@ export default function TodaySkinCompare() {
           title="피부 기록 비교"
           onBack={() => navigate(-1)}
         />
-        <Content>피부 기록을 비교하고 있어요.</Content>
+        <AnalyzingLoader text="피부 기록을 비교하고 있어요" />
       </div>
     );
   }
