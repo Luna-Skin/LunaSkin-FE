@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useCallback, useState } from "react";import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import styled from "styled-components";
 import Header from "../../components/home/Header";
@@ -72,6 +71,8 @@ const TODAY_STATUS_UNKNOWN = {
   ),
 };
 
+const EMPTY_CONCERNS = [];
+
 const SectionLabel = styled.h2`
   width: 354px;
   margin: 20px auto 0;
@@ -137,16 +138,20 @@ export default function Home() {
       });
   }, []);
 
-  const routines = (routineData?.routines ?? []).map((routine, index) => {
-    const meta =
-      ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
-    return {
-      id: index,
-      icon: meta.icon,
-      title: meta.title,
-      description: routine.content,
-    };
-  });
+  const routines = useMemo(
+    () =>
+      (routineData?.routines ?? []).map((routine, index) => {
+        const meta =
+          ROUTINE_CATEGORY_META[routine.routineCategory] ?? DEFAULT_ROUTINE_META;
+        return {
+          id: index,
+          icon: meta.icon,
+          title: meta.title,
+          description: routine.content,
+        };
+      }),
+    [routineData],
+  );
 
   // 홈 헤더용 프로필(이름, 피부타입, 선택된 피부고민). API 응답 오기 전엔 null
   const [profile, setProfile] = useState(null);
@@ -226,15 +231,18 @@ export default function Home() {
       }
     : TODAY_STATUS_UNKNOWN;
 
-  const handleDateClick = (dateStr) => {
-    if (periodSelectMode) {
-      setPeriodSelectedDate(dateStr);
-      return;
-    }
-
-    setSelectedDate(dateStr);
-    setModalStep("dateAction");
-  };
+  const handleDateClick = useCallback(
+    (dateStr) => {
+      if (periodSelectMode) {
+        setPeriodSelectedDate(dateStr);
+        return;
+      }
+ 
+      setSelectedDate(dateStr);
+      setModalStep("dateAction");
+    },
+    [periodSelectMode],
+  );
 
   const closeModal = () => {
     setModalStep(null);
@@ -342,7 +350,7 @@ export default function Home() {
         <UserInfo
           name={profile?.name ?? ""}
           skinType={profile?.skinType ?? ""}
-          skinConcerns={profile?.selectedSkinConcerns ?? []}
+          skinConcerns={profile?.selectedSkinConcerns ?? EMPTY_CONCERNS}
           points={getPoints()}
         />
 
