@@ -46,6 +46,12 @@ const Description = styled.p`
   font-style: normal;
   font-weight: 600;
   line-height: normal;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const ArrowButton = styled.button`
