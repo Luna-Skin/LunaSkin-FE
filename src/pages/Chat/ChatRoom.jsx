@@ -229,7 +229,7 @@ export default function ChatRoom() {
   const location = useLocation();
   const { chatId } = useParams();
 
-  const { fetchChatMessages } =
+  const { fetchChatMessages, deleteChat } =
     useChatContext();
 
   const fromTodaySkin = Boolean(
@@ -238,6 +238,10 @@ export default function ChatRoom() {
 
   const todaySkinDate =
     location.state?.todaySkinDate;
+
+  const isNewChat = Boolean(
+    location.state?.isNewChat,
+  );
 
   const [input, setInput] = useState("");
   const [isMenuOpen, setIsMenuOpen] =
@@ -266,6 +270,9 @@ export default function ChatRoom() {
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const messageEndRef = useRef(null);
+
+  const isSendingRef = useRef(false);
+  const hasSentMessageRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -470,11 +477,29 @@ export default function ChatRoom() {
     isAiTyping,
   ]);
 
-  const handleGoBack = () => {
+  const handleGoBack = async () => {
+    if (
+      isNewChat &&
+      !hasSentMessageRef.current
+    ) {
+      try {
+        await deleteChat(chatId);
+      } catch (error) {
+        console.error(
+          "[ChatRoom] 빈 채팅방 삭제 실패:",
+          error,
+        );
+      }
+    }
+
     navigate(-1);
   };
 
   const sendMessage = async () => {
+    if (isSendingRef.current) {
+      return;
+    }
+
     console.log(
       "[ChatRoom] sendMessage 호출",
     );
@@ -490,6 +515,8 @@ export default function ChatRoom() {
       return;
     }
 
+    isSendingRef.current = true;
+
     try {
       if (attachedImage) {
         setIsUploading(true);
@@ -499,6 +526,8 @@ export default function ChatRoom() {
           attachedImage.file,
           text,
         );
+
+        hasSentMessageRef.current = true;
 
         setInput("");
         setAttachedImage(null);
@@ -554,6 +583,8 @@ export default function ChatRoom() {
         return;
       }
 
+      hasSentMessageRef.current = true;
+
       setInput("");
       setIsMenuOpen(false);
       setSocketError(null);
@@ -572,6 +603,7 @@ export default function ChatRoom() {
       );
     } finally {
       setIsUploading(false);
+      isSendingRef.current = false;
     }
   };
 

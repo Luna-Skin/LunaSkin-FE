@@ -2,6 +2,7 @@ import styled from "styled-components";
 import plusIcon from "../../assets/icons/plus.svg";
 import sendIcon from "../../assets/icons/send.svg";
 import deleteIcon from "../../assets/icons/delete.svg";
+import nonoIcon from "../../assets/icons/nono.svg";
 
 const Form = styled.form`
   display: flex;
@@ -14,8 +15,8 @@ const Form = styled.form`
 
   padding: 8px 12px;
 
-  border: 1px solid #ded8e7;
-  border-radius: 18px;
+  border: 1px solid #d9d9d9;
+  border-radius: 30px;
 
   background: #fff;
 
@@ -45,28 +46,32 @@ const PreviewImage = styled.img`
 const RemoveImageButton = styled.button`
   position: absolute;
 
-  top: -6px;
-  right: -6px;
+  top: 4px;
+  right: 4px;
 
   display: grid;
 
-  width: 22px;
-  height: 22px;
+  width: 12px;
+  height: 12px;
 
   place-items: center;
 
   padding: 0;
 
-  border: 1px solid #ddd;
+  border: 0.6px solid #ede8f8;
   border-radius: 50%;
 
-  background: #fff;
+  background: #f8f6fc;
   color: #666;
 
-  font-size: 15px;
-  line-height: 1;
-
   cursor: pointer;
+`;
+
+const RemoveImageIcon = styled.img`
+  width: 6px;
+  height: 6px;
+
+  object-fit: contain;
 `;
 
 const CircleButton = styled.button`
@@ -84,7 +89,7 @@ const CircleButton = styled.button`
   border: 1px solid #ede8f8;
   border-radius: 50%;
 
-  background: ##CFB4FD;
+  background: #f8f6fc;
 
   color: #5d5370;
 
@@ -103,7 +108,7 @@ const SendButton = styled(CircleButton)`
 
   background: ${({ $isActive }) =>
     $isActive
-      ? "#a47af5"
+      ? "#cfb4fd"
       : "#f8f6fc"};
 
   color: #fff;
@@ -168,9 +173,12 @@ export default function ChatInputBar({
   image,
   onRemoveImage,
 }) {
-  const isActive =
-    value.trim().length > 0 ||
-    !!image;
+  /*
+   * 사진만 첨부하고 텍스트가 없으면
+   * 전송 버튼을 비활성 상태로 둔다.
+   * (사진 단독 전송 방지 — 캡션 없이는 보낼 수 없다)
+   */
+  const isActive = value.trim().length > 0;
 
   const handleKeyDown = (event) => {
     if (
@@ -207,8 +215,8 @@ export default function ChatInputBar({
             onClick={onRemoveImage}
             aria-label="첨부 이미지 삭제"
           >
-            <ButtonIcon
-              src={deleteIcon}
+            <RemoveImageIcon
+              src={nonoIcon}
               alt=""
             />
           </RemoveImageButton>

@@ -150,11 +150,13 @@ export default function TodaySkinResult() {
   /*
    * 끼끼에게 질문하기
    *
-   * 중요:
-   * 기존 분석 채팅방을 조회/재사용하지 않고
-   * 버튼을 누를 때마다 새로운 일반 채팅방을 생성한다.
+   * 같은 분석 결과 화면에서 버튼을 여러 번 눌러도
+   * 항상 같은 채팅방으로 연결되도록
+   * 채팅방 생성 시 analysisId를 aiAnalysis로 함께 넘긴다.
+   * (서버가 해당 aiAnalysis에 연결된 기존 채팅방이 있으면
+   * 그 방을 그대로 반환하고, 없으면 새로 만들어 반환한다.)
    *
-   * 생성된 채팅방에는 현재 투데이스킨 날짜와
+   * 생성/조회된 채팅방에는 현재 투데이스킨 날짜와
    * 분석 ID를 state로 넘겨서 ChatRoom에서
    * "오늘의 분석 결과에서 어떤 부분이 궁금하신가요?"
    * 같은 초기 UI를 표시할 수 있도록 한다.
@@ -170,24 +172,25 @@ export default function TodaySkinResult() {
       return;
     }
 
+    const analysisId =
+      analysis.analysisId ??
+      analysis.id ??
+      null;
+
+    if (!analysisId) {
+      alert(
+        "분석 ID를 찾을 수 없어요. 잠시 후 다시 시도해주세요.",
+      );
+
+      return;
+    }
+
     try {
       setIsCreatingChat(true);
 
-      /*
-       * 일반 채팅방을 새로 생성한다.
-       *
-       * createChatFromAnalysis가 아니라
-       * createChat을 사용하는 이유:
-       *
-       * createChatFromAnalysis
-       * → 특정 analysisId에 연결된 채팅방
-       * → 서버가 기존 방을 반환할 가능성 있음
-       *
-       * createChat
-       * → 매번 새로운 chatRoom 생성
-       */
       const chat = await createChat(
         "오늘의 투데이스킨 분석",
+        analysisId,
       );
 
       if (!chat?.chatRoomId) {
@@ -204,10 +207,7 @@ export default function TodaySkinResult() {
 
             todaySkinDate: date,
 
-            analysisId:
-              analysis.analysisId ??
-              analysis.id ??
-              null,
+            analysisId,
 
             /*
              * ChatRoom에서

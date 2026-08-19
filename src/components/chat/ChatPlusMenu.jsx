@@ -47,7 +47,7 @@ const MenuButton = styled.button`
 
   background: transparent;
 
-  color: #555;
+  color: #6b6b6b;
 
   font-family: "Pretendard Variable",
     Pretendard, sans-serif;

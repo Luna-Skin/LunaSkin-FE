@@ -13,7 +13,7 @@ const Card = styled.section`
 `;
 
 const ANGLES = [-90, -18, 54, 126, 198];
-const MAX_RADIUS = 72;
+const MAX_RADIUS = 77.5;
 const EMPTY_SCORE = 1;
 
 const PHASE_META = {
@@ -83,7 +83,7 @@ export default function PhaseRadarChart({
   return (
     <Card>
       <svg
-        viewBox="0 0 340 177"
+        viewBox="0 0 340 206"
         width="100%"
         role="img"
         aria-label="주기 단계별 피부 비교 차트"
@@ -117,7 +117,7 @@ export default function PhaseRadarChart({
         </g>
 
         {/* 레이더 차트 */}
-        <g transform="translate(170 95)">
+        <g transform="translate(169.5 103)">
           {/* 가장 바깥쪽 레이더 */}
           <polygon
             points={buildGridPoints(
@@ -197,23 +197,23 @@ export default function PhaseRadarChart({
           fill="#7E7979"
           textAnchor="middle"
         >
-          <text x="155" y="15">
+          <text x="155" y="18">
             트러블
           </text>
 
-          <text x="244" y="75">
+          <text x="249" y="81">
             유분
           </text>
 
-          <text x="205" y="170">
+          <text x="208" y="182">
             칙칙함
           </text>
 
-          <text x="116" y="170">
+          <text x="112" y="182">
             수분
           </text>
 
-          <text x="77" y="75">
+          <text x="71" y="81">
             탄력
           </text>
         </g>

@@ -10,12 +10,13 @@ export const getChatRooms = async () => {
 // 일반 채팅방 생성
 export const createChatRoom = async (
   title = "새로운 대화",
+  aiAnalysisId = 0,
 ) => {
   const res = await apiClient.post(
     "/api/chat/rooms",
     {
       title,
-      aiAnalysis: 0,
+      aiAnalysis: aiAnalysisId,
     },
   );
 
