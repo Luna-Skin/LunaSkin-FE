@@ -2,11 +2,11 @@ import { useRef, useState } from "react";
 import styled from "styled-components";
 import checkIcon from "../../assets/icons/check.svg";
 
-const DEFAULT_HEIGHT = 235; // 기본 노출 길이
-const MAX_HEIGHT_VH = 80; // 최대로 끌어올렸을 때 화면 대비 비율
+const DEFAULT_HEIGHT = 235;
+const MAX_HEIGHT = 650;
 
 const Overlay = styled.div`
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 30;
   display: flex;
@@ -19,12 +19,13 @@ const Sheet = styled.section`
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 402px);
+  width: 100%;
   height: ${({ $height }) => $height}px;
-  max-height: ${MAX_HEIGHT_VH}vh;
+  max-height: ${MAX_HEIGHT}px;
   border-radius: 18px 18px 0 0;
   background: #fff;
-  transition: ${({ $isDragging }) => ($isDragging ? "none" : "height 0.2s ease")};
+  transition: ${({ $isDragging }) =>
+    $isDragging ? "none" : "height 0.2s ease"};
 `;
 
 const HandleArea = styled.div`
@@ -116,18 +117,18 @@ export default function PeriodOptionSheet({
     event.target.setPointerCapture(event.pointerId);
   };
 
-  const handlePointerMove = (event) => {
-    if (!isDragging) return;
-
-    const deltaY = dragStartY.current - event.clientY; // 위로 끌면 양수
-    const maxHeightPx = window.innerHeight * (MAX_HEIGHT_VH / 100);
-    const nextHeight = Math.min(
-      maxHeightPx,
-      Math.max(160, dragStartHeight.current + deltaY),
-    );
-
-    setHeight(nextHeight);
-  };
+const handlePointerMove = (event) => {
+  if (!isDragging) return;
+  const deltaY = dragStartY.current - event.clientY;
+  const nextHeight = Math.min(
+    MAX_HEIGHT,
+    Math.max(
+      160,
+      dragStartHeight.current + deltaY,
+    ),
+  );
+  setHeight(nextHeight);
+};
 
   const handlePointerUp = () => {
     setIsDragging(false);

@@ -10,12 +10,14 @@ import {
   getLifestyleInsight,
 } from "../../api/insightApi";
 
+import alertIcon from "../../assets/icons/alert.svg";
+
 const Page = styled.div`
   width: 100%;
   max-width: 402px;
   min-height: calc(100dvh - 60px);
   margin: 0 auto;
-  padding: 24px 20px 84px;
+  padding: 24px 24px 84px;
   background: #fff;
 
   font-family: "Pretendard Variable", Pretendard, sans-serif;
@@ -34,7 +36,7 @@ const Title = styled.h1`
 `;
 
 const Section = styled.section`
-  margin-top: 20px;
+  margin-top: 24px;
 
   &:first-of-type {
     margin-top: 0;
@@ -53,11 +55,11 @@ const SectionTitle = styled.h2`
 `;
 
 const Description = styled.div`
-  margin-top: 8px;
-  padding: 10px 12px;
+  margin-top: 12px;
+  padding: 16px;
 
-  border-radius: 14px;
-  background: #f6f0ff;
+  border-radius: 18px;
+  background: rgba(168, 118, 252, 0.1);
 
   color: rgba(152, 132, 220, 0.8);
 
@@ -67,7 +69,9 @@ const Description = styled.div`
   line-height: normal;
 
   strong {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     margin-bottom: 3px;
 
     color: #616161;
@@ -77,6 +81,12 @@ const Description = styled.div`
     font-weight: 600;
     line-height: normal;
   }
+`;
+
+const AlertIcon = styled.img`
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 `;
 
 const HabitList = styled.div`
@@ -248,7 +258,10 @@ export default function Insight() {
 
         {!isLoadingTrouble && troubleAnalysisText && (
           <Description>
-            <strong>ⓘ 트러블 지수 분석</strong>
+            <strong>
+              <AlertIcon src={alertIcon} alt="" />
+              트러블 지수 분석
+            </strong>
             {troubleAnalysisText}
           </Description>
         )}

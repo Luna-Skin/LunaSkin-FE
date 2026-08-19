@@ -5,37 +5,54 @@ import styled from "styled-components";
 import PeriodOptionSheet from "../../components/my/PeriodOptionSheet";
 import SelectableChip from "../../components/my/SelectableChip";
 import { getCycleInfo, updateCycleInfo } from "../../api/userApi";
+import backIcon from "../../assets/icons/my/back-chevron.svg";
 
-const Page = styled.main`
+const Page = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 402px;
-  min-height: calc(100dvh - 60px);
-  margin: 0 auto;
+  min-height: 100%;
   background: #fff;
+  overflow: hidden;
 `;
 
 const Header = styled.header`
-  position: relative;
-  padding: 20px 16px 14px;
-  border-bottom: 1px solid #eee;
-  text-align: center;
+  width: 402px;
+  height: 56px;
+  border-bottom: 1px solid #d9d9d9;
+  padding: 15px 8px;
+  display: flex;
+  gap: 130px;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+`;
 
-  h1 {
-    font-size: 16px;
-  }
+const Title = styled.p`
+  color: #2d2d2d;
+  font-family: "Pretendard Variable";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
 `;
 
 const BackButton = styled.button`
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  border: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 26px;
+  height: 26px;
+
+  border: none;
   background: transparent;
-  color: #555;
-  font-size: 28px;
   cursor: pointer;
+`;
+
+const BackIcon = styled.img`
+  width: 26px;
+  height: 26px;
 `;
 
 const Content = styled.section`
@@ -60,23 +77,47 @@ const SaveButton = styled.button`
   padding: 15px;
   border: 0;
   border-radius: 12px;
-  background: ${({ $changed }) =>
-    $changed ? "#A985E7" : "#cfcfcf"};
+  background: ${({ $changed }) => ($changed ? "#A985E7" : "#cfcfcf")};
   color: #fff;
   font-size: 14px;
   font-weight: 700;
-  cursor: ${({ $changed }) =>
-    $changed ? "pointer" : "default"};
+  cursor: ${({ $changed }) => ($changed ? "pointer" : "default")};
 `;
 
 const CYCLE_OPTIONS = [
-  "20일", "21일", "22일", "23일", "24일", "25일", "26일", "27일",
-  "28일", "29일", "30일", "31일", "32일", "33일", "34일", "35일",
-  "36일", "37일", "38일", "39일", "40일",
+  "20일",
+  "21일",
+  "22일",
+  "23일",
+  "24일",
+  "25일",
+  "26일",
+  "27일",
+  "28일",
+  "29일",
+  "30일",
+  "31일",
+  "32일",
+  "33일",
+  "34일",
+  "35일",
+  "36일",
+  "37일",
+  "38일",
+  "39일",
+  "40일",
 ];
 
 const PERIOD_OPTIONS = [
-  "2일 이내", "3일", "4일", "5일", "6일", "7일", "8일", "9일", "10일 이상",
+  "2일 이내",
+  "3일",
+  "4일",
+  "5일",
+  "6일",
+  "7일",
+  "8일",
+  "9일",
+  "10일 이상",
 ];
 
 // 숫자(일수)를 화면에 보여줄 문자열로 변환
@@ -104,8 +145,14 @@ function periodLabelToDuration(label) {
 export default function PeriodInfo() {
   const navigate = useNavigate();
 
-  const [settings, setSettings] = useState({ cycleLength: "", periodLength: "" });
-  const [originalSettings, setOriginalSettings] = useState({ cycleLength: "", periodLength: "" });
+  const [settings, setSettings] = useState({
+    cycleLength: "",
+    periodLength: "",
+  });
+  const [originalSettings, setOriginalSettings] = useState({
+    cycleLength: "",
+    periodLength: "",
+  });
   const [sheetType, setSheetType] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -190,10 +237,9 @@ export default function PeriodInfo() {
     <Page>
       <Header>
         <BackButton type="button" onClick={() => navigate("/my")}>
-          ‹
+          <BackIcon src={backIcon} alt="" />
         </BackButton>
-
-        <h1>생리 정보</h1>
+        <Title>생리 정보</Title>
       </Header>
 
       <Content>
@@ -213,11 +259,7 @@ export default function PeriodInfo() {
       </Content>
 
       <SaveArea>
-        <SaveButton
-          type="button"
-          $changed={isChanged}
-          onClick={handleSave}
-        >
+        <SaveButton type="button" $changed={isChanged} onClick={handleSave}>
           저장
         </SaveButton>
       </SaveArea>

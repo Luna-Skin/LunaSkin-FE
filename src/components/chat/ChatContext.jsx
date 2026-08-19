@@ -177,9 +177,15 @@ export function ChatProvider({ children }) {
   );
 
   const createChat = useCallback(
-    async (title = "새로운 대화") => {
+    async (
+      title = "새로운 대화",
+      aiAnalysisId,
+    ) => {
       const response =
-        await createChatRoomApi(title);
+        await createChatRoomApi(
+          title,
+          aiAnalysisId,
+        );
 
       const newChat = normalizeChatRoom(
         unwrapData(response),

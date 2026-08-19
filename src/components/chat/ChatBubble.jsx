@@ -125,6 +125,8 @@ const Time = styled.p`
   margin: 4px 0 0;
 
   color: #a7a7a7;
+  text-align: ${({ $isUser }) =>
+    $isUser ? "right" : "left"};
 
   font-family: "Pretendard Variable",
     Pretendard, sans-serif;
@@ -239,7 +241,7 @@ export default function ChatBubble({
         </Bubble>
 
         {!isTyping && (
-          <Time>
+          <Time $isUser={isUser}>
             {time ?? formatTime()}
           </Time>
         )}
