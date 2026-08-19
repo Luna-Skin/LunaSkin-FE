@@ -7,6 +7,7 @@ import { getChatDateLabel } from "../../utils/chatDateLabel";
 
 import trashIcon from "../../assets/icons/Trash.svg";
 import editIcon from "../../assets/icons/Edit.svg";
+import plusIcon from "../../assets/icons/plus.svg";
 
 const LONG_PRESS_DURATION = 1500;
 
@@ -161,8 +162,8 @@ const AddButton = styled.button`
   display: grid;
   place-items: center;
 
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
 
   padding: 0;
 
@@ -172,11 +173,14 @@ const AddButton = styled.button`
   background: #cfb4fd;
   color: #fff;
 
-  font-family: "Pretendard Variable", Pretendard, sans-serif;
-  font-size: 24px;
-  font-weight: 500;
-
   cursor: pointer;
+`;
+
+const AddIcon = styled.img`
+  width: 14px;
+  height: 14px;
+
+  filter: brightness(0) invert(1);
 `;
 
 const ContextMenu = styled.div`
@@ -428,6 +432,11 @@ export default function ChatList() {
 
       navigate(
         `/chat/${newChat.chatRoomId}`,
+        {
+          state: {
+            isNewChat: true,
+          },
+        },
       );
     } catch (error) {
       console.error(
@@ -589,7 +598,7 @@ export default function ChatList() {
         onClick={handleAddChat}
         aria-label="새 대화 시작"
       >
-        +
+        <AddIcon src={plusIcon} alt="" />
       </AddButton>
 
       {deleteTargetId !== null && (

@@ -3,7 +3,7 @@ import styled from "styled-components";
 const Card = styled.article`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   min-height: 68px;
   padding: 16px;
   box-sizing: border-box;
