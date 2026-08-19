@@ -241,7 +241,7 @@ export default function Home() {
 
   const handleSelectSkinInfo = () => {
     navigate(`/today-skin/result/${selectedDate}`, {
-      state: { showBackHeader: true, hideBottomActions: true },
+      state: { showBackHeader: true },
     });
   };
 
