@@ -84,23 +84,36 @@ export default function TodaySkinResult() {
   const [isCreatingChat, setIsCreatingChat] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     setAnalysis(null);
     setLoadError(false);
 
     getDailyAnalysis(date)
-      .then(setAnalysis)
+      .then((result) => {
+        // 다른 날짜로 넘어간 뒤 늦게 도착한 응답이 최신 상태를 덮어쓰지 않도록 방지
+        if (!cancelled) setAnalysis(result);
+      })
       .catch((error) => {
         console.error("일일 분석 기록 조회 실패:", error);
 
-        setLoadError(true);
+        if (!cancelled) setLoadError(true);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [date]);
 
   useEffect(() => {
+    let cancelled = false;
+
     setProducts([]);
 
     getRecommendedProducts(date)
       .then((list) => {
+        if (cancelled) return;
+
         setProducts(
           list.map((product) => ({
             id: product.productId,
@@ -113,6 +126,10 @@ export default function TodaySkinResult() {
       .catch((error) => {
         console.error("제품 추천 조회 실패:", error);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [date]);
 
   const showBackHeader = Boolean(location.state?.showBackHeader);

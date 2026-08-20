@@ -103,8 +103,9 @@ const ActionButton = styled.button`
   cursor: pointer;
   color: #fff;
   font-family: "Pretendard Variable";
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  
 `;
 
 export default function SkinScoreSummary({
