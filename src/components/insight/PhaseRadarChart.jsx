@@ -13,16 +13,16 @@ const Card = styled.section`
 `;
 
 const CHART_WIDTH = 354;
-const CHART_HEIGHT = 186;
+const CHART_HEIGHT = 214;
 
 const ANGLES = [-90, -18, 54, 126, 198];
 
 
-const MAX_RADIUS = 70.5;
+const MAX_RADIUS = 80.5;
 
 
 const CENTER_X = 100 + 153 / 2;
-const CENTER_Y = 34 + 135 / 2;
+const CENTER_Y = 34 + 166 / 2;
 
 
 const LABEL_GAP = 4;
