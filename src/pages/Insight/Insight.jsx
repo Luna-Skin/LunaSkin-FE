@@ -17,14 +17,22 @@ const Page = styled.div`
   max-width: 402px;
   min-height: calc(100dvh - 60px);
   margin: 0 auto;
-  padding: 24px 24px 84px;
+  padding: 0 24px 24px;
   background: #fff;
 
   font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
+const HeaderWrapper = styled.header`
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 24px 0 24px;
+  background: #fff;
+`;
+
 const Title = styled.h1`
-  margin: 0 0 24px;
+  margin: 0;
 
   color: #a876fc;
   text-align: center;
@@ -130,8 +138,7 @@ function normalizeHabitFactors(factors) {
   if (!Array.isArray(factors)) return [];
 
   return factors.map((factor, index) => {
-    const isNegative =
-      factor.impactType?.toUpperCase() === "NEGATIVE";
+    const isNegative = factor.impactType?.toUpperCase() === "NEGATIVE";
 
     return {
       type: `${factor.condition ?? "habit"}-${index}`,
@@ -196,9 +203,7 @@ export default function Insight() {
 
         if (!isMounted) return;
 
-        setPhaseComparisonData(
-          normalizePhaseData(response.data?.phases),
-        );
+        setPhaseComparisonData(normalizePhaseData(response.data?.phases));
       } catch {
         if (isMounted) setPhaseComparisonData({});
       } finally {
@@ -222,9 +227,7 @@ export default function Insight() {
 
         if (!isMounted) return;
 
-        setHabitAnalysis(
-          normalizeHabitFactors(response.data?.factors),
-        );
+        setHabitAnalysis(normalizeHabitFactors(response.data?.factors));
       } catch {
         if (!isMounted) return;
 
@@ -244,12 +247,12 @@ export default function Insight() {
 
   return (
     <Page>
-      <Title>Skin Insight</Title>
-
+      <HeaderWrapper>
+        <Title>Skin Insight</Title>
+      </HeaderWrapper>
+      
       <Section>
-        <SectionTitle>
-          생리 시작일 기준 트러블 지수
-        </SectionTitle>
+        <SectionTitle>생리 시작일 기준 트러블 지수</SectionTitle>
 
         <TroubleTrendChart
           troubleTimeline={troubleTimeline}
@@ -268,26 +271,16 @@ export default function Insight() {
       </Section>
 
       <Section>
-        <SectionTitle>
-          주기 단계별 피부 비교
-        </SectionTitle>
+        <SectionTitle>주기 단계별 피부 비교</SectionTitle>
 
-        <PhaseRadarChart
-          data={isLoadingPhase ? {} : phaseComparisonData}
-        />
+        <PhaseRadarChart data={isLoadingPhase ? {} : phaseComparisonData} />
       </Section>
 
       <Section>
-        <SectionTitle>
-          생활 습관 영향 분석
-        </SectionTitle>
+        <SectionTitle>생활 습관 영향 분석</SectionTitle>
 
         <HabitList>
-          {isLoadingHabits && (
-            <HabitListMessage>
-              분석 중...
-            </HabitListMessage>
-          )}
+          {isLoadingHabits && <HabitListMessage>분석 중...</HabitListMessage>}
 
           {!isLoadingHabits && habitError && (
             <HabitListMessage>
@@ -295,21 +288,16 @@ export default function Insight() {
             </HabitListMessage>
           )}
 
-          {!isLoadingHabits &&
-            !habitError &&
-            habitAnalysis.length === 0 && (
-              <HabitListMessage>
-                아직 기록된 생활 습관 데이터가 없어요.
-              </HabitListMessage>
-            )}
+          {!isLoadingHabits && !habitError && habitAnalysis.length === 0 && (
+            <HabitListMessage>
+              아직 기록된 생활 습관 데이터가 없어요.
+            </HabitListMessage>
+          )}
 
           {!isLoadingHabits &&
             !habitError &&
             habitAnalysis.map((habit) => (
-              <HabitImpactCard
-                key={habit.type}
-                {...habit}
-              />
+              <HabitImpactCard key={habit.type} {...habit} />
             ))}
         </HabitList>
       </Section>

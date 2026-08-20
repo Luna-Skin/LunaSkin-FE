@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
-import badIcon from "../../assets/images/bad.png";
-import goodIcon from "../../assets/images/good.png";
+import badIcon from "../../assets/images/bad.svg";
+import goodIcon from "../../assets/images/good.svg";
 
 const Card = styled.article`
   display: flex;
