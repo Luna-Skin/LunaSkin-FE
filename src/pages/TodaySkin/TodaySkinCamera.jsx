@@ -7,7 +7,10 @@ import FaceFrameGuide from "../../components/todaySkin/FaceFrameGuide";
 import PhotoConfirmSheet from "../../components/todaySkin/PhotoConfirmSheet";
 import captureIcon from "../../assets/icons/camera_capture_button.svg";
 import backChevron from "../../assets/icons/back-chevron.svg";
-import { getYawAngleDegrees, isFrontalYaw } from "../../utils/facePose";
+import {
+  getYawAngleDegrees,
+  matchesRequestedAngle,
+} from "../../utils/facePose";
 import {
   loadCapturedPhotos,
   saveCapturedPhotos,
@@ -183,15 +186,15 @@ const BackArrow = styled.button`
   padding: 4px 8px;
   cursor: pointer;
   width: 26px;
-height: 26px;
-display: flex;
-align-items: center;
-justify-content: center;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const BackIcon = styled.img`
   width: 10px;
-height: 18px;
+  height: 18px;
 `;
 
 const TitleText = styled.span`
@@ -237,9 +240,6 @@ const FaceFrameWrapper = styled.div`
     height: 304px;
   `}
 `;
-
-
-
 
 const BottomSection = styled.div`
   width: 100%;
@@ -338,6 +338,9 @@ export default function TodaySkinCamera() {
 
     lastVideoTimeRef.current = -1;
 
+    const DETECT_INTERVAL_MS = 100;
+    let lastDetectTime = 0;
+
     function detectLoop() {
       const video = videoRef.current;
       const detector = detectorRef.current;
@@ -350,11 +353,15 @@ export default function TodaySkinCamera() {
         return;
       }
 
-      if (video.currentTime !== lastVideoTimeRef.current) {
+      const now = performance.now();
+      if (
+        video.currentTime !== lastVideoTimeRef.current &&
+        now - lastDetectTime >= DETECT_INTERVAL_MS
+      ) {
         lastVideoTimeRef.current = video.currentTime;
+        lastDetectTime = now;
 
         try {
-          const now = performance.now();
           const result = detector.detectForVideo(video, now);
           const landmarks = result.faceLandmarks?.[0];
 
@@ -457,6 +464,10 @@ export default function TodaySkinCamera() {
   }, [step]);
 
   const handleBack = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     navigate("/today-skin");
   };
 
@@ -487,10 +498,7 @@ export default function TodaySkinCamera() {
     navigate("/today-skin", { state: { skipTodayCheck: true } });
   };
 
-  const angleMatchesRequest =
-    requestedAngle === "front"
-      ? isFrontalYaw(yawDegrees)
-      : !isFrontalYaw(yawDegrees);
+  const angleMatchesRequest = matchesRequestedAngle(requestedAngle, yawDegrees);
 
   const getGuideText = () => {
     if (!cameraReady) {

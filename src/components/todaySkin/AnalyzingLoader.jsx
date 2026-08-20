@@ -31,7 +31,7 @@ const Text = styled.p`
   line-height: normal;
 `;
 
-export default function AnalyzingLoader() {
+export default function AnalyzingLoader({ text = "분석 중입니다" }) {
   return (
     <Wrapper>
       <Spinner width="108" height="108" viewBox="0 0 108 108">
@@ -51,7 +51,7 @@ export default function AnalyzingLoader() {
           strokeLinecap="round"
         />
       </Spinner>
-      <Text>분석 중입니다</Text>
+      <Text>{text}</Text>
     </Wrapper>
   );
 }

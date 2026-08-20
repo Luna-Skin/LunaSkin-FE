@@ -1,3 +1,4 @@
+import { memo } from "react";
 import styled from "styled-components";
 import RoutineCard from "./RoutineCard";
 
@@ -22,7 +23,7 @@ const CardList = styled.div`
   gap: 8px;
 `;
 
-export default function RoutineSection({ phaseLabel, routines = [] }) {
+function RoutineSection({ phaseLabel, routines = [] }) {
   return (
     <Section>
       <SectionTitle>{phaseLabel} 추천 루틴</SectionTitle>
@@ -34,3 +35,5 @@ export default function RoutineSection({ phaseLabel, routines = [] }) {
     </Section>
   );
 }
+
+export default memo(RoutineSection);

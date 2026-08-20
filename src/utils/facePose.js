@@ -22,12 +22,26 @@ export function getYawAngleDegrees(matrix) {
   return (yawRadians * 180) / Math.PI;
 }
 
-// TODO: 실제 테스트하면서 조정 필요 (정면으로 인정할 각도 범위)
 const YAW_THRESHOLD_DEGREES = 15;
 
-// yaw 각도가 "정면"으로 인정할 범위 안에 있는지만 판단.
-// 왼쪽/오른쪽 방향(부호)은 구분하지 않음 — 어느 쪽 측면 사진인지는 촬영 당시
-// 화면에 어떤 가이드 프레임이 떠 있었는지로 정해지기 때문에, "충분히 돌아갔는가/안 돌아갔는가"만 판단
+const LEFT_YAW_SIGN = -1; // TODO: 실기기 테스트 후 1 또는 -1로 확정
+
 export function isFrontalYaw(yawDegrees) {
   return Math.abs(yawDegrees) <= YAW_THRESHOLD_DEGREES;
+}
+
+export function isLeftYaw(yawDegrees) {
+  return LEFT_YAW_SIGN * yawDegrees > YAW_THRESHOLD_DEGREES;
+}
+
+export function isRightYaw(yawDegrees) {
+  return LEFT_YAW_SIGN * yawDegrees < -YAW_THRESHOLD_DEGREES;
+}
+
+// requestedAngle("front" | "left" | "right")에 맞는 yaw인지 한 곳에서 판단
+export function matchesRequestedAngle(requestedAngle, yawDegrees) {
+  if (requestedAngle === "front") return isFrontalYaw(yawDegrees);
+  if (requestedAngle === "left") return isLeftYaw(yawDegrees);
+  if (requestedAngle === "right") return isRightYaw(yawDegrees);
+  return false;
 }

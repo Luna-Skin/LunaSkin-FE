@@ -1,3 +1,4 @@
+import { memo } from "react";
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -68,7 +69,7 @@ function formatConcerns(concerns = []) {
   return `${shown} +${rest}`;
 }
 
-export default function UserInfo({ name, skinType, skinConcerns = [], points = 0 }) {
+function UserInfo({ name, skinType, skinConcerns = [], points = 0 }) {
   return (
     <Container>
       <LeftGroup>
@@ -83,3 +84,5 @@ export default function UserInfo({ name, skinType, skinConcerns = [], points = 0
     </Container>
   );
 }
+
+export default memo(UserInfo);

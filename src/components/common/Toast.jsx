@@ -18,8 +18,8 @@ const Wrapper = styled.div`
   position: absolute;
   top: 260px;
   z-index: 100;
-  margin-left: 26px;
-
+  left: 50%;
+  transform: translateX(-50%);
   display: inline-flex;
   width: 334px;
   padding: 16px 24px;

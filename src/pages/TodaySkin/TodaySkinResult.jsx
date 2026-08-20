@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import dayjs from "dayjs";
 
 import Header from "../../components/todaySkin/Header";
 import SkinScoreSummary from "../../components/todaySkin/SkinScoreSummary";
@@ -115,7 +116,9 @@ export default function TodaySkinResult() {
   }, [date]);
 
   const showBackHeader = Boolean(location.state?.showBackHeader);
-  const hideBottomActions = Boolean(location.state?.hideBottomActions);
+  const today = dayjs().format("YYYY-MM-DD");
+  const isTodayResult = date === today;
+  const hideBottomActions = !isTodayResult;
 
   const headerProps = showBackHeader
     ? {
