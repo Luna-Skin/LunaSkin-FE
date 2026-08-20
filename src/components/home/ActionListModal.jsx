@@ -25,7 +25,7 @@ const Container = styled.div`
 const CloseButton = styled.button`
   position: absolute;
   top: 24px;
-  left: 24px;
+  right: 24px;
   width: 24px;
   height: 24px;
   display: flex;
