@@ -30,7 +30,9 @@ const Header = styled.header`
   display: flex;
   justify-content: center;
   align-items: center;
-
+  position: sticky;
+  top: 0;
+  z-index: 10;
   height: 83px;
   box-sizing: border-box;
 
