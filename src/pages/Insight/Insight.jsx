@@ -135,7 +135,7 @@ function normalizeHabitFactors(factors) {
 
     return {
       type: `${factor.condition ?? "habit"}-${index}`,
-      emoji: isNegative ? "😰" : "😀",
+      isNegative,
       title: factor.condition ?? "생활 습관 분석",
       result: factor.impactLabel ?? "",
       color: "#825FBD",
