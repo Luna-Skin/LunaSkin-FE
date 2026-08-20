@@ -67,7 +67,7 @@ const SectionTitle = styled.h2`
   font-style: normal;
   font-weight: 600;
   line-height: normal;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 `;
 
 const ChipList = styled.div`
@@ -77,8 +77,8 @@ const ChipList = styled.div`
 `;
 
 const Chip = styled.button`
-  width: 82.5px;
-  height: 35px;
+  width: 80px;
+  height: 33px;
   padding-top: 9px;
   padding-bottom: 9px;
   border: 1px solid #d9d9d9;
@@ -89,7 +89,7 @@ const Chip = styled.button`
   background: ${({ $selected }) => ($selected ? "#DEC4FA" : "#fff")};
   color: #2d2d2d;
   font-family: "Pretendard Variable";
-  font-size: 16px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 500;
   line-height: normal;
