@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import styled from "styled-components";
 import plusIcon from "../../assets/icons/plus.svg";
 import sendIcon from "../../assets/icons/send.svg";
@@ -130,11 +130,13 @@ const SendIcon = styled.img`
   height: 14px;
 `;
 
+/* line-height 20px 기준 최대 4줄(80px)까지 늘어나고, 그 이상은 스크롤 */
 const Input = styled.textarea`
   flex: 1;
 
   min-height: 22px;
-  max-height: 72px;
+  max-height: 80px;
+  overflow-y: auto;
 
   padding: 0;
 
@@ -150,15 +152,17 @@ const Input = styled.textarea`
   font-size: 15px;
   font-weight: 400;
   line-height: 20px;
-
-  &::placeholder {
-    color: #b6b0c0;
-  }
 `;
 
+/*
+ * align-items: center로 두면 텍스트가 여러 줄로 늘어날 때
+ * +/전송 버튼이 입력창 세로 중앙으로 같이 밀려 올라간다.
+ * flex-end로 바닥에 고정해서 줄 수와 상관없이 버튼이
+ * 항상 입력창 하단에 붙어있게 한다.
+ */
 const InputRow = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
 
   gap: 8px;
 
@@ -188,6 +192,23 @@ export default function ChatInputBar({
    * isComposing 상태일 때는 Enter를 전송으로 처리하지 않는다.
    */
   const isComposingRef = useRef(false);
+
+  /*
+   * textarea는 기본적으로 내용이 늘어나도 높이가 자동으로
+   * 커지지 않는다. scrollHeight를 기준으로 높이를 다시 계산해서
+   * 줄이 늘어날 때마다 입력창 자체가 위로 늘어나게 한다.
+   * CSS의 max-height(4줄)가 최종 상한을 잡아준다.
+   */
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
 
   const handleKeyDown = (event) => {
     if (
@@ -254,6 +275,7 @@ export default function ChatInputBar({
         </CircleButton>
 
         <Input
+          ref={textareaRef}
           value={value}
           onChange={(event) =>
             onChange(
@@ -267,7 +289,6 @@ export default function ChatInputBar({
           onCompositionEnd={() => {
             isComposingRef.current = false;
           }}
-          placeholder="메시지를 입력하세요"
           rows="1"
         />
 

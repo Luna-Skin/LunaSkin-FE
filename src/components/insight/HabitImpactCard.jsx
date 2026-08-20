@@ -1,5 +1,8 @@
 import styled from "styled-components";
 
+import badIcon from "../../assets/images/bad.svg";
+import goodIcon from "../../assets/images/good.svg";
+
 const Card = styled.article`
   display: flex;
   align-items: center;
@@ -26,11 +29,12 @@ const EmojiBox = styled.div`
 
   border-radius: 11px;
   background: #f0e8ff;
+`;
 
-  font-family: "Pretendard Variable", Pretendard, sans-serif;
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 1;
+const EmojiImage = styled.img`
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 `;
 
 const Content = styled.div`
@@ -57,13 +61,18 @@ const Result = styled.span`
 `;
 
 export default function HabitImpactCard({
-  emoji,
+  isNegative,
   title,
   result,
 }) {
   return (
     <Card>
-      <EmojiBox>{emoji}</EmojiBox>
+      <EmojiBox>
+        <EmojiImage
+          src={isNegative ? badIcon : goodIcon}
+          alt=""
+        />
+      </EmojiBox>
 
       <Content>{title}</Content>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import styled from "styled-components";
 import { getPhaseFromSegments, PHASE_COLOR } from "../../utils/cyclePhase";
@@ -220,8 +220,7 @@ const LegendDot = styled.span`
 //   - selectedDate는 빨간색 테두리 원으로 표시됨
 //   - 오늘 날짜를 선택하면 보라색 원 위에 빨간색 테두리가 함께 표시됨
 //   - 펼치기/접기 토글 버튼은 숨김(어차피 강제로 펼쳐져 있어서 눌러도 의미 없음)
-export default function CalendarView({
-  cycleResponses = [],
+function CalendarView({  cycleResponses = [],
   analysisDates = [],
   displayedMonth,
   onMonthChange,
@@ -266,6 +265,19 @@ export default function CalendarView({
   }, [effectiveExpanded, displayedMonth, today]);
 
   const canShowPhase = effectiveExpanded || SHOW_PHASE_HIGHLIGHT_IN_WEEK_VIEW;
+
+  // 날짜별 phase를 한 번씩만 계산해서 캐싱 
+  const phaseByDate = useMemo(() => {
+    if (!canShowPhase) return {};
+    const map = {};
+    for (const date of days) {
+      map[date.format("YYYY-MM-DD")] = getPhaseFromSegments(
+        date.format("YYYY-MM-DD"),
+        cycleResponses,
+      );
+    }
+    return map;
+  }, [canShowPhase, days, cycleResponses]);
 
   return (
     <Wrapper $isExpanded={effectiveExpanded}>
@@ -313,7 +325,7 @@ export default function CalendarView({
           const hasRecord = !isFutureDate && analysisDates.includes(dateStr);
           const isSelected = selectMode && selectedDate === dateStr;
 
-          const phase = canShowPhase ? getPhaseFromSegments(dateStr, cycleResponses) : null;
+          const phase = canShowPhase ? phaseByDate[dateStr] : null;
           const phaseColor = phase ? PHASE_COLOR[phase] : null;
 
           const columnIndex = index % 7;
@@ -324,12 +336,12 @@ export default function CalendarView({
           const mergeLeft =
             canShowPhase &&
             prevInRow &&
-            getPhaseFromSegments(prevInRow.format("YYYY-MM-DD"), cycleResponses) === phase;
+            phaseByDate[prevInRow.format("YYYY-MM-DD")] === phase;
 
           const mergeRight =
             canShowPhase &&
             nextInRow &&
-            getPhaseFromSegments(nextInRow.format("YYYY-MM-DD"), cycleResponses) === phase;
+            phaseByDate[nextInRow.format("YYYY-MM-DD")] === phase;
 
           const hasRowAbove = index - 7 >= 0;
           const hasRowBelow = index + 7 < days.length;
@@ -406,3 +418,5 @@ export default function CalendarView({
     </Wrapper>
   );
 }
+
+export default memo(CalendarView);

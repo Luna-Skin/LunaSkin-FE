@@ -26,7 +26,6 @@ const Header = styled.header`
   gap: 130px;
   justify-content: flex-start;
   align-items: center;
-  margin-bottom: 24px;
 `;
 
 const Title = styled.p`
@@ -56,15 +55,19 @@ const BackIcon = styled.img`
 `;
 
 const Content = styled.section`
-  padding: 16px;
+  padding: 8px 24px;
 `;
 
 const Label = styled.label`
+  color: #000;
   display: block;
-  margin-top: 12px;
-  color: #333;
-  font-size: 14px;
+  font-family: "Pretendard Variable";
+  font-size: 18px;
+  font-style: normal;
   font-weight: 600;
+  line-height: normal;
+  margin-top: 30px;
+  margin-bottom: 9px;
 `;
 
 const SaveArea = styled.div`

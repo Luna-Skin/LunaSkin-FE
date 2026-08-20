@@ -5,21 +5,25 @@ const Field = styled.button`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  width: 354px;
+  height: 50px;
   margin-top: 8px;
-  padding: 12px 14px;
-  border: 1px solid #e3e0e8;
-  border-radius: 12px;
+  padding: 16px;
+border: 1.5px solid rgba(0, 0, 0, 0.10);
+border-radius: 18px;
   background: #fff;
-  color: #333;
-  font-size: 14px;
+  color: #2C2C2C;
+font-family: "Pretendard Variable";
+font-size: 15px;
+font-style: normal;
+font-weight: 500;
+line-height: normal;
   cursor: pointer;
-  font-weight: 550;
 `;
 
 const DirectionIcon = styled.img`
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
 `;
 

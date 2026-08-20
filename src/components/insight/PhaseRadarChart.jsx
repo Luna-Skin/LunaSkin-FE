@@ -3,17 +3,60 @@ import styled from "styled-components";
 const Card = styled.section`
   width: 100%;
   box-sizing: border-box;
-  padding: 12px;
 
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  outline: 1.5px rgba(0, 0, 0, 0.1) solid;
+  outline-offset: -1.5px;
   border-radius: 18px;
   background: #fff;
 
   font-family: "Pretendard Variable", Pretendard, sans-serif;
 `;
 
+const CHART_WIDTH = 354;
+const CHART_HEIGHT = 214;
+
 const ANGLES = [-90, -18, 54, 126, 198];
-const MAX_RADIUS = 77.5;
+
+
+const MAX_RADIUS = 80.5;
+
+
+const CENTER_X = 100 + 153 / 2;
+const CENTER_Y = 34 + 166 / 2;
+
+
+const LABEL_GAP = 4;
+
+const LABEL_DEFS = [
+  { text: "트러블", angle: -89.5, anchor: "middle", gap: LABEL_GAP, dx: 0, dy: -4 },
+  { text: "유분", angle: -14, anchor: "start", gap: LABEL_GAP, dx: 0, dy: 0 },
+  { text: "칙칙함", angle: 65, anchor: "start", gap: LABEL_GAP, dx: 1.5, dy: 4 },
+  { text: "수분", angle: 115, anchor: "end", gap: LABEL_GAP, dx: -1.5, dy: 4 },
+  { text: "탄력", angle: 194, anchor: "end", gap: LABEL_GAP, dx: 0, dy: 0 },
+];
+
+const LABELS = LABEL_DEFS.map(
+  ({ text, angle, anchor, gap, dx, dy }) => {
+    const radian =
+      (angle * Math.PI) / 180;
+
+    const radius = MAX_RADIUS + gap;
+
+    return {
+      text,
+      anchor,
+      x:
+        CENTER_X +
+        radius * Math.cos(radian) +
+        dx,
+      y:
+        CENTER_Y +
+        radius * Math.sin(radian) +
+        dy,
+    };
+  },
+);
+
 const EMPTY_SCORE = 1;
 
 const PHASE_META = {
@@ -86,13 +129,13 @@ export default function PhaseRadarChart({
   return (
     <Card>
       <svg
-        viewBox="0 0 340 206"
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         width="100%"
         role="img"
         aria-label="주기 단계별 피부 비교 차트"
         fontFamily="Pretendard Variable"
       >
-        {/* 생리기 / 배란기 / 황체기 범례 */}
+        {/* 생리기 / 배란기 / 황체기 범례 (피그마: left 16, top 16, gap 4) */}
         <g
           fontSize="12"
           fontWeight="500"
@@ -102,15 +145,15 @@ export default function PhaseRadarChart({
             ([phase, meta], index) => (
               <g key={phase}>
                 <circle
-                  cx="10"
-                  cy={12 + index * 16}
+                  cx="20"
+                  cy={20 + index * 16}
                   r="4"
                   fill={meta.legendColor}
                 />
 
                 <text
-                  x="20"
-                  y={16 + index * 16}
+                  x="29"
+                  y={24 + index * 16}
                 >
                   {meta.label}
                 </text>
@@ -120,7 +163,9 @@ export default function PhaseRadarChart({
         </g>
 
         {/* 레이더 차트 */}
-        <g transform="translate(169.5 103)">
+        <g
+          transform={`translate(${CENTER_X} ${CENTER_Y})`}
+        >
           {/* 가장 바깥쪽 레이더 */}
           <polygon
             points={buildGridPoints(
@@ -194,36 +239,23 @@ export default function PhaseRadarChart({
         </g>
 
         {/*
-          피부 지표
-
-          피그마 서식 기준 라벨별 정렬:
-          트러블(가운데), 유분·칙칙함(왼쪽 정렬, 오각형에서 오른쪽으로 벌어짐),
-          수분·탄력(오른쪽 정렬, 오각형에서 왼쪽으로 벌어짐)
+          피부 지표 (LABEL_DEFS 기반, 위 주석 참고)
         */}
         <g
           fontSize="12"
           fontWeight="500"
           fill="#7E7979"
         >
-          <text x="155" y="15" textAnchor="middle">
-            트러블
-          </text>
-
-          <text x="247" y="80" textAnchor="start">
-            유분
-          </text>
-
-          <text x="208" y="177" textAnchor="start">
-            칙칙함
-          </text>
-
-          <text x="112" y="177" textAnchor="end">
-            수분
-          </text>
-
-          <text x="72" y="80" textAnchor="end">
-            탄력
-          </text>
+          {LABELS.map((label) => (
+            <text
+              key={label.text}
+              x={label.x}
+              y={label.y}
+              textAnchor={label.anchor}
+            >
+              {label.text}
+            </text>
+          ))}
         </g>
       </svg>
     </Card>

@@ -70,11 +70,7 @@ const Bubble = styled.div`
       : "12px"};
 
   border: 1px solid #d9d9d9;
-
-  border-radius: ${({ $isUser }) =>
-    $isUser
-      ? "16px 16px 4px 16px"
-      : "16px"};
+  border-radius: 16px;
 
   background: ${({ $isUser }) =>
     $isUser

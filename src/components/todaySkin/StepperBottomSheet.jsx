@@ -57,6 +57,26 @@ const ControlRow = styled.div`
   margin-top: 45.5px;
 `;
 
+const StepperGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const DeleteButton = styled.button`
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: #000;
+  text-align: right;
+  font-family: "Pretendard Variable";
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+`;
+
 const ValueText = styled.span`
   color: #000;
   text-align: right;
@@ -67,7 +87,7 @@ const ValueText = styled.span`
   line-height: normal;
 `;
 
-// 손잡이를 드래그하는 대신 클릭하면 닫히도록 수정 
+// 손잡이를 드래그하는 대신 클릭하면 닫히도록 수정
 export default function StepperBottomSheet({
   label,
   value,
@@ -99,6 +119,11 @@ export default function StepperBottomSheet({
 
   const displayValue = formatValue ? formatValue(value) : value;
 
+  const handleDelete = () => {
+    onChange(null);
+    requestClose();
+  };
+
   return (
     <Overlay onClick={requestClose}>
       <Sheet
@@ -112,7 +137,18 @@ export default function StepperBottomSheet({
 
         <ControlRow>
           <ValueText>{displayValue}</ValueText>
-          <Stepper value={value} min={min} max={max} step={step} onChange={onChange} />
+          <StepperGroup>
+            <Stepper
+              value={value}
+              min={min}
+              max={max}
+              step={step}
+              onChange={onChange}
+            />
+            <DeleteButton type="button" onClick={handleDelete}>
+              삭제
+            </DeleteButton>
+          </StepperGroup>
         </ControlRow>
       </Sheet>
     </Overlay>
