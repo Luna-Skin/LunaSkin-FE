@@ -152,15 +152,17 @@ const Input = styled.textarea`
   font-size: 15px;
   font-weight: 400;
   line-height: 20px;
-
-  &::placeholder {
-    color: #b6b0c0;
-  }
 `;
 
+/*
+ * align-items: center로 두면 텍스트가 여러 줄로 늘어날 때
+ * +/전송 버튼이 입력창 세로 중앙으로 같이 밀려 올라간다.
+ * flex-end로 바닥에 고정해서 줄 수와 상관없이 버튼이
+ * 항상 입력창 하단에 붙어있게 한다.
+ */
 const InputRow = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
 
   gap: 8px;
 
@@ -287,7 +289,6 @@ export default function ChatInputBar({
           onCompositionEnd={() => {
             isComposingRef.current = false;
           }}
-          placeholder="메시지를 입력하세요"
           rows="1"
         />
 
